@@ -82,12 +82,54 @@ final class RecipeJoeUITests: XCTestCase {
         app.launch()
 
         // Switch to Add Recipe tab
+        let addRecipeTab = app.tabBars.buttons["Add Recipe"]
+        XCTAssertTrue(addRecipeTab.waitForExistence(timeout: 5), "Add Recipe tab should exist")
+        addRecipeTab.tap()
+
+        // Wait a moment for the view to load
+        Thread.sleep(forTimeInterval: 1)
+
+        // Verify URL text field exists (most important element)
+        let urlTextField = app.textFields["urlTextField"]
+        XCTAssertTrue(urlTextField.waitForExistence(timeout: 5), "URL text field should exist")
+
+        // Verify action button exists
+        let actionButton = app.buttons["actionButton"]
+        XCTAssertTrue(actionButton.waitForExistence(timeout: 5), "Action button should exist")
+    }
+
+    @MainActor
+    func testAddRecipeButtonStateChange() throws {
+        let app = XCUIApplication()
+        app.launch()
+
+        // Switch to Add Recipe tab
         app.tabBars.buttons["Add Recipe"].tap()
 
-        // Verify Add Recipe view content
-        XCTAssertTrue(app.navigationBars["New Recipe"].exists, "New Recipe navigation bar should be visible")
-        XCTAssertTrue(app.staticTexts["Add Recipe"].exists, "Add Recipe text should be visible")
-        XCTAssertTrue(app.staticTexts["Recipe creation form coming soon"].exists, "Add Recipe placeholder text should be visible")
+        // Get references to UI elements
+        let urlTextField = app.textFields["urlTextField"]
+        let actionButton = app.buttons["actionButton"]
+
+        // Verify button exists in default state (plus icon)
+        XCTAssertTrue(actionButton.exists, "Action button should exist")
+
+        // Tap text field and enter URL
+        urlTextField.tap()
+        urlTextField.typeText("https://www.example.com/recipe")
+
+        // Button should still exist (now in send/go state)
+        XCTAssertTrue(actionButton.exists, "Action button should still exist after entering URL")
+
+        // Clear the text field
+        urlTextField.tap()
+        // Select all and delete (clearing the field)
+        if let value = urlTextField.value as? String, !value.isEmpty {
+            let deleteString = String(repeating: XCUIKeyboardKey.delete.rawValue, count: value.count)
+            urlTextField.typeText(deleteString)
+        }
+
+        // Button should still exist (back to plus icon state)
+        XCTAssertTrue(actionButton.exists, "Action button should exist after clearing URL")
     }
 
     // MARK: - Search Tab Tests (iOS 26 Liquid Glass)
