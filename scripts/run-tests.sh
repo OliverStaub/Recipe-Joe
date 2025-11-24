@@ -1,12 +1,12 @@
 #!/bin/bash
 
-# Pre-commit hook for RecipeJoe
-# Runs both unit tests and UI tests before allowing commits
-# Use 'git commit --no-verify' to bypass this hook if needed
+# Run Tests Script for RecipeJoe
+# Executes the same tests as the pre-commit hook
+# Usage: ./scripts/run-tests.sh
 
 set -e
 
-echo "🧪 Running pre-commit tests..."
+echo "🧪 Running RecipeJoe Tests..."
 echo ""
 
 # Colors for output
@@ -15,7 +15,7 @@ GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
-# Get the project root directory (repository root)
+# Get the project root directory
 PROJECT_ROOT="$(git rev-parse --show-toplevel)"
 cd "$PROJECT_ROOT"
 
@@ -66,19 +66,17 @@ run_tests() {
 
 # Run unit tests
 if ! run_tests "RecipeJoe" "Unit Tests" "RecipeJoeTests"; then
-    echo -e "${RED}❌ Unit tests failed. Commit aborted.${NC}"
-    echo -e "${YELLOW}Tip: Use 'git commit --no-verify' to bypass this check${NC}"
+    echo -e "${RED}❌ Unit tests failed.${NC}"
     exit 1
 fi
 
 # Run UI tests
 if ! run_tests "RecipeJoe" "UI Tests" "RecipeJoeUITests"; then
-    echo -e "${RED}❌ UI tests failed. Commit aborted.${NC}"
-    echo -e "${YELLOW}Tip: Use 'git commit --no-verify' to bypass this check${NC}"
+    echo -e "${RED}❌ UI tests failed.${NC}"
     exit 1
 fi
 
-echo -e "${GREEN}✅ All tests passed! Proceeding with commit...${NC}"
+echo -e "${GREEN}✅ All tests passed!${NC}"
 echo ""
 
 exit 0
