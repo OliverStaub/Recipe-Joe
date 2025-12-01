@@ -73,7 +73,7 @@ final class RecipeJoeUITests: XCTestCase {
         // Home tab should be selected by default
         XCTAssertTrue(app.navigationBars["RecipeJoe"].exists, "RecipeJoe navigation bar should be visible on Home tab")
         XCTAssertTrue(app.staticTexts["Home"].exists, "Home text should be visible")
-        XCTAssertTrue(app.staticTexts["Recipe home screen coming soon"].exists, "Home placeholder text should be visible")
+        XCTAssertTrue(app.staticTexts["No recipes yet. Add your first recipe!"].exists, "Home empty state text should be visible")
     }
 
     @MainActor
@@ -145,7 +145,7 @@ final class RecipeJoeUITests: XCTestCase {
         // Verify Search view content
         XCTAssertTrue(app.navigationBars["Search"].exists, "Search navigation bar should be visible")
         XCTAssertTrue(app.staticTexts["Search Recipes"].exists, "Search Recipes text should be visible")
-        XCTAssertTrue(app.staticTexts["Recipe search coming soon"].exists, "Search placeholder text should be visible")
+        XCTAssertTrue(app.staticTexts["Search by name, category, cuisine, or ingredients"].exists, "Search instruction text should be visible")
     }
 
     @MainActor
@@ -173,5 +173,72 @@ final class RecipeJoeUITests: XCTestCase {
         let searchTab = tabBar.buttons["Search"]
         XCTAssertTrue(searchTab.exists, "Liquid Glass search tab should exist")
         XCTAssertTrue(searchTab.isHittable, "Search tab should be tappable")
+    }
+
+    // MARK: - Settings Tests
+
+    @MainActor
+    func testSettingsButtonExists() throws {
+        let app = XCUIApplication()
+        app.launch()
+
+        // Settings button should be in the Home tab toolbar
+        let settingsButton = app.buttons["settingsButton"]
+        XCTAssertTrue(settingsButton.waitForExistence(timeout: 5), "Settings button should exist in Home toolbar")
+    }
+
+    @MainActor
+    func testSettingsButtonOpensSheet() throws {
+        let app = XCUIApplication()
+        app.launch()
+
+        // Tap settings button
+        let settingsButton = app.buttons["settingsButton"]
+        XCTAssertTrue(settingsButton.waitForExistence(timeout: 5), "Settings button should exist")
+        settingsButton.tap()
+
+        // Verify Settings view appears
+        XCTAssertTrue(app.navigationBars["Settings"].waitForExistence(timeout: 5), "Settings navigation bar should appear")
+    }
+
+    @MainActor
+    func testSettingsShowsSyncStatus() throws {
+        let app = XCUIApplication()
+        app.launch()
+
+        // Open settings
+        app.buttons["settingsButton"].tap()
+
+        // Verify sync status text exists (more reliable than checking the row element)
+        XCTAssertTrue(app.staticTexts["Sync Status"].waitForExistence(timeout: 5), "Sync Status label should exist in Settings")
+    }
+
+    @MainActor
+    func testSettingsShowsVersion() throws {
+        let app = XCUIApplication()
+        app.launch()
+
+        // Open settings
+        app.buttons["settingsButton"].tap()
+
+        // Verify version info exists
+        XCTAssertTrue(app.staticTexts["Version"].waitForExistence(timeout: 5), "Version label should exist in Settings")
+    }
+
+    @MainActor
+    func testSettingsCanBeDismissed() throws {
+        let app = XCUIApplication()
+        app.launch()
+
+        // Open settings
+        app.buttons["settingsButton"].tap()
+        XCTAssertTrue(app.navigationBars["Settings"].waitForExistence(timeout: 5), "Settings should be open")
+
+        // Swipe down to dismiss
+        app.swipeDown()
+
+        // Wait for sheet to dismiss and verify we're back on Home
+        Thread.sleep(forTimeInterval: 1)
+        XCTAssertTrue(app.navigationBars["RecipeJoe"].exists, "Should be back on Home screen after dismissing Settings")
     }
 }

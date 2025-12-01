@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import SwiftData
 
 @main
 struct RecipeJoeApp: App {
@@ -13,5 +14,6 @@ struct RecipeJoeApp: App {
         WindowGroup {
             MainTabView()
         }
+        .modelContainer(DataController.sharedModelContainer)
     }
 }
