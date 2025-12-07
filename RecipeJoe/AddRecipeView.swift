@@ -10,12 +10,7 @@ import SwiftUI
 struct AddRecipeView: View {
     @State private var urlText: String = ""
     @FocusState private var isTextFieldFocused: Bool
-
-    // State for Anthropic API test
-    @State private var anthropicResponse: String = ""
-    @State private var isLoading: Bool = false
-    @State private var showError: Bool = false
-    @State private var errorMessage: String = ""
+    @StateObject private var importViewModel = RecipeImportViewModel()
 
     var body: some View {
         NavigationStack {
@@ -32,22 +27,19 @@ struct AddRecipeView: View {
                 VStack(alignment: .leading, spacing: 12) {
                     URLInputRow(
                         urlText: $urlText,
-                        isTextFieldFocused: $isTextFieldFocused
+                        isTextFieldFocused: $isTextFieldFocused,
+                        isLoading: importViewModel.importState.isLoading,
+                        onImport: importRecipe
                     )
                     .padding(.horizontal, 24)
 
                     PlatformIconsView()
                         .padding(.leading, 40)
 
-                    // Anthropic API Test Section
-                    AnthropicTestSection(
-                        response: $anthropicResponse,
-                        isLoading: $isLoading,
-                        showError: $showError,
-                        errorMessage: $errorMessage
-                    )
-                    .padding(.horizontal, 24)
-                    .padding(.top, 8)
+                    // Import Status Section
+                    ImportStatusSection(viewModel: importViewModel)
+                        .padding(.horizontal, 24)
+                        .padding(.top, 8)
                 }
 
                 Spacer()
@@ -59,6 +51,14 @@ struct AddRecipeView: View {
             }
         }
     }
+
+    private func importRecipe() {
+        guard !urlText.isEmpty else { return }
+        isTextFieldFocused = false
+        Task {
+            await importViewModel.importRecipe(from: urlText)
+        }
+    }
 }
 
 // MARK: - URL Input Row
@@ -66,6 +66,8 @@ struct AddRecipeView: View {
 private struct URLInputRow: View {
     @Binding var urlText: String
     @FocusState.Binding var isTextFieldFocused: Bool
+    let isLoading: Bool
+    let onImport: () -> Void
 
     private var hasURL: Bool {
         !urlText.trimmingCharacters(in: .whitespaces).isEmpty
@@ -83,24 +85,35 @@ private struct URLInputRow: View {
                 .autocorrectionDisabled()
                 .keyboardType(.URL)
                 .submitLabel(.go)
+                .onSubmit {
+                    if hasURL {
+                        onImport()
+                    }
+                }
                 .accessibilityIdentifier("urlTextField")
 
             Button(action: {
-                // No functionality yet - UI only
                 if hasURL {
-                    // Future: trigger URL request
-                    print("Send/Go action - URL: \(urlText)")
-                } else {
-                    // Future: open file picker
-                    print("Plus action - open file picker")
+                    onImport()
                 }
+                // TODO: Plus button for file picker when no URL
             }) {
-                Image(systemName: hasURL ? "arrow.forward.circle.fill" : "plus.circle.fill")
-                    .font(.system(size: 36))
-                    .foregroundStyle(Color.terracotta)
-                    .contentTransition(.symbolEffect(.replace))
-                    .padding(6)
+                Group {
+                    if isLoading {
+                        ProgressView()
+                            .progressViewStyle(CircularProgressViewStyle())
+                            .scaleEffect(0.8)
+                            .frame(width: 36, height: 36)
+                    } else {
+                        Image(systemName: hasURL ? "arrow.forward.circle.fill" : "plus.circle.fill")
+                            .font(.system(size: 36))
+                    }
+                }
+                .foregroundStyle(Color.terracotta)
+                .contentTransition(.symbolEffect(.replace))
+                .padding(6)
             }
+            .disabled(isLoading || !hasURL)
             .accessibilityIdentifier("actionButton")
             .animation(.spring(response: 0.3, dampingFraction: 0.7), value: hasURL)
         }
@@ -161,79 +174,88 @@ private struct PlatformIcon: View {
     }
 }
 
-// MARK: - Anthropic Test Section
+// MARK: - Import Status Section
 
-private struct AnthropicTestSection: View {
-    @Binding var response: String
-    @Binding var isLoading: Bool
-    @Binding var showError: Bool
-    @Binding var errorMessage: String
+private struct ImportStatusSection: View {
+    @ObservedObject var viewModel: RecipeImportViewModel
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            // Test Button
-            Button(action: testAnthropicAPI) {
-                HStack {
-                    if isLoading {
-                        ProgressView()
-                            .progressViewStyle(CircularProgressViewStyle())
-                            .scaleEffect(0.8)
-                    } else {
-                        Image(systemName: "wand.and.stars")
-                    }
-                    Text(isLoading ? "Calling Claude..." : "Test Anthropic API")
-                }
-                .font(.subheadline)
-                .fontWeight(.medium)
-                .foregroundStyle(.white)
-                .padding(.horizontal, 16)
-                .padding(.vertical, 10)
-                .background(Color.terracotta)
-                .clipShape(Capsule())
-            }
-            .disabled(isLoading)
-            .accessibilityIdentifier("testAnthropicButton")
+            switch viewModel.importState {
+            case .idle:
+                EmptyView()
 
-            // Response Display
-            if !response.isEmpty {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Claude says:")
+            case .importing:
+                HStack(spacing: 8) {
+                    ProgressView()
+                        .progressViewStyle(CircularProgressViewStyle())
+                        .scaleEffect(0.8)
+                    Text("Importing recipe...")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                }
+                .accessibilityIdentifier("importingIndicator")
+
+            case .success:
+                VStack(alignment: .leading, spacing: 8) {
+                    HStack(spacing: 8) {
+                        Image(systemName: "checkmark.circle.fill")
+                            .foregroundStyle(.green)
+                        Text("Recipe imported!")
+                            .font(.subheadline)
+                            .fontWeight(.medium)
+                    }
+
+                    if let recipeName = viewModel.lastImportedRecipeName {
+                        Text(recipeName)
+                            .font(.headline)
+                            .padding(12)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .background(Color(.systemGray6))
+                            .clipShape(RoundedRectangle(cornerRadius: 12))
+                    }
+
+                    if let stats = viewModel.lastImportStats {
+                        HStack(spacing: 16) {
+                            StatBadge(value: stats.stepsCount, label: "steps")
+                            StatBadge(value: stats.ingredientsCount, label: "ingredients")
+                        }
                         .font(.caption)
                         .foregroundStyle(.secondary)
-                    Text(response)
-                        .font(.body)
-                        .foregroundStyle(.primary)
-                        .padding(12)
-                        .background(Color(.systemGray6))
-                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                    }
                 }
-                .accessibilityIdentifier("anthropicResponse")
-            }
+                .accessibilityIdentifier("importSuccess")
 
-            // Error Display
-            if showError {
-                Text(errorMessage)
-                    .font(.caption)
-                    .foregroundStyle(.red)
-                    .accessibilityIdentifier("anthropicError")
+            case .error(let message):
+                VStack(alignment: .leading, spacing: 4) {
+                    HStack(spacing: 8) {
+                        Image(systemName: "exclamationmark.triangle.fill")
+                            .foregroundStyle(.red)
+                        Text("Import failed")
+                            .font(.subheadline)
+                            .fontWeight(.medium)
+                    }
+                    Text(message)
+                        .font(.caption)
+                        .foregroundStyle(.red)
+                }
+                .accessibilityIdentifier("importError")
             }
         }
     }
+}
 
-    private func testAnthropicAPI() {
-        isLoading = true
-        showError = false
-        response = ""
+// MARK: - Stat Badge
 
-        Task {
-            do {
-                let result = try await SupabaseService.shared.callAnthropicRelay()
-                response = result
-            } catch {
-                showError = true
-                errorMessage = error.localizedDescription
-            }
-            isLoading = false
+private struct StatBadge: View {
+    let value: Int
+    let label: String
+
+    var body: some View {
+        HStack(spacing: 4) {
+            Text("\(value)")
+                .fontWeight(.medium)
+            Text(label)
         }
     }
 }
