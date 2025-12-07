@@ -14,6 +14,7 @@ final class RecipeImportViewModel: ObservableObject {
     // MARK: - Published Properties
 
     @Published var importState: ImportState = .idle
+    @Published var currentStep: ImportStep = .fetching
     @Published var lastImportedRecipeId: UUID?
     @Published var lastImportedRecipeName: String?
     @Published var lastImportStats: ImportStats?
@@ -37,6 +38,26 @@ final class RecipeImportViewModel: ObservableObject {
         }
     }
 
+    enum ImportStep: Int, CaseIterable {
+        case fetching = 0
+        case parsing = 1
+        case extracting = 2
+        case saving = 3
+
+        var title: String {
+            switch self {
+            case .fetching: return "Fetching recipe..."
+            case .parsing: return "Analyzing with AI..."
+            case .extracting: return "Extracting ingredients..."
+            case .saving: return "Saving recipe..."
+            }
+        }
+
+        var progress: Double {
+            Double(rawValue + 1) / Double(ImportStep.allCases.count)
+        }
+    }
+
     // MARK: - Import Recipe
 
     /// Import a recipe from a URL
@@ -50,15 +71,29 @@ final class RecipeImportViewModel: ObservableObject {
         }
 
         importState = .importing
+        currentStep = .fetching
 
         do {
-            // Determine language based on device locale
-            let language = Locale.current.language.languageCode?.identifier == "de" ? "de" : "en"
+            // Simulate step progression (actual work happens in Edge Function)
+            // Step 1: Fetching
+            try await Task.sleep(for: .milliseconds(500))
+            currentStep = .parsing
+
+            // Step 2: Parsing - Use language from user settings
+            let language = UserSettings.shared.recipeLanguage.rawValue
+
+            // Start the actual import (this takes most of the time)
+            try await Task.sleep(for: .milliseconds(800))
+            currentStep = .extracting
 
             let response = try await SupabaseService.shared.importRecipe(
                 from: urlString,
                 language: language
             )
+
+            // Step 3 & 4: Extracting & Saving happen in the Edge Function
+            currentStep = .saving
+            try await Task.sleep(for: .milliseconds(300))
 
             if response.success {
                 if let recipeIdString = response.recipeId,

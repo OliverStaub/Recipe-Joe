@@ -5,29 +5,30 @@
 //  Created by Oliver Staub on 23.11.2025.
 //
 
+import Combine
 import SwiftUI
-import SwiftData
 
 struct SearchView: View {
-    @Query private var allRecipes: [Recipe]
+    @StateObject private var viewModel = SearchViewModel()
     @State private var searchText = ""
 
-    private var filteredRecipes: [Recipe] {
+    private var filteredRecipes: [SupabaseRecipe] {
         guard !searchText.isEmpty else { return [] }
         let lowercasedQuery = searchText.lowercased()
-        return allRecipes.filter { recipe in
+        return viewModel.recipes.filter { recipe in
             recipe.name.lowercased().contains(lowercasedQuery) ||
-            recipe.recipeCategory.lowercased().contains(lowercasedQuery) ||
-            recipe.recipeCuisine.lowercased().contains(lowercasedQuery) ||
-            recipe.keywords.contains { $0.lowercased().contains(lowercasedQuery) } ||
-            recipe.ingredientsList.contains { $0.lowercased().contains(lowercasedQuery) }
+            (recipe.category?.lowercased().contains(lowercasedQuery) ?? false) ||
+            (recipe.cuisine?.lowercased().contains(lowercasedQuery) ?? false) ||
+            (recipe.keywords?.contains { $0.lowercased().contains(lowercasedQuery) } ?? false)
         }
     }
 
     var body: some View {
         NavigationStack {
             Group {
-                if searchText.isEmpty {
+                if viewModel.isLoading {
+                    ProgressView("Loading recipes...")
+                } else if searchText.isEmpty {
                     emptySearchView
                 } else if filteredRecipes.isEmpty {
                     noResultsView
@@ -37,6 +38,9 @@ struct SearchView: View {
             }
             .navigationTitle("Search")
             .searchable(text: $searchText, prompt: "Search recipes...")
+        }
+        .task {
+            await viewModel.fetchRecipes()
         }
     }
 
@@ -80,25 +84,44 @@ struct SearchView: View {
 
     private var searchResultsView: some View {
         List(filteredRecipes) { recipe in
-            HStack {
-                VStack(alignment: .leading) {
-                    Text(recipe.name)
-                        .font(.headline)
-                    Text("\(recipe.recipeCategory) - \(recipe.recipeCuisine)")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-                Spacer()
-                if recipe.isFavorite {
-                    Image(systemName: "heart.fill")
-                        .foregroundStyle(.red)
+            NavigationLink(destination: RecipeDetailView(recipeId: recipe.id)) {
+                HStack {
+                    VStack(alignment: .leading) {
+                        Text(recipe.name)
+                            .font(.headline)
+                        Text("\(recipe.category ?? "") - \(recipe.cuisine ?? "")")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                    Spacer()
+                    if recipe.isFavorite {
+                        Image(systemName: "heart.fill")
+                            .foregroundStyle(.red)
+                    }
                 }
             }
         }
     }
 }
 
+// MARK: - ViewModel
+
+@MainActor
+final class SearchViewModel: ObservableObject {
+    @Published var recipes: [SupabaseRecipe] = []
+    @Published var isLoading: Bool = false
+
+    func fetchRecipes() async {
+        isLoading = true
+        do {
+            recipes = try await SupabaseService.shared.fetchRecipes()
+        } catch {
+            // Silent fail - just show empty results
+        }
+        isLoading = false
+    }
+}
+
 #Preview {
     SearchView()
-        .modelContainer(DataController.previewContainer)
 }

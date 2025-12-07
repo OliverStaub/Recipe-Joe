@@ -8,18 +8,28 @@
 import SwiftUI
 
 struct SettingsView: View {
-    @State private var syncManager = SyncStatusManager()
+    @ObservedObject private var userSettings = UserSettings.shared
 
     var body: some View {
         NavigationStack {
             List {
-                // MARK: - Sync Status Section
+                // MARK: - Recipe Import Section
                 Section {
-                    SyncStatusRow(syncManager: syncManager)
+                    Picker(selection: $userSettings.recipeLanguage) {
+                        ForEach(RecipeLanguage.allCases) { language in
+                            HStack {
+                                Text(language.flag)
+                                Text(language.displayName)
+                            }
+                            .tag(language)
+                        }
+                    } label: {
+                        Label("Recipe Language", systemImage: "globe")
+                    }
                 } header: {
-                    Text("iCloud Sync")
+                    Text("Recipe Import")
                 } footer: {
-                    Text("Your recipes sync automatically across all your devices signed into the same iCloud account.")
+                    Text("Recipes will be imported and translated to \(userSettings.recipeLanguage.displayName).")
                 }
 
                 // MARK: - About Section
@@ -33,56 +43,6 @@ struct SettingsView: View {
                 }
             }
             .navigationTitle("Settings")
-            .refreshable {
-                await syncManager.refresh()
-            }
-        }
-    }
-}
-
-// MARK: - Sync Status Row
-
-private struct SyncStatusRow: View {
-    let syncManager: SyncStatusManager
-
-    var body: some View {
-        HStack(spacing: 12) {
-            Image(systemName: syncManager.syncStatus.systemImage)
-                .font(.title2)
-                .foregroundStyle(statusColor)
-                .symbolEffect(.pulse, isActive: syncManager.syncStatus == .syncing)
-
-            VStack(alignment: .leading, spacing: 4) {
-                Text("Sync Status")
-                    .font(.body)
-
-                Text(syncManager.syncStatus.description)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-
-                if let lastSync = syncManager.lastSyncDate {
-                    Text("Last synced: \(lastSync.formatted(date: .abbreviated, time: .shortened))")
-                        .font(.caption2)
-                        .foregroundStyle(.tertiary)
-                }
-            }
-
-            Spacer()
-        }
-        .padding(.vertical, 4)
-        .accessibilityIdentifier("syncStatusRow")
-    }
-
-    private var statusColor: Color {
-        switch syncManager.syncStatus {
-        case .synced:
-            return .green
-        case .syncing:
-            return .blue
-        case .notSyncing, .error:
-            return .orange
-        case .unknown:
-            return .gray
         }
     }
 }

@@ -202,18 +202,6 @@ final class RecipeJoeUITests: XCTestCase {
     }
 
     @MainActor
-    func testSettingsShowsSyncStatus() throws {
-        let app = XCUIApplication()
-        app.launch()
-
-        // Open settings
-        app.buttons["settingsButton"].tap()
-
-        // Verify sync status text exists (more reliable than checking the row element)
-        XCTAssertTrue(app.staticTexts["Sync Status"].waitForExistence(timeout: 5), "Sync Status label should exist in Settings")
-    }
-
-    @MainActor
     func testSettingsShowsVersion() throws {
         let app = XCUIApplication()
         app.launch()

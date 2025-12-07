@@ -133,6 +133,60 @@ final class SupabaseService {
         let (recipe, steps, ingredients) = try await (recipeTask, stepsTask, ingredientsTask)
         return SupabaseRecipeDetail(recipe: recipe, steps: steps, ingredients: ingredients)
     }
+
+    // MARK: - Image Upload
+
+    /// Upload a recipe image to Supabase Storage
+    /// - Parameters:
+    ///   - imageData: The image data to upload
+    ///   - recipeId: The recipe ID to associate with the image
+    /// - Returns: The public URL of the uploaded image
+    func uploadRecipeImage(imageData: Data, recipeId: UUID) async throws -> String {
+        let fileName = "\(recipeId.uuidString).jpg"
+        let filePath = "recipe-images/\(fileName)"
+
+        // Upload to storage
+        try await client.storage
+            .from("recipe-images")
+            .upload(
+                filePath,
+                data: imageData,
+                options: FileOptions(
+                    contentType: "image/jpeg",
+                    upsert: true
+                )
+            )
+
+        // Get public URL
+        let publicURL = try client.storage
+            .from("recipe-images")
+            .getPublicURL(path: filePath)
+
+        // Update the recipe with the image URL
+        try await updateRecipeImageUrl(id: recipeId, imageUrl: publicURL.absoluteString)
+
+        return publicURL.absoluteString
+    }
+
+    /// Update a recipe's image URL
+    func updateRecipeImageUrl(id: UUID, imageUrl: String) async throws {
+        try await client
+            .from("recipes")
+            .update(["image_url": imageUrl])
+            .eq("id", value: id.uuidString)
+            .execute()
+    }
+
+    // MARK: - Delete Recipe
+
+    /// Delete a recipe and all its related data (steps, ingredients cascade automatically)
+    func deleteRecipe(id: UUID) async throws {
+        try await client
+            .from("recipes")
+            .delete()
+            .eq("id", value: id.uuidString)
+            .execute()
+    }
 }
 
 // MARK: - Errors

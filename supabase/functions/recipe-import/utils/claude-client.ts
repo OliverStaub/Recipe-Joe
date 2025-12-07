@@ -37,7 +37,7 @@ export async function callClaude(options: ClaudeCallOptions): Promise<ClaudeResp
     },
     body: JSON.stringify({
       model: 'claude-3-5-haiku-20241022',
-      max_tokens: 4096,
+      max_tokens: 8192,
       system: systemPrompt,
       messages: [
         { role: 'user', content: userPrompt },
@@ -109,10 +109,13 @@ ${ingredientsList}
 ${measurementsList}
 
 ## Step Formatting Rules:
+- IMPORTANT: You MUST extract ALL cooking steps from the recipe. Do not skip any steps.
 - Each step should contain only ONE action
 - Use imperative mood ("Chop the onions" not "The onions should be chopped")
 - Include specific times/temperatures when mentioned
 - Keep steps concise but complete
+- If steps are numbered in the original, preserve the order
+- Look for instructions in the HTML content if not in JSON-LD
 
 ## Output Format:
 Respond with ONLY valid JSON (no markdown, no explanation). The JSON must match this schema:
@@ -152,11 +155,11 @@ function buildUserPrompt(options: ClaudeCallOptions): string {
     content = `## Pre-extracted JSON-LD Recipe Data:
 ${JSON.stringify(jsonLd, null, 2)}
 
-## Raw HTML (for additional context if needed):
-${truncateHtml(html, 6000)}`;
+## Raw HTML (for additional context, especially for cooking instructions):
+${truncateHtml(html, 15000)}`;
   } else {
     content = `## Raw HTML Content:
-${truncateHtml(html, 12000)}`;
+${truncateHtml(html, 25000)}`;
   }
 
   return `Extract the recipe from this webpage:

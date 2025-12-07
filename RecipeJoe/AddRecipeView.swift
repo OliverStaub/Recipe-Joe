@@ -186,15 +186,8 @@ private struct ImportStatusSection: View {
                 EmptyView()
 
             case .importing:
-                HStack(spacing: 8) {
-                    ProgressView()
-                        .progressViewStyle(CircularProgressViewStyle())
-                        .scaleEffect(0.8)
-                    Text("Importing recipe...")
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-                }
-                .accessibilityIdentifier("importingIndicator")
+                ImportProgressView(currentStep: viewModel.currentStep)
+                    .accessibilityIdentifier("importingIndicator")
 
             case .success:
                 VStack(alignment: .leading, spacing: 8) {
@@ -240,6 +233,86 @@ private struct ImportStatusSection: View {
                         .foregroundStyle(.red)
                 }
                 .accessibilityIdentifier("importError")
+            }
+        }
+    }
+}
+
+// MARK: - Import Progress View
+
+private struct ImportProgressView: View {
+    let currentStep: RecipeImportViewModel.ImportStep
+    @State private var shimmerOffset: CGFloat = -1
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            // Step indicator text
+            Text(currentStep.title)
+                .font(.subheadline)
+                .fontWeight(.medium)
+                .foregroundStyle(Color.terracotta)
+
+            // Progress bar with shimmer
+            GeometryReader { geometry in
+                ZStack(alignment: .leading) {
+                    // Background track
+                    RoundedRectangle(cornerRadius: 6)
+                        .fill(Color(.systemGray5))
+
+                    // Progress fill
+                    RoundedRectangle(cornerRadius: 6)
+                        .fill(Color.terracotta)
+                        .frame(width: geometry.size.width * currentStep.progress)
+                        .animation(.easeInOut(duration: 0.4), value: currentStep)
+
+                    // Shimmer overlay
+                    RoundedRectangle(cornerRadius: 6)
+                        .fill(
+                            LinearGradient(
+                                colors: [
+                                    .clear,
+                                    .white.opacity(0.4),
+                                    .clear
+                                ],
+                                startPoint: .leading,
+                                endPoint: .trailing
+                            )
+                        )
+                        .frame(width: 60)
+                        .offset(x: shimmerOffset * geometry.size.width)
+                        .mask(
+                            RoundedRectangle(cornerRadius: 6)
+                                .frame(width: geometry.size.width * currentStep.progress)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                        )
+                }
+            }
+            .frame(height: 12)
+
+            // Step dots
+            HStack(spacing: 0) {
+                ForEach(RecipeImportViewModel.ImportStep.allCases, id: \.rawValue) { step in
+                    HStack(spacing: 4) {
+                        Circle()
+                            .fill(step.rawValue <= currentStep.rawValue ? Color.terracotta : Color(.systemGray4))
+                            .frame(width: 8, height: 8)
+
+                        if step != RecipeImportViewModel.ImportStep.allCases.last {
+                            Rectangle()
+                                .fill(step.rawValue < currentStep.rawValue ? Color.terracotta : Color(.systemGray4))
+                                .frame(height: 2)
+                        }
+                    }
+                }
+            }
+            .padding(.horizontal, 4)
+        }
+        .padding(16)
+        .background(Color(.systemGray6))
+        .clipShape(RoundedRectangle(cornerRadius: 12))
+        .onAppear {
+            withAnimation(.linear(duration: 1.2).repeatForever(autoreverses: false)) {
+                shimmerOffset = 1.5
             }
         }
     }
