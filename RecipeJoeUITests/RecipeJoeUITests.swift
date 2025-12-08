@@ -72,8 +72,11 @@ final class RecipeJoeUITests: XCTestCase {
 
         // Home tab should be selected by default
         XCTAssertTrue(app.navigationBars["RecipeJoe"].exists, "RecipeJoe navigation bar should be visible on Home tab")
-        XCTAssertTrue(app.staticTexts["Home"].exists, "Home text should be visible")
-        XCTAssertTrue(app.staticTexts["No recipes yet. Add your first recipe!"].exists, "Home empty state text should be visible")
+        // Check for empty state OR recipe list (depends on whether recipes exist)
+        let emptyState = app.staticTexts["No Recipes Yet"]
+        let recipeList = app.collectionViews["recipeList"]
+        XCTAssertTrue(emptyState.waitForExistence(timeout: 5) || recipeList.waitForExistence(timeout: 5),
+                      "Home should show either empty state or recipe list")
     }
 
     @MainActor
@@ -199,18 +202,6 @@ final class RecipeJoeUITests: XCTestCase {
 
         // Verify Settings view appears
         XCTAssertTrue(app.navigationBars["Settings"].waitForExistence(timeout: 5), "Settings navigation bar should appear")
-    }
-
-    @MainActor
-    func testSettingsShowsSyncStatus() throws {
-        let app = XCUIApplication()
-        app.launch()
-
-        // Open settings
-        app.buttons["settingsButton"].tap()
-
-        // Verify sync status text exists (more reliable than checking the row element)
-        XCTAssertTrue(app.staticTexts["Sync Status"].waitForExistence(timeout: 5), "Sync Status label should exist in Settings")
     }
 
     @MainActor

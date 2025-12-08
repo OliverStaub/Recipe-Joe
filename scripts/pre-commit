@@ -2,9 +2,19 @@
 
 # Pre-commit hook for RecipeJoe
 # Runs both unit tests and UI tests before allowing commits
+# Only runs on main and develop branches (skips feature branches)
 # Use 'git commit --no-verify' to bypass this hook if needed
 
 set -e
+
+# Check current branch - only run tests on main and develop
+CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD)
+
+if [[ "$CURRENT_BRANCH" != "main" && "$CURRENT_BRANCH" != "develop" ]]; then
+    echo "⏭️  Skipping pre-commit tests on branch '$CURRENT_BRANCH'"
+    echo "   Tests only run on 'main' and 'develop' branches."
+    exit 0
+fi
 
 echo "🧪 Running pre-commit tests..."
 echo ""

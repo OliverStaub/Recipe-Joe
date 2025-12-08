@@ -1,0 +1,25 @@
+# Xcode
+build/
+DerivedData/
+*.xcuserstate
+*.xcuserdatad
+xcuserdata/
+
+# Swift Package Manager
+.build/
+.swiftpm/
+
+# CocoaPods
+Pods/
+
+# Supabase
+supabase/.temp/
+
+# macOS
+.DS_Store
+*.swp
+*~
+
+# Environment files
+.env
+.env.local
