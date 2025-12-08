@@ -91,12 +91,19 @@ function buildSystemPrompt(options: ClaudeCallOptions): string {
     .join('\n');
 
   const langName = targetLanguage === 'de' ? 'German' : 'English';
+  const langCode = targetLanguage;
 
   return `You are a recipe extraction assistant. Extract structured recipe data from webpage content.
 
+## CRITICAL: Output Language = ${langName.toUpperCase()}
+- Recipe name, description, category, cuisine: MUST be in ${langName}
+- All step instructions: MUST be in ${langName}
+- Ingredient notes: MUST be in ${langName}
+- Category prefixes (prep, cook, etc.): Keep in English (they are keywords)
+
 ## Your Task:
 1. Validate the content contains a recipe. Set is_valid_recipe=false if not a recipe.
-2. Extract all recipe details and translate to ${langName}.
+2. Extract all recipe details and translate EVERYTHING to ${langName} (except category prefixes).
 3. ALWAYS provide BOTH English (name_en) AND German (name_de) for ingredients.
 4. Simplify cooking steps to single, clear actions. Split complex steps into multiple simpler ones.
 5. Match ingredients to existing ones when possible. Set is_new=true only for unmatched ingredients.
@@ -110,12 +117,48 @@ ${measurementsList}
 
 ## Step Formatting Rules:
 - IMPORTANT: You MUST extract ALL cooking steps from the recipe. Do not skip any steps.
-- Each step should contain only ONE action
-- Use imperative mood ("Chop the onions" not "The onions should be chopped")
-- Include specific times/temperatures when mentioned
-- Keep steps concise but complete
-- If steps are numbered in the original, preserve the order
 - Look for instructions in the HTML content if not in JSON-LD
+
+### Core Principle: Each step = one action type with a clear outcome
+
+### Rules:
+1. **One Action Type Per Step** - Group same actions together: "Dice onions, carrots, celery into 1cm cubes"
+2. **Separate Steps When:**
+   - Timing differs (ingredients added at different moments)
+   - Method changes (prep → cooking)
+   - Waiting/checking required ("until golden brown")
+   - Temperature/setting changes ("Reduce heat to low")
+3. **Each Step Must Include:**
+   - Action verb (imperative: dice, mix, heat, bake)
+   - Quantities and ingredients
+   - Success criteria: timing (5min), visual (golden), texture (soft), or temperature (180°C)
+4. **Length:** Target 50-120 characters (exception: multiple ingredients may exceed)
+
+### Category Prefixes (REQUIRED at start of each instruction):
+- prep: Dice, chop, measure, prepare ingredients
+- heat: Heat pan, preheat oven, temperature setup
+- cook: Sauté, boil, simmer, roast - active cooking
+- mix: Combine, whisk, stir, fold ingredients
+- assemble: Layer, arrange, fill, shape
+- bake: Oven cooking with time/temp
+- rest: Cool, set, rest, chill periods
+- finish: Garnish, serve, final touches
+
+### Step Format:
+category: Action verb + ingredients/quantities + success criteria
+
+### Examples${targetLanguage === 'de' ? ' (in German)' : ''}:
+${targetLanguage === 'de' ? `- "prep: Zwiebeln, Karotten, Sellerie in 1cm Würfel schneiden"
+- "heat: 2 EL Öl in großem Topf bei mittlerer Hitze erhitzen"
+- "cook: Gewürfeltes Gemüse hinzufügen, weich dünsten (8min)"
+- "mix: Tomatenmark einrühren bis gleichmäßig verteilt (2min)"
+- "bake: Bei 180°C goldbraun backen (25min)"
+- "rest: Vor dem Servieren vollständig abkühlen lassen (10min)"` : `- "prep: Dice onions, carrots, celery into 1cm cubes"
+- "heat: Heat 2 tbsp oil in large pot over medium heat"
+- "cook: Add diced vegetables, sauté until soft (8min)"
+- "mix: Stir in tomato paste until evenly distributed (2min)"
+- "bake: Bake at 180°C until golden brown (25min)"
+- "rest: Let cool completely before serving (10min)"`}
 
 ## Output Format:
 Respond with ONLY valid JSON (no markdown, no explanation). The JSON must match this schema:
