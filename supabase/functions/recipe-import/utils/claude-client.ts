@@ -182,7 +182,10 @@ ${languageInstructions}
 ## Your Task:
 1. Validate the content contains a recipe. Set is_valid_recipe=false if not a recipe.
 2. ${reword ? `Extract all recipe details and translate EVERYTHING to ${langName} (except category prefixes).` : 'Extract all recipe details, keeping original language (only add category prefixes to steps).'}
-3. ALWAYS provide BOTH English (name_en) AND German (name_de) for ingredients.
+3. CRITICAL: For EVERY ingredient, you MUST provide BOTH:
+   - name_en: The ingredient name in ENGLISH (e.g., "Garlic", "Onion", "Butter")
+   - name_de: The ingredient name in GERMAN (e.g., "Knoblauch", "Zwiebel", "Butter")
+   These MUST be actual translations, not duplicates of the same language!
 4. ${reword ? 'Simplify cooking steps to single, clear actions. Split complex steps into multiple simpler ones.' : 'Keep original step text, only add category prefix.'}
 5. Match ingredients to existing ones when possible. Set is_new=true only for unmatched ingredients.
 6. Use ONLY the measurement types listed below. Map similar units to the closest match.
