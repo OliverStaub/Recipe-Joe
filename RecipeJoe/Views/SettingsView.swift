@@ -55,16 +55,6 @@ struct SettingsView: View {
     }
 }
 
-// MARK: - Bundle Extension
-
-extension Bundle {
-    var appVersion: String {
-        let version = infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0"
-        let build = infoDictionary?["CFBundleVersion"] as? String ?? "1"
-        return "\(version) (\(build))"
-    }
-}
-
 #Preview {
     SettingsView()
 }

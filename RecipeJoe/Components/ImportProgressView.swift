@@ -1,0 +1,150 @@
+//
+//  ImportProgressView.swift
+//  RecipeJoe
+//
+//  Progress view for recipe import
+//
+
+import SwiftUI
+
+struct ImportProgressView: View {
+    let currentStep: RecipeImportViewModel.ImportStep
+    @State private var shimmerOffset: CGFloat = -1
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            // Step indicator text
+            Text(currentStep.title)
+                .font(.subheadline)
+                .fontWeight(.medium)
+                .foregroundStyle(Color.terracotta)
+
+            // Progress bar with shimmer
+            GeometryReader { geometry in
+                ZStack(alignment: .leading) {
+                    // Background track
+                    RoundedRectangle(cornerRadius: 6)
+                        .fill(Color(.systemGray5))
+
+                    // Progress fill
+                    RoundedRectangle(cornerRadius: 6)
+                        .fill(Color.terracotta)
+                        .frame(width: geometry.size.width * currentStep.progress)
+                        .animation(.easeInOut(duration: 0.4), value: currentStep)
+
+                    // Shimmer overlay
+                    RoundedRectangle(cornerRadius: 6)
+                        .fill(
+                            LinearGradient(
+                                colors: [
+                                    .clear,
+                                    .white.opacity(0.4),
+                                    .clear
+                                ],
+                                startPoint: .leading,
+                                endPoint: .trailing
+                            )
+                        )
+                        .frame(width: 60)
+                        .offset(x: shimmerOffset * geometry.size.width)
+                        .mask(
+                            RoundedRectangle(cornerRadius: 6)
+                                .frame(width: geometry.size.width * currentStep.progress)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                        )
+                }
+            }
+            .frame(height: 12)
+
+            // Step dots
+            HStack(spacing: 0) {
+                ForEach(RecipeImportViewModel.ImportStep.allCases, id: \.rawValue) { step in
+                    HStack(spacing: 4) {
+                        Circle()
+                            .fill(step.rawValue <= currentStep.rawValue ? Color.terracotta : Color(.systemGray4))
+                            .frame(width: 8, height: 8)
+
+                        if step != RecipeImportViewModel.ImportStep.allCases.last {
+                            Rectangle()
+                                .fill(step.rawValue < currentStep.rawValue ? Color.terracotta : Color(.systemGray4))
+                                .frame(height: 2)
+                        }
+                    }
+                }
+            }
+            .padding(.horizontal, 4)
+        }
+        .padding(16)
+        .background(Color(.systemGray6))
+        .clipShape(RoundedRectangle(cornerRadius: 12))
+        .onAppear {
+            withAnimation(.linear(duration: 1.2).repeatForever(autoreverses: false)) {
+                shimmerOffset = 1.5
+            }
+        }
+    }
+}
+
+// MARK: - Import Status Section
+
+struct ImportStatusSection: View {
+    @ObservedObject var viewModel: RecipeImportViewModel
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            switch viewModel.importState {
+            case .idle:
+                EmptyView()
+
+            case .importing:
+                ImportProgressView(currentStep: viewModel.currentStep)
+                    .accessibilityIdentifier("importingIndicator")
+
+            case .success:
+                VStack(alignment: .leading, spacing: 8) {
+                    HStack(spacing: 8) {
+                        Image(systemName: "checkmark.circle.fill")
+                            .foregroundStyle(.green)
+                        Text("Recipe imported!")
+                            .font(.subheadline)
+                            .fontWeight(.medium)
+                    }
+
+                    if let recipeName = viewModel.lastImportedRecipeName {
+                        Text(recipeName)
+                            .font(.headline)
+                            .padding(12)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .background(Color(.systemGray6))
+                            .clipShape(RoundedRectangle(cornerRadius: 12))
+                    }
+
+                    if let stats = viewModel.lastImportStats {
+                        HStack(spacing: 16) {
+                            StatBadge(value: stats.stepsCount, label: "steps")
+                            StatBadge(value: stats.ingredientsCount, label: "ingredients")
+                        }
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    }
+                }
+                .accessibilityIdentifier("importSuccess")
+
+            case .error(let message):
+                VStack(alignment: .leading, spacing: 4) {
+                    HStack(spacing: 8) {
+                        Image(systemName: "exclamationmark.triangle.fill")
+                            .foregroundStyle(.red)
+                        Text("Import failed")
+                            .font(.subheadline)
+                            .fontWeight(.medium)
+                    }
+                    Text(message)
+                        .font(.caption)
+                        .foregroundStyle(.red)
+                }
+                .accessibilityIdentifier("importError")
+            }
+        }
+    }
+}

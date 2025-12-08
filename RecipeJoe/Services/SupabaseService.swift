@@ -37,41 +37,6 @@ final class SupabaseService {
         )
     }
 
-    // MARK: - Edge Function Calls
-
-    /// Response structure from the anthropic-relay function
-    struct AnthropicRelayResponse: Codable {
-        let success: Bool
-        let message: String?
-        let model: String?
-        let error: String?
-    }
-
-    /// Request structure for the anthropic-relay function
-    struct AnthropicRelayRequest: Codable {
-        let prompt: String
-    }
-
-    /// Call the anthropic-relay Edge Function
-    /// - Parameter prompt: The prompt to send to Claude
-    /// - Returns: The response message from Claude
-    func callAnthropicRelay(prompt: String = "Hello! Please say hello back.") async throws -> String {
-        let request = AnthropicRelayRequest(prompt: prompt)
-
-        let response: AnthropicRelayResponse = try await client.functions.invoke(
-            "anthropic-relay",
-            options: FunctionInvokeOptions(body: request)
-        )
-
-        if response.success, let message = response.message {
-            return message
-        } else if let error = response.error {
-            throw SupabaseError.functionError(error)
-        } else {
-            throw SupabaseError.unknownError
-        }
-    }
-
     // MARK: - Recipe Import
 
     /// Import a recipe from a URL using the Edge Function

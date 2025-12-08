@@ -84,10 +84,10 @@ final class RecipeImportUITests: XCTestCase {
         // Navigate to Add Recipe tab
         app.tabBars.buttons["Add Recipe"].tap()
 
-        // Verify platform icons are visible
-        let platformIcons = app.otherElements["platformIcons"]
-        XCTAssertTrue(platformIcons.waitForExistence(timeout: 5),
-                      "Platform icons should be visible")
+        // Verify platform icons are visible by checking for the "Supports:" label
+        let supportsLabel = app.staticTexts["Supports:"]
+        XCTAssertTrue(supportsLabel.waitForExistence(timeout: 5),
+                      "Platform icons section should be visible")
     }
 
     @MainActor
