@@ -113,31 +113,26 @@ struct RecipeDetailView: View {
     private func headerImageSection(recipe: SupabaseRecipe) -> some View {
         ZStack {
             // Image placeholder or actual image
-            RoundedRectangle(cornerRadius: 16)
-                .fill(Color.terracotta.opacity(0.15))
-                .frame(height: 220)
-                .overlay {
-                    if let imageUrl = recipe.imageUrl,
-                       let url = URL(string: imageUrl) {
-                        AsyncImage(url: url) { phase in
-                            switch phase {
-                            case .success(let image):
-                                image
-                                    .resizable()
-                                    .scaledToFill()
-                                    .clipShape(RoundedRectangle(cornerRadius: 16))
-                            case .failure:
-                                placeholderContent
-                            case .empty:
-                                ProgressView()
-                            @unknown default:
-                                placeholderContent
-                            }
-                        }
-                    } else {
+            if let imageUrl = recipe.imageUrl,
+               let url = URL(string: imageUrl) {
+                AsyncImage(url: url) { phase in
+                    switch phase {
+                    case .success(let image):
+                        image
+                            .resizable()
+                            .scaledToFill()
+                    case .failure:
+                        placeholderContent
+                    case .empty:
+                        ProgressView()
+                            .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    @unknown default:
                         placeholderContent
                     }
                 }
+            } else {
+                placeholderContent
+            }
 
             // Upload progress overlay
             if isUploadingImage {
@@ -186,6 +181,10 @@ struct RecipeDetailView: View {
                 }
             }
         }
+        .frame(height: 220)
+        .frame(maxWidth: .infinity)
+        .background(Color.terracotta.opacity(0.15))
+        .clipShape(RoundedRectangle(cornerRadius: 16))
         .onChange(of: selectedPhotoItem) { _, newItem in
             Task {
                 await handleImageSelection(newItem)
@@ -202,6 +201,7 @@ struct RecipeDetailView: View {
                 .font(.caption)
                 .foregroundStyle(.secondary)
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
     private func handleImageSelection(_ item: PhotosPickerItem?) async {
@@ -545,15 +545,15 @@ private enum StepCategory: String, CaseIterable {
 
     var displayName: String {
         switch self {
-        case .prep: return "Prep"
-        case .heat: return "Heat"
-        case .cook: return "Cook"
-        case .mix: return "Mix"
-        case .assemble: return "Assemble"
-        case .bake: return "Bake"
-        case .rest: return "Rest"
-        case .finish: return "Finish"
-        case .unknown: return "Step"
+        case .prep: return String(localized: "Prep")
+        case .heat: return String(localized: "Heat")
+        case .cook: return String(localized: "Cook")
+        case .mix: return String(localized: "Mix")
+        case .assemble: return String(localized: "Assemble")
+        case .bake: return String(localized: "Bake")
+        case .rest: return String(localized: "Rest")
+        case .finish: return String(localized: "Finish")
+        case .unknown: return String(localized: "Step")
         }
     }
 

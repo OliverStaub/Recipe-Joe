@@ -54,7 +54,9 @@ export async function insertRecipe(
   supabase: SupabaseClient,
   recipeData: RecipeImport,
   sourceUrl: string,
-  measurementTypes: MeasurementType[]
+  measurementTypes: MeasurementType[],
+  language: string = 'en',
+  imageUrl?: string | null
 ): Promise<InsertResult> {
   const recipe = recipeData.recipe;
 
@@ -78,6 +80,8 @@ export async function insertRecipe(
       cuisine: recipe.cuisine,
       keywords: recipe.keywords,
       source_url: sourceUrl,
+      language: language,
+      image_url: imageUrl || null,
     })
     .select('id')
     .single();

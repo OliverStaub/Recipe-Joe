@@ -17,6 +17,7 @@ export interface MeasurementType {
 export interface ImportRequest {
   url: string;
   language?: 'en' | 'de'; // Target language for recipe translation
+  reword?: boolean; // If false, keep original text but add category prefixes
 }
 
 export interface ImportResponse {

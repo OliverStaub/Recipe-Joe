@@ -13,6 +13,7 @@ import Foundation
 struct RecipeImportRequest: Codable {
     let url: String
     let language: String
+    let reword: Bool
 }
 
 /// Response from recipe import Edge Function
@@ -78,6 +79,7 @@ struct SupabaseRecipe: Codable, Identifiable {
     let imageUrl: String?
     let sourceUrl: String?
     let keywords: [String]?
+    let language: String?
     let createdAt: Date
     let updatedAt: Date
 
@@ -98,6 +100,7 @@ struct SupabaseRecipe: Codable, Identifiable {
         case imageUrl = "image_url"
         case sourceUrl = "source_url"
         case keywords
+        case language
         case createdAt = "created_at"
         case updatedAt = "updated_at"
     }

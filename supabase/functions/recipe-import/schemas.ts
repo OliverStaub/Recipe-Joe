@@ -33,6 +33,7 @@ export const RecipeImportSchema = z.object({
     category: z.string().nullable().describe("Recipe category (e.g., 'Dinner', 'Dessert', 'Breakfast')"),
     cuisine: z.string().nullable().describe("Cuisine type (e.g., 'Italian', 'Mexican', 'German')"),
     keywords: z.array(z.string()),
+    image_url: z.string().nullable().describe("URL of the main recipe image from the source website"),
   }).nullable(),
   steps: z.array(StepSchema).nullable(),
   ingredients: z.array(IngredientSchema).nullable(),

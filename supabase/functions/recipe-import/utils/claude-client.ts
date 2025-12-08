@@ -9,6 +9,7 @@ interface ClaudeCallOptions {
   existingIngredients: ExistingIngredient[];
   measurementTypes: MeasurementType[];
   targetLanguage: 'en' | 'de';
+  reword: boolean; // If false, keep original text but add category prefixes
 }
 
 interface ClaudeResponse {
@@ -80,7 +81,7 @@ export async function callClaude(options: ClaudeCallOptions): Promise<ClaudeResp
 }
 
 function buildSystemPrompt(options: ClaudeCallOptions): string {
-  const { existingIngredients, measurementTypes, targetLanguage } = options;
+  const { existingIngredients, measurementTypes, targetLanguage, reword } = options;
 
   const ingredientsList = existingIngredients.length > 0
     ? existingIngredients.map(i => `- ${i.id}: ${i.name_en} / ${i.name_de}`).join('\n')
@@ -91,31 +92,24 @@ function buildSystemPrompt(options: ClaudeCallOptions): string {
     .join('\n');
 
   const langName = targetLanguage === 'de' ? 'German' : 'English';
-  const langCode = targetLanguage;
 
-  return `You are a recipe extraction assistant. Extract structured recipe data from webpage content.
-
-## CRITICAL: Output Language = ${langName.toUpperCase()}
+  // Build language instructions based on reword setting
+  const languageInstructions = reword
+    ? `## CRITICAL: Output Language = ${langName.toUpperCase()}
 - Recipe name, description, category, cuisine: MUST be in ${langName}
 - All step instructions: MUST be in ${langName}
 - Ingredient notes: MUST be in ${langName}
-- Category prefixes (prep, cook, etc.): Keep in English (they are keywords)
+- Category prefixes (prep, cook, etc.): Keep in English (they are keywords)`
+    : `## CRITICAL: Keep Original Language
+- Recipe name, description, category, cuisine: Keep in ORIGINAL language from source
+- All step instructions: Keep in ORIGINAL language, only add category prefix
+- Ingredient notes: Keep in ORIGINAL language
+- Category prefixes (prep, cook, etc.): Always in English (they are keywords)
+- DO NOT translate or reword anything except adding the category prefix`;
 
-## Your Task:
-1. Validate the content contains a recipe. Set is_valid_recipe=false if not a recipe.
-2. Extract all recipe details and translate EVERYTHING to ${langName} (except category prefixes).
-3. ALWAYS provide BOTH English (name_en) AND German (name_de) for ingredients.
-4. Simplify cooking steps to single, clear actions. Split complex steps into multiple simpler ones.
-5. Match ingredients to existing ones when possible. Set is_new=true only for unmatched ingredients.
-6. Use ONLY the measurement types listed below. Map similar units to the closest match.
-
-## Existing Ingredients (id: name_en / name_de):
-${ingredientsList}
-
-## Valid Measurement Types (use English name in output):
-${measurementsList}
-
-## Step Formatting Rules:
+  // Build step instructions based on reword setting
+  const stepInstructions = reword
+    ? `## Step Formatting Rules:
 - IMPORTANT: You MUST extract ALL cooking steps from the recipe. Do not skip any steps.
 - Look for instructions in the HTML content if not in JSON-LD
 
@@ -158,7 +152,55 @@ ${targetLanguage === 'de' ? `- "prep: Zwiebeln, Karotten, Sellerie in 1cm Würfe
 - "cook: Add diced vegetables, sauté until soft (8min)"
 - "mix: Stir in tomato paste until evenly distributed (2min)"
 - "bake: Bake at 180°C until golden brown (25min)"
-- "rest: Let cool completely before serving (10min)"`}
+- "rest: Let cool completely before serving (10min)"`}`
+    : `## Step Formatting Rules:
+- IMPORTANT: You MUST extract ALL cooking steps from the recipe. Do not skip any steps.
+- Keep the ORIGINAL text from the source - do NOT reword or simplify
+- ONLY add a category prefix at the start of each step
+
+### Category Prefixes (add to start of each original instruction):
+- prep: Preparation steps (cutting, measuring, etc.)
+- heat: Heating steps (preheat oven, heat pan, etc.)
+- cook: Active cooking (sauté, boil, simmer, fry, etc.)
+- mix: Mixing/combining steps
+- assemble: Assembly steps
+- bake: Oven cooking steps
+- rest: Resting/cooling steps
+- finish: Final touches, garnishing, serving
+
+### Format:
+category: [original step text unchanged]
+
+### Example (keeping original German text):
+Original: "Die Zwiebeln fein würfeln und in Butter anschwitzen"
+Output: "prep: Die Zwiebeln fein würfeln und in Butter anschwitzen"`;
+
+  return `You are a recipe extraction assistant. Extract structured recipe data from webpage content.
+
+${languageInstructions}
+
+## Your Task:
+1. Validate the content contains a recipe. Set is_valid_recipe=false if not a recipe.
+2. ${reword ? `Extract all recipe details and translate EVERYTHING to ${langName} (except category prefixes).` : 'Extract all recipe details, keeping original language (only add category prefixes to steps).'}
+3. ALWAYS provide BOTH English (name_en) AND German (name_de) for ingredients.
+4. ${reword ? 'Simplify cooking steps to single, clear actions. Split complex steps into multiple simpler ones.' : 'Keep original step text, only add category prefix.'}
+5. Match ingredients to existing ones when possible. Set is_new=true only for unmatched ingredients.
+6. Use ONLY the measurement types listed below. Map similar units to the closest match.
+7. Extract the main recipe image URL from JSON-LD or HTML.
+
+## Existing Ingredients (id: name_en / name_de):
+${ingredientsList}
+
+## Valid Measurement Types (use English name in output):
+${measurementsList}
+
+${stepInstructions}
+
+## Image Extraction:
+- Look for recipe image in JSON-LD "image" field
+- If not found, look for og:image meta tag or main recipe image in HTML
+- Return the full URL of the highest quality image available
+- Set to null if no image found
 
 ## Output Format:
 Respond with ONLY valid JSON (no markdown, no explanation). The JSON must match this schema:
@@ -174,7 +216,8 @@ Respond with ONLY valid JSON (no markdown, no explanation). The JSON must match 
     "recipe_yield": string | null,
     "category": string | null,
     "cuisine": string | null,
-    "keywords": string[]
+    "keywords": string[],
+    "image_url": string | null
   } | null,
   "steps": [{ "step_number": number, "instruction": string, "duration_minutes": number | null }] | null,
   "ingredients": [{

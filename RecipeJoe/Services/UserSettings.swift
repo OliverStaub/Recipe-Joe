@@ -42,13 +42,22 @@ final class UserSettings: ObservableObject {
 
     private enum Keys {
         static let recipeLanguage = "recipeLanguage"
+        static let keepOriginalWording = "keepOriginalWording"
     }
 
     // MARK: - Published Properties
 
+    /// Language for recipe import (translation target)
     @Published var recipeLanguage: RecipeLanguage {
         didSet {
             UserDefaults.standard.set(recipeLanguage.rawValue, forKey: Keys.recipeLanguage)
+        }
+    }
+
+    /// If true, keep original step text without rewording/translating
+    @Published var keepOriginalWording: Bool {
+        didSet {
+            UserDefaults.standard.set(keepOriginalWording, forKey: Keys.keepOriginalWording)
         }
     }
 
@@ -64,5 +73,8 @@ final class UserSettings: ObservableObject {
             let deviceLanguage = Locale.current.language.languageCode?.identifier ?? "en"
             self.recipeLanguage = deviceLanguage == "de" ? .german : .english
         }
+
+        // Load keepOriginalWording (default: false = reword enabled)
+        self.keepOriginalWording = UserDefaults.standard.bool(forKey: Keys.keepOriginalWording)
     }
 }

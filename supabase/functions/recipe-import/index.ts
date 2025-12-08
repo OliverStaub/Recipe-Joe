@@ -6,6 +6,7 @@ import type { ImportRequest, ImportResponse } from "./types.ts";
 import { fetchWebpage } from "./utils/fetch-url.ts";
 import { extractJsonLd } from "./utils/extract-jsonld.ts";
 import { callClaude } from "./utils/claude-client.ts";
+import { downloadAndUploadImage } from "./utils/image-handler.ts";
 import {
   getSupabaseClient,
   fetchExistingIngredients,
@@ -27,7 +28,7 @@ serve(async (req) => {
   try {
     // Parse request
     const body = await req.json();
-    const { url, language = 'en' }: ImportRequest = body;
+    const { url, language = 'en', reword = true }: ImportRequest = body;
 
     if (!url) {
       throw new Error('URL is required');
@@ -72,13 +73,14 @@ serve(async (req) => {
     }
 
     // Step 4: Call Claude for extraction
-    console.log('Calling Claude for recipe extraction...');
+    console.log(`Calling Claude for recipe extraction (reword=${reword}, language=${language})...`);
     const claudeResponse = await callClaude({
       html,
       jsonLd,
       existingIngredients,
       measurementTypes,
       targetLanguage: language as 'en' | 'de',
+      reword,
     });
 
     console.log(`Claude used ${claudeResponse.usage.input_tokens} input tokens, ${claudeResponse.usage.output_tokens} output tokens`);
@@ -96,13 +98,33 @@ serve(async (req) => {
       });
     }
 
-    // Step 6: Insert into database
+    // Step 6: Download and upload image if available
+    let uploadedImageUrl: string | null = null;
+    const sourceImageUrl = claudeResponse.data.recipe?.image_url;
+
+    if (sourceImageUrl) {
+      console.log(`Downloading recipe image from: ${sourceImageUrl}`);
+      // Generate a temporary ID for the image upload (will be replaced with actual recipe ID)
+      const tempId = crypto.randomUUID();
+      const imageResult = await downloadAndUploadImage(sourceImageUrl, tempId, supabase);
+
+      if (imageResult.success && imageResult.publicUrl) {
+        uploadedImageUrl = imageResult.publicUrl;
+        console.log(`Image uploaded successfully`);
+      } else {
+        console.log(`Image upload failed: ${imageResult.error} - continuing without image`);
+      }
+    }
+
+    // Step 7: Insert into database
     console.log('Inserting recipe into database...');
     const { recipeId, newIngredientsCount } = await insertRecipe(
       supabase,
       claudeResponse.data,
       url,
-      measurementTypes
+      measurementTypes,
+      language,
+      uploadedImageUrl
     );
 
     console.log(`Created recipe ${recipeId} with ${newIngredientsCount} new ingredients`);

@@ -26,10 +26,18 @@ struct SettingsView: View {
                     } label: {
                         Label("Recipe Language", systemImage: "globe")
                     }
+
+                    Toggle(isOn: $userSettings.keepOriginalWording) {
+                        Label("Keep Original Wording", systemImage: "text.quote")
+                    }
                 } header: {
                     Text("Recipe Import")
                 } footer: {
-                    Text("Recipes will be imported and translated to \(userSettings.recipeLanguage.displayName).")
+                    if userSettings.keepOriginalWording {
+                        Text("Steps will be imported in their original language without rewording.")
+                    } else {
+                        Text("Recipes will be imported and translated to \(userSettings.recipeLanguage.displayName). This setting applies to future imports only.")
+                    }
                 }
 
                 // MARK: - About Section

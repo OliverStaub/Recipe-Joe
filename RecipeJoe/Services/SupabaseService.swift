@@ -78,9 +78,10 @@ final class SupabaseService {
     /// - Parameters:
     ///   - url: The URL of the recipe webpage
     ///   - language: Target language for the recipe ("en" or "de")
+    ///   - reword: If true, AI will reword and translate. If false, keeps original text with category prefixes only.
     /// - Returns: The import response with recipe details
-    func importRecipe(from url: String, language: String = "en") async throws -> RecipeImportResponse {
-        let request = RecipeImportRequest(url: url, language: language)
+    func importRecipe(from url: String, language: String = "en", reword: Bool = true) async throws -> RecipeImportResponse {
+        let request = RecipeImportRequest(url: url, language: language, reword: reword)
 
         let response: RecipeImportResponse = try await client.functions.invoke(
             "recipe-import",

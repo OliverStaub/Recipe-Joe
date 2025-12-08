@@ -46,10 +46,10 @@ final class RecipeImportViewModel: ObservableObject {
 
         var title: String {
             switch self {
-            case .fetching: return "Fetching recipe..."
-            case .parsing: return "Analyzing with AI..."
-            case .extracting: return "Extracting ingredients..."
-            case .saving: return "Saving recipe..."
+            case .fetching: return String(localized: "Fetching recipe...")
+            case .parsing: return String(localized: "Analyzing with AI...")
+            case .extracting: return String(localized: "Extracting ingredients...")
+            case .saving: return String(localized: "Saving recipe...")
             }
         }
 
@@ -79,8 +79,9 @@ final class RecipeImportViewModel: ObservableObject {
             try await Task.sleep(for: .milliseconds(500))
             currentStep = .parsing
 
-            // Step 2: Parsing - Use language from user settings
+            // Step 2: Parsing - Use language and reword settings
             let language = UserSettings.shared.recipeLanguage.rawValue
+            let reword = !UserSettings.shared.keepOriginalWording
 
             // Start the actual import (this takes most of the time)
             try await Task.sleep(for: .milliseconds(800))
@@ -88,7 +89,8 @@ final class RecipeImportViewModel: ObservableObject {
 
             let response = try await SupabaseService.shared.importRecipe(
                 from: urlString,
-                language: language
+                language: language,
+                reword: reword
             )
 
             // Step 3 & 4: Extracting & Saving happen in the Edge Function
