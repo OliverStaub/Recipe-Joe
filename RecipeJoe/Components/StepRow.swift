@@ -9,6 +9,7 @@ import SwiftUI
 
 struct StepRow: View {
     let step: SupabaseRecipeStep
+    @Environment(\.locale) private var locale
 
     private var parsedStep: (category: StepCategory, instruction: String) {
         StepCategory.parse(step.instruction)
@@ -29,7 +30,7 @@ struct StepRow: View {
             // Instruction
             VStack(alignment: .leading, spacing: 6) {
                 // Category badge
-                Text(parsed.category.displayName)
+                Text(parsed.category.displayName(locale: locale))
                     .font(.caption2)
                     .fontWeight(.semibold)
                     .foregroundStyle(parsed.category.color)
@@ -71,18 +72,25 @@ enum StepCategory: String, CaseIterable {
     case finish
     case unknown
 
-    var displayName: String {
+    func displayName(locale: Locale) -> String {
+        let key: String
         switch self {
-        case .prep: return String(localized: "Prep")
-        case .heat: return String(localized: "Heat")
-        case .cook: return String(localized: "Cook")
-        case .mix: return String(localized: "Mix")
-        case .assemble: return String(localized: "Assemble")
-        case .bake: return String(localized: "Bake")
-        case .rest: return String(localized: "Rest")
-        case .finish: return String(localized: "Finish")
-        case .unknown: return String(localized: "Step")
+        case .prep: key = "Prep"
+        case .heat: key = "Heat"
+        case .cook: key = "Cook"
+        case .mix: key = "Mix"
+        case .assemble: key = "Assemble"
+        case .bake: key = "Bake"
+        case .rest: key = "Rest"
+        case .finish: key = "Finish"
+        case .unknown: key = "Step"
         }
+        return key.localized(for: locale)
+    }
+
+    // Keep a default for backward compatibility
+    var displayName: String {
+        displayName(locale: .current)
     }
 
     var icon: String {

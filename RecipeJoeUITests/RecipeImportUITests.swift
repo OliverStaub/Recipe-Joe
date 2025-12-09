@@ -9,13 +9,29 @@ import XCTest
 
 final class RecipeImportUITests: XCTestCase {
 
+    /// Configured app instance with English locale for consistent UI tests
+    var app: XCUIApplication!
+
     override func setUpWithError() throws {
         continueAfterFailure = false
+
+        // Configure app to launch in English for consistent UI tests
+        app = XCUIApplication()
+
+        // Set system locale to English
+        app.launchArguments += ["-AppleLanguages", "(en)"]
+        app.launchArguments += ["-AppleLocale", "en_US"]
+
+        // Reset the app's internal language setting to English via UserDefaults
+        app.launchArguments += ["-appLanguage", "en"]
+    }
+
+    override func tearDownWithError() throws {
+        app = nil
     }
 
     @MainActor
     func testURLTextFieldExists() throws {
-        let app = XCUIApplication()
         app.launch()
 
         // Navigate to Add Recipe tab
@@ -29,7 +45,6 @@ final class RecipeImportUITests: XCTestCase {
 
     @MainActor
     func testActionButtonExists() throws {
-        let app = XCUIApplication()
         app.launch()
 
         // Navigate to Add Recipe tab
@@ -43,7 +58,6 @@ final class RecipeImportUITests: XCTestCase {
 
     @MainActor
     func testActionButtonDisabledWhenNoURL() throws {
-        let app = XCUIApplication()
         app.launch()
 
         // Navigate to Add Recipe tab
@@ -58,7 +72,6 @@ final class RecipeImportUITests: XCTestCase {
 
     @MainActor
     func testActionButtonEnabledWhenURLEntered() throws {
-        let app = XCUIApplication()
         app.launch()
 
         // Navigate to Add Recipe tab
@@ -78,7 +91,6 @@ final class RecipeImportUITests: XCTestCase {
 
     @MainActor
     func testPlatformIconsVisible() throws {
-        let app = XCUIApplication()
         app.launch()
 
         // Navigate to Add Recipe tab
@@ -92,7 +104,6 @@ final class RecipeImportUITests: XCTestCase {
 
     @MainActor
     func testNewRecipeTitleVisible() throws {
-        let app = XCUIApplication()
         app.launch()
 
         // Navigate to Add Recipe tab

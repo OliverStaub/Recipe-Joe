@@ -10,11 +10,22 @@ import SwiftUI
 struct ImportProgressView: View {
     let currentStep: RecipeImportViewModel.ImportStep
     @State private var shimmerOffset: CGFloat = -1
+    @Environment(\.locale) private var locale
+
+    /// Returns localized step title
+    private var stepTitle: String {
+        switch currentStep {
+        case .fetching: return "Fetching recipe...".localized(for: locale)
+        case .parsing: return "Analyzing with AI...".localized(for: locale)
+        case .extracting: return "Extracting ingredients...".localized(for: locale)
+        case .saving: return "Saving recipe...".localized(for: locale)
+        }
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             // Step indicator text
-            Text(currentStep.title)
+            Text(stepTitle)
                 .font(.subheadline)
                 .fontWeight(.medium)
                 .foregroundStyle(Color.terracotta)
@@ -89,6 +100,7 @@ struct ImportProgressView: View {
 
 struct ImportStatusSection: View {
     @ObservedObject var viewModel: RecipeImportViewModel
+    @Environment(\.locale) private var locale
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -105,7 +117,7 @@ struct ImportStatusSection: View {
                     HStack(spacing: 8) {
                         Image(systemName: "checkmark.circle.fill")
                             .foregroundStyle(.green)
-                        Text("Recipe imported!")
+                        Text("Recipe imported!".localized(for: locale))
                             .font(.subheadline)
                             .fontWeight(.medium)
                     }
@@ -121,8 +133,8 @@ struct ImportStatusSection: View {
 
                     if let stats = viewModel.lastImportStats {
                         HStack(spacing: 16) {
-                            StatBadge(value: stats.stepsCount, label: "steps")
-                            StatBadge(value: stats.ingredientsCount, label: "ingredients")
+                            StatBadge(value: stats.stepsCount, label: "steps".localized(for: locale))
+                            StatBadge(value: stats.ingredientsCount, label: "ingredients".localized(for: locale))
                         }
                         .font(.caption)
                         .foregroundStyle(.secondary)
@@ -135,7 +147,7 @@ struct ImportStatusSection: View {
                     HStack(spacing: 8) {
                         Image(systemName: "exclamationmark.triangle.fill")
                             .foregroundStyle(.red)
-                        Text("Import failed")
+                        Text("Import failed".localized(for: locale))
                             .font(.subheadline)
                             .fontWeight(.medium)
                     }

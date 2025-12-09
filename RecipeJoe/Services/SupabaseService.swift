@@ -109,7 +109,7 @@ final class SupabaseService {
     /// - Returns: The public URL of the uploaded image
     func uploadRecipeImage(imageData: Data, recipeId: UUID) async throws -> String {
         let fileName = "\(recipeId.uuidString).jpg"
-        let filePath = "recipe-images/\(fileName)"
+        let filePath = fileName
 
         // Upload to storage
         try await client.storage

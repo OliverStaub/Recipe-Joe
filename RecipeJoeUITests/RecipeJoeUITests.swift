@@ -9,23 +9,32 @@ import XCTest
 
 final class RecipeJoeUITests: XCTestCase {
 
-    override func setUpWithError() throws {
-        // Put setup code here. This method is called before the invocation of each test method in the class.
+    /// Configured app instance with English locale for consistent UI tests
+    var app: XCUIApplication!
 
+    override func setUpWithError() throws {
         // In UI tests it is usually best to stop immediately when a failure occurs.
         continueAfterFailure = false
 
-        // In UI tests it’s important to set the initial state - such as interface orientation - required for your tests before they run. The setUp method is a good place to do this.
+        // Configure app to launch in English for consistent UI tests
+        app = XCUIApplication()
+
+        // Set system locale to English
+        app.launchArguments += ["-AppleLanguages", "(en)"]
+        app.launchArguments += ["-AppleLocale", "en_US"]
+
+        // Reset the app's internal language setting to English via UserDefaults
+        // This overrides the app's own language preference stored in UserDefaults
+        app.launchArguments += ["-appLanguage", "en"]
     }
 
     override func tearDownWithError() throws {
-        // Put teardown code here. This method is called after the invocation of each test method in the class.
+        app = nil
     }
 
     @MainActor
     func testExample() throws {
         // UI tests must launch the application that they test.
-        let app = XCUIApplication()
         app.launch()
 
         // Use XCTAssert and related functions to verify your tests produce the correct results.
@@ -35,7 +44,7 @@ final class RecipeJoeUITests: XCTestCase {
     func testLaunchPerformance() throws {
         // This measures how long it takes to launch your application.
         measure(metrics: [XCTApplicationLaunchMetric()]) {
-            XCUIApplication().launch()
+            app.launch()
         }
     }
 
@@ -43,8 +52,6 @@ final class RecipeJoeUITests: XCTestCase {
 
     @MainActor
     func testTabBarExists() throws {
-        // Launch the app
-        let app = XCUIApplication()
         app.launch()
 
         // Verify tab bar exists
@@ -54,7 +61,6 @@ final class RecipeJoeUITests: XCTestCase {
 
     @MainActor
     func testAllTabsExist() throws {
-        let app = XCUIApplication()
         app.launch()
 
         let tabBar = app.tabBars.firstMatch
@@ -67,7 +73,6 @@ final class RecipeJoeUITests: XCTestCase {
 
     @MainActor
     func testHomeTabContent() throws {
-        let app = XCUIApplication()
         app.launch()
 
         // Home tab should be selected by default
@@ -81,7 +86,6 @@ final class RecipeJoeUITests: XCTestCase {
 
     @MainActor
     func testAddRecipeTabContent() throws {
-        let app = XCUIApplication()
         app.launch()
 
         // Switch to Add Recipe tab
@@ -103,7 +107,6 @@ final class RecipeJoeUITests: XCTestCase {
 
     @MainActor
     func testAddRecipeButtonStateChange() throws {
-        let app = XCUIApplication()
         app.launch()
 
         // Switch to Add Recipe tab
@@ -139,7 +142,6 @@ final class RecipeJoeUITests: XCTestCase {
 
     @MainActor
     func testSearchTabContent() throws {
-        let app = XCUIApplication()
         app.launch()
 
         // Switch to Search tab
@@ -153,7 +155,6 @@ final class RecipeJoeUITests: XCTestCase {
 
     @MainActor
     func testSearchTabHasSearchBar() throws {
-        let app = XCUIApplication()
         app.launch()
 
         // Switch to Search tab
@@ -166,7 +167,6 @@ final class RecipeJoeUITests: XCTestCase {
 
     @MainActor
     func testLiquidGlassSearchTabIsSeparated() throws {
-        let app = XCUIApplication()
         app.launch()
 
         let tabBar = app.tabBars.firstMatch
@@ -182,7 +182,6 @@ final class RecipeJoeUITests: XCTestCase {
 
     @MainActor
     func testSettingsButtonExists() throws {
-        let app = XCUIApplication()
         app.launch()
 
         // Settings button should be in the Home tab toolbar
@@ -192,7 +191,6 @@ final class RecipeJoeUITests: XCTestCase {
 
     @MainActor
     func testSettingsButtonOpensSheet() throws {
-        let app = XCUIApplication()
         app.launch()
 
         // Tap settings button
@@ -206,7 +204,6 @@ final class RecipeJoeUITests: XCTestCase {
 
     @MainActor
     func testSettingsShowsVersion() throws {
-        let app = XCUIApplication()
         app.launch()
 
         // Open settings
@@ -218,7 +215,6 @@ final class RecipeJoeUITests: XCTestCase {
 
     @MainActor
     func testSettingsCanBeDismissed() throws {
-        let app = XCUIApplication()
         app.launch()
 
         // Open settings

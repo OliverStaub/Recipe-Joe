@@ -9,9 +9,12 @@ import SwiftUI
 
 @main
 struct RecipeJoeApp: App {
+    @ObservedObject private var userSettings = UserSettings.shared
+
     var body: some Scene {
         WindowGroup {
             MainTabView()
+                .environment(\.locale, userSettings.appLocale)
         }
     }
 }

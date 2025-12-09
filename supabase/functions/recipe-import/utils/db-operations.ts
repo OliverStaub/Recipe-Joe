@@ -124,12 +124,27 @@ export async function insertRecipe(
       // Create new ingredient if needed
       if (ing.is_new || !ingredientId) {
         // First check if ingredient already exists (by name)
-        const { data: existingIng } = await supabase
+        // Try matching by English name first, then German name
+        let existingIng = null;
+
+        const { data: matchByEn } = await supabase
           .from('ingredients')
           .select('id')
-          .or(`name_en.ilike.${ing.name_en},name_de.ilike.${ing.name_de}`)
+          .ilike('name_en', ing.name_en)
           .limit(1)
-          .single();
+          .maybeSingle();
+
+        if (matchByEn) {
+          existingIng = matchByEn;
+        } else {
+          const { data: matchByDe } = await supabase
+            .from('ingredients')
+            .select('id')
+            .ilike('name_de', ing.name_de)
+            .limit(1)
+            .maybeSingle();
+          existingIng = matchByDe;
+        }
 
         if (existingIng) {
           ingredientId = existingIng.id;

@@ -1,0 +1,94 @@
+#!/bin/bash
+
+# Pre-merge-commit hook for RecipeJoe
+# Runs both unit tests and UI tests before allowing merge commits
+# Only runs when merging into main or develop branches
+# Use 'git merge --no-verify' to bypass this hook if needed
+
+set -e
+
+# Check current branch - only run tests when merging into main or develop
+CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD)
+
+if [[ "$CURRENT_BRANCH" != "main" && "$CURRENT_BRANCH" != "develop" ]]; then
+    echo "⏭️  Skipping pre-merge tests on branch '$CURRENT_BRANCH'"
+    echo "   Tests only run when merging into 'main' or 'develop' branches."
+    exit 0
+fi
+
+echo "🔀 Running pre-merge tests before merging into '$CURRENT_BRANCH'..."
+echo ""
+
+# Colors for output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+NC='\033[0m' # No Color
+
+# Get the project root directory (repository root)
+PROJECT_ROOT="$(git rev-parse --show-toplevel)"
+cd "$PROJECT_ROOT"
+
+# Check if we can find the xcodeproj
+XCODE_PROJECT="RecipeJoe.xcodeproj"
+if [ ! -d "$XCODE_PROJECT" ]; then
+    echo -e "${RED}❌ Could not find $XCODE_PROJECT${NC}"
+    exit 1
+fi
+
+# Function to run tests
+run_tests() {
+    local scheme=$1
+    local test_type=$2
+    local test_target=$3
+
+    echo -e "${YELLOW}Running $test_type...${NC}"
+    echo ""
+
+    # Run xcodebuild and let it output directly to terminal
+    local exit_code=0
+    if [ -n "$test_target" ]; then
+        xcodebuild test \
+            -project "$XCODE_PROJECT" \
+            -scheme "$scheme" \
+            -destination 'platform=iOS Simulator,name=iPhone Air' \
+            -only-testing:"$test_target" || exit_code=$?
+    else
+        xcodebuild test \
+            -project "$XCODE_PROJECT" \
+            -scheme "$scheme" \
+            -destination 'platform=iOS Simulator,name=iPhone Air' || exit_code=$?
+    fi
+
+    echo ""
+
+    # Check if xcodebuild succeeded
+    if [ $exit_code -eq 0 ]; then
+        echo -e "${GREEN}✓ $test_type passed${NC}"
+        echo ""
+        return 0
+    else
+        echo -e "${RED}✗ $test_type failed${NC}"
+        echo ""
+        return 1
+    fi
+}
+
+# Run unit tests
+if ! run_tests "RecipeJoe" "Unit Tests" "RecipeJoeTests"; then
+    echo -e "${RED}❌ Unit tests failed. Merge aborted.${NC}"
+    echo -e "${YELLOW}Tip: Use 'git merge --no-verify' to bypass this check${NC}"
+    exit 1
+fi
+
+# Run UI tests
+if ! run_tests "RecipeJoe" "UI Tests" "RecipeJoeUITests"; then
+    echo -e "${RED}❌ UI tests failed. Merge aborted.${NC}"
+    echo -e "${YELLOW}Tip: Use 'git merge --no-verify' to bypass this check${NC}"
+    exit 1
+fi
+
+echo -e "${GREEN}✅ All tests passed! Proceeding with merge...${NC}"
+echo ""
+
+exit 0
