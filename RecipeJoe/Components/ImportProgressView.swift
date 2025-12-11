@@ -23,13 +23,7 @@ struct ImportProgressView: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            // Step indicator text
-            Text(stepTitle)
-                .font(.subheadline)
-                .fontWeight(.medium)
-                .foregroundStyle(Color.terracotta)
-
+        VStack(alignment: .leading, spacing: 12) {
             // Progress bar with shimmer
             GeometryReader { geometry in
                 ZStack(alignment: .leading) {
@@ -67,23 +61,11 @@ struct ImportProgressView: View {
             }
             .frame(height: 12)
 
-            // Step dots
-            HStack(spacing: 0) {
-                ForEach(RecipeImportViewModel.ImportStep.allCases, id: \.rawValue) { step in
-                    HStack(spacing: 4) {
-                        Circle()
-                            .fill(step.rawValue <= currentStep.rawValue ? Color.terracotta : Color(.systemGray4))
-                            .frame(width: 8, height: 8)
-
-                        if step != RecipeImportViewModel.ImportStep.allCases.last {
-                            Rectangle()
-                                .fill(step.rawValue < currentStep.rawValue ? Color.terracotta : Color(.systemGray4))
-                                .frame(height: 2)
-                        }
-                    }
-                }
-            }
-            .padding(.horizontal, 4)
+            // Step indicator text
+            Text(stepTitle)
+                .font(.subheadline)
+                .fontWeight(.medium)
+                .foregroundStyle(Color.terracotta)
         }
         .padding(16)
         .background(Color(.systemGray6))

@@ -16,6 +16,52 @@ final class HomeViewModel: ObservableObject {
     @Published var recipes: [SupabaseRecipe] = []
     @Published var isLoading: Bool = false
     @Published var error: String?
+    @Published var filters = RecipeFilters()
+    @Published private(set) var hasLoadedOnce: Bool = false
+
+    // MARK: - Computed Properties
+
+    var filteredRecipes: [SupabaseRecipe] {
+        recipes.filter { recipe in
+            // Time filter
+            guard filters.timeFilter.matches(totalMinutes: recipe.totalTimeMinutes) else {
+                return false
+            }
+
+            // Category filter
+            if let selectedCategory = filters.selectedCategory {
+                guard recipe.category?.lowercased() == selectedCategory.lowercased() else {
+                    return false
+                }
+            }
+
+            // Cuisine filter
+            if let selectedCuisine = filters.selectedCuisine {
+                guard recipe.cuisine?.lowercased() == selectedCuisine.lowercased() else {
+                    return false
+                }
+            }
+
+            // Favorites filter
+            if filters.showFavoritesOnly {
+                guard recipe.isFavorite else {
+                    return false
+                }
+            }
+
+            return true
+        }
+    }
+
+    var availableCategories: [String] {
+        let categories = recipes.compactMap { $0.category }.filter { !$0.isEmpty }
+        return Array(Set(categories)).sorted()
+    }
+
+    var availableCuisines: [String] {
+        let cuisines = recipes.compactMap { $0.cuisine }.filter { !$0.isEmpty }
+        return Array(Set(cuisines)).sorted()
+    }
 
     // MARK: - Fetch Recipes
 
@@ -30,6 +76,7 @@ final class HomeViewModel: ObservableObject {
         }
 
         isLoading = false
+        hasLoadedOnce = true
     }
 
     // MARK: - Refresh

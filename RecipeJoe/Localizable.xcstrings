@@ -115,6 +115,29 @@
         }
       }
     },
+    "All" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Alle"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "All"
+          }
+        },
+        "gsw" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Alli"
+          }
+        }
+      }
+    },
     "Analyzing with AI..." : {
       "localizations" : {
         "de" : {
@@ -274,6 +297,29 @@
         }
       }
     },
+    "Category" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kategorie"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Category"
+          }
+        },
+        "gsw" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kategorie"
+          }
+        }
+      }
+    },
     "Change Photo" : {
       "localizations" : {
         "de" : {
@@ -320,6 +366,29 @@
         }
       }
     },
+    "Clear Filters" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Filter zurücksetzen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Clear Filters"
+          }
+        },
+        "gsw" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Filter zruggsetze"
+          }
+        }
+      }
+    },
     "Cook" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -339,6 +408,29 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Choche"
+          }
+        }
+      }
+    },
+    "Cuisine" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Küche"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cuisine"
+          }
+        },
+        "gsw" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Chuchi"
           }
         }
       }
@@ -429,6 +521,29 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Zuetate wärded sorgfältig extrahiert..."
+          }
+        }
+      }
+    },
+    "Favorites" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Favoriten"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Favorites"
+          }
+        },
+        "gsw" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Favorite"
           }
         }
       }
@@ -728,6 +843,52 @@
         }
       }
     },
+    "Long" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lang"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Long"
+          }
+        },
+        "gsw" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lang"
+          }
+        }
+      }
+    },
+    "Medium" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mittel"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Medium"
+          }
+        },
+        "gsw" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mittel"
+          }
+        }
+      }
+    },
     "Mix" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -791,6 +952,29 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Keis Bild"
+          }
+        }
+      }
+    },
+    "No Matching Recipes" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Keine passenden Rezepte"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No Matching Recipes"
+          }
+        },
+        "gsw" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kei passendi Rezept"
           }
         }
       }
@@ -880,6 +1064,29 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Vorbereite"
+          }
+        }
+      }
+    },
+    "Quick" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Schnell"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Quick"
+          }
+        },
+        "gsw" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Schnäll"
           }
         }
       }
@@ -1402,6 +1609,29 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Probier en andere Suechbegriff"
+          }
+        }
+      }
+    },
+    "Try adjusting your filters" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Versuche deine Filter anzupassen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Try adjusting your filters"
+          }
+        },
+        "gsw" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Probier dini Filter aazpasse"
           }
         }
       }

@@ -17,6 +17,7 @@ struct RecipeDetailView: View {
     @State private var selectedPhotoItem: PhotosPickerItem?
     @State private var isUploadingImage = false
     @State private var uploadError: String?
+    @Environment(\.locale) private var locale
 
     var body: some View {
         ScrollView {
@@ -299,7 +300,7 @@ struct RecipeDetailView: View {
     @ViewBuilder
     private func ingredientsSection(ingredients: [SupabaseRecipeIngredient]) -> some View {
         VStack(alignment: .leading, spacing: 12) {
-            SectionHeader(title: "Ingredients", icon: "basket.fill")
+            SectionHeader(title: "Ingredients".localized(for: locale), icon: "basket.fill")
 
             VStack(alignment: .leading, spacing: 8) {
                 ForEach(ingredients) { ingredient in
@@ -317,7 +318,7 @@ struct RecipeDetailView: View {
     @ViewBuilder
     private func stepsSection(steps: [SupabaseRecipeStep]) -> some View {
         VStack(alignment: .leading, spacing: 12) {
-            SectionHeader(title: "Instructions", icon: "list.number")
+            SectionHeader(title: "Instructions".localized(for: locale), icon: "list.number")
 
             VStack(alignment: .leading, spacing: 16) {
                 ForEach(steps) { step in
