@@ -12,32 +12,35 @@ struct HomeView: View {
     @State private var showingSettings = false
     @Environment(\.locale) private var locale
 
+    @ViewBuilder
+    private var contentView: some View {
+        VStack(spacing: 0) {
+            // Always show filter bar
+            FilterBar(
+                filters: $viewModel.filters,
+                availableCategories: viewModel.availableCategories,
+                availableCuisines: viewModel.availableCuisines
+            )
+
+            // Content based on state
+            if viewModel.isLoading && viewModel.recipes.isEmpty {
+                loadingView
+            } else if viewModel.recipes.isEmpty && !viewModel.filters.hasActiveFilters {
+                // No recipes and no filters applied
+                emptyStateView
+            } else if viewModel.filteredRecipes.isEmpty {
+                // Either no recipes with filters, or filters filtered everything out
+                noFilterResultsView
+            } else {
+                recipeListView
+            }
+        }
+    }
+
     var body: some View {
         NavigationStack {
-            VStack(spacing: 0) {
-                // Filter bar (show after initial load if recipes exist)
-                if viewModel.hasLoadedOnce && !viewModel.recipes.isEmpty {
-                    FilterBar(
-                        filters: $viewModel.filters,
-                        availableCategories: viewModel.availableCategories,
-                        availableCuisines: viewModel.availableCuisines
-                    )
-                }
-
-                // Content
-                Group {
-                    if viewModel.isLoading && !viewModel.hasLoadedOnce {
-                        loadingView
-                    } else if viewModel.recipes.isEmpty {
-                        emptyStateView
-                    } else if viewModel.filteredRecipes.isEmpty {
-                        noFilterResultsView
-                    } else {
-                        recipeListView
-                    }
-                }
-            }
-            .navigationTitle("RecipeJoe")
+            contentView
+                .navigationTitle("RecipeJoe")
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button {
