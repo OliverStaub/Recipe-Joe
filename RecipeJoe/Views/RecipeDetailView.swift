@@ -46,23 +46,27 @@ struct RecipeDetailView: View {
 
             // Recipe Info
             recipeInfoSection(recipe: detail.recipe)
+                .padding(.horizontal, 16)
 
             // Source Link
             if let sourceUrl = detail.recipe.sourceUrl, !sourceUrl.isEmpty {
                 sourceLinkSection(urlString: sourceUrl)
+                    .padding(.horizontal, 16)
             }
 
             // Ingredients
             if !detail.sortedIngredients.isEmpty {
                 ingredientsSection(ingredients: detail.sortedIngredients)
+                    .padding(.horizontal, 16)
             }
 
             // Steps
             if !detail.sortedSteps.isEmpty {
                 stepsSection(steps: detail.sortedSteps)
+                    .padding(.horizontal, 16)
             }
         }
-        .padding()
+        .padding(.vertical)
     }
 
     // MARK: - Header Image

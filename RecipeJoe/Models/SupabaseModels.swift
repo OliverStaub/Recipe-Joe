@@ -10,14 +10,14 @@ import Foundation
 // MARK: - Recipe Import Request/Response
 
 /// Request to import a recipe from URL
-struct RecipeImportRequest: Codable {
+struct RecipeImportRequest: Codable, Sendable {
     let url: String
     let language: String
     let reword: Bool
 }
 
 /// Response from recipe import Edge Function
-struct RecipeImportResponse: Codable {
+struct RecipeImportResponse: Codable, Sendable {
     let success: Bool
     let recipeId: String?
     let recipeName: String?
@@ -34,7 +34,7 @@ struct RecipeImportResponse: Codable {
 }
 
 /// Import statistics from Edge Function
-struct ImportStats: Codable {
+struct ImportStats: Codable, Sendable {
     let stepsCount: Int
     let ingredientsCount: Int
     let newIngredientsCount: Int
@@ -49,7 +49,7 @@ struct ImportStats: Codable {
 }
 
 /// Token usage from Claude API
-struct TokenUsage: Codable {
+struct TokenUsage: Codable, Sendable {
     let inputTokens: Int
     let outputTokens: Int
 
@@ -62,7 +62,7 @@ struct TokenUsage: Codable {
 // MARK: - Database Models
 
 /// Recipe as stored in Supabase
-struct SupabaseRecipe: Codable, Identifiable {
+struct SupabaseRecipe: Codable, Identifiable, Sendable {
     let id: UUID
     let userId: UUID?
     let name: String
@@ -107,7 +107,7 @@ struct SupabaseRecipe: Codable, Identifiable {
 }
 
 /// Recipe step as stored in Supabase
-struct SupabaseRecipeStep: Codable, Identifiable {
+struct SupabaseRecipeStep: Codable, Identifiable, Sendable {
     let id: UUID
     let recipeId: UUID
     let stepNumber: Int
@@ -124,7 +124,7 @@ struct SupabaseRecipeStep: Codable, Identifiable {
 }
 
 /// Ingredient as stored in Supabase (shared across users)
-struct SupabaseIngredient: Codable, Identifiable {
+struct SupabaseIngredient: Codable, Identifiable, Sendable {
     let id: UUID
     let nameEn: String
     let nameDe: String
@@ -144,7 +144,7 @@ struct SupabaseIngredient: Codable, Identifiable {
 }
 
 /// Measurement type as stored in Supabase
-struct SupabaseMeasurementType: Codable, Identifiable {
+struct SupabaseMeasurementType: Codable, Identifiable, Sendable {
     let id: UUID
     let nameEn: String
     let nameDe: String
@@ -171,7 +171,7 @@ struct SupabaseMeasurementType: Codable, Identifiable {
 }
 
 /// Recipe ingredient junction as stored in Supabase
-struct SupabaseRecipeIngredient: Codable, Identifiable {
+struct SupabaseRecipeIngredient: Codable, Identifiable, Sendable {
     let id: UUID
     let recipeId: UUID
     let ingredientId: UUID
@@ -220,7 +220,7 @@ struct SupabaseRecipeIngredient: Codable, Identifiable {
 // MARK: - Full Recipe with Relations
 
 /// Complete recipe with all related data
-struct SupabaseRecipeDetail {
+struct SupabaseRecipeDetail: Sendable {
     let recipe: SupabaseRecipe
     let steps: [SupabaseRecipeStep]
     let ingredients: [SupabaseRecipeIngredient]

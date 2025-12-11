@@ -49,6 +49,7 @@
       }
     },
     "About" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -137,6 +138,7 @@
       }
     },
     "App Language" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -182,6 +184,7 @@
       }
     },
     "Assemble" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -204,6 +207,7 @@
       }
     },
     "Bake" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -294,6 +298,7 @@
     },
     "Choose the language for the app interface." : {
       "comment" : "App language setting description",
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -316,6 +321,7 @@
       }
     },
     "Cook" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -450,6 +456,7 @@
       }
     },
     "Finish" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -472,6 +479,7 @@
       }
     },
     "Heat" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -516,6 +524,7 @@
       }
     },
     "Import failed" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -560,6 +569,7 @@
       }
     },
     "ingredients" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -628,6 +638,7 @@
       }
     },
     "Keep Original Wording" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -651,6 +662,7 @@
     },
     "Language" : {
       "comment" : "Settings section header",
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -717,6 +729,7 @@
       }
     },
     "Mix" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -849,6 +862,7 @@
       }
     },
     "Prep" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -895,6 +909,7 @@
     },
     "Recipe Import" : {
       "comment" : "Settings section header",
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -917,6 +932,7 @@
       }
     },
     "Recipe imported!" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -939,6 +955,7 @@
       }
     },
     "Recipe Language" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -1007,6 +1024,7 @@
     },
     "Recipes will be imported and translated to %@. This setting applies to future imports only." : {
       "comment" : "Recipe translation description",
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -1029,6 +1047,7 @@
       }
     },
     "Rest" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -1183,6 +1202,7 @@
       }
     },
     "Settings" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -1205,6 +1225,7 @@
       }
     },
     "Step" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -1227,6 +1248,7 @@
       }
     },
     "steps" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -1250,6 +1272,7 @@
     },
     "Steps will be imported in their original language without rewording." : {
       "comment" : "Keep original wording description",
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -1316,6 +1339,7 @@
       }
     },
     "to taste" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -1383,6 +1407,7 @@
       }
     },
     "Unknown" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -1428,6 +1453,7 @@
     },
     "Version" : {
       "comment" : "Version label in settings",
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
