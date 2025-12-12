@@ -1,22 +1,22 @@
 #!/bin/bash
 
-# Pre-commit hook for RecipeJoe
-# Runs both unit tests and UI tests before allowing commits
-# Only runs on main and develop branches (skips feature branches)
-# Use 'git commit --no-verify' to bypass this hook if needed
+# Pre-merge-commit hook for RecipeJoe
+# Runs both unit tests and UI tests before allowing merge commits
+# Only runs when merging into main or develop branches
+# Use 'git merge --no-verify' to bypass this hook if needed
 
 set -e
 
-# Check current branch - only run tests on main and develop
+# Check current branch - only run tests when merging into main or develop
 CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD)
 
 if [[ "$CURRENT_BRANCH" != "main" && "$CURRENT_BRANCH" != "develop" ]]; then
-    echo "⏭️  Skipping pre-commit tests on branch '$CURRENT_BRANCH'"
-    echo "   Tests only run on 'main' and 'develop' branches."
+    echo "⏭️  Skipping pre-merge tests on branch '$CURRENT_BRANCH'"
+    echo "   Tests only run when merging into 'main' or 'develop' branches."
     exit 0
 fi
 
-echo "🧪 Running pre-commit tests..."
+echo "🔀 Running pre-merge tests before merging into '$CURRENT_BRANCH'..."
 echo ""
 
 # Colors for output
@@ -76,19 +76,19 @@ run_tests() {
 
 # Run unit tests
 if ! run_tests "RecipeJoe" "Unit Tests" "RecipeJoeTests"; then
-    echo -e "${RED}❌ Unit tests failed. Commit aborted.${NC}"
-    echo -e "${YELLOW}Tip: Use 'git commit --no-verify' to bypass this check${NC}"
+    echo -e "${RED}❌ Unit tests failed. Merge aborted.${NC}"
+    echo -e "${YELLOW}Tip: Use 'git merge --no-verify' to bypass this check${NC}"
     exit 1
 fi
 
 # Run UI tests
 if ! run_tests "RecipeJoe" "UI Tests" "RecipeJoeUITests"; then
-    echo -e "${RED}❌ UI tests failed. Commit aborted.${NC}"
-    echo -e "${YELLOW}Tip: Use 'git commit --no-verify' to bypass this check${NC}"
+    echo -e "${RED}❌ UI tests failed. Merge aborted.${NC}"
+    echo -e "${YELLOW}Tip: Use 'git merge --no-verify' to bypass this check${NC}"
     exit 1
 fi
 
-echo -e "${GREEN}✅ All tests passed! Proceeding with commit...${NC}"
+echo -e "${GREEN}✅ All tests passed! Proceeding with merge...${NC}"
 echo ""
 
 exit 0
