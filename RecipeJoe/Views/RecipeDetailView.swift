@@ -6,6 +6,7 @@
 //
 
 import Combine
+import Kingfisher
 import PhotosUI
 import SwiftUI
 import UIKit
@@ -75,24 +76,17 @@ struct RecipeDetailView: View {
     @ViewBuilder
     private func headerImageSection(recipe: SupabaseRecipe) -> some View {
         ZStack {
-            // Image placeholder or actual image
+            // Image with Kingfisher caching
             if let imageUrl = recipe.imageUrl,
                let url = URL(string: imageUrl) {
-                AsyncImage(url: url) { phase in
-                    switch phase {
-                    case .success(let image):
-                        image
-                            .resizable()
-                            .scaledToFill()
-                    case .failure:
-                        placeholderContent
-                    case .empty:
-                        ProgressView()
-                            .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    @unknown default:
-                        placeholderContent
-                    }
-                }
+                KFImage(url)
+                    .placeholder { ProgressView().frame(maxWidth: .infinity, maxHeight: .infinity) }
+                    .onFailure { _ in }
+                    .loadDiskFileSynchronously()
+                    .cacheMemoryOnly(false)
+                    .fade(duration: 0.25)
+                    .resizable()
+                    .scaledToFill()
             } else {
                 placeholderContent
             }
