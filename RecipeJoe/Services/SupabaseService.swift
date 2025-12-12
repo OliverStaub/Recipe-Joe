@@ -41,12 +41,26 @@ final class SupabaseService {
 
     /// Import a recipe from a URL using the Edge Function
     /// - Parameters:
-    ///   - url: The URL of the recipe webpage
+    ///   - url: The URL of the recipe webpage or video
     ///   - language: Target language for the recipe ("en" or "de")
     ///   - reword: If true, AI will reword and translate. If false, keeps original text with category prefixes only.
+    ///   - startTimestamp: Optional start time for video (MM:SS or HH:MM:SS format). If nil, starts from beginning.
+    ///   - endTimestamp: Optional end time for video (MM:SS or HH:MM:SS format). If nil, goes to end.
     /// - Returns: The import response with recipe details
-    func importRecipe(from url: String, language: String = "en", reword: Bool = true) async throws -> RecipeImportResponse {
-        let request = RecipeImportRequest(url: url, language: language, reword: reword)
+    func importRecipe(
+        from url: String,
+        language: String = "en",
+        reword: Bool = true,
+        startTimestamp: String? = nil,
+        endTimestamp: String? = nil
+    ) async throws -> RecipeImportResponse {
+        let request = RecipeImportRequest(
+            url: url,
+            language: language,
+            reword: reword,
+            startTimestamp: startTimestamp,
+            endTimestamp: endTimestamp
+        )
 
         let response: RecipeImportResponse = try await client.functions.invoke(
             "recipe-import",

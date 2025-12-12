@@ -114,4 +114,100 @@ final class RecipeImportUITests: XCTestCase {
         XCTAssertTrue(title.waitForExistence(timeout: 5),
                       "New Recipe title should be visible")
     }
+
+    // MARK: - Video Import Tests
+
+    @MainActor
+    func testTimestampFieldsAppearForYouTubeURL() throws {
+        app.launch()
+
+        // Navigate to Add Recipe tab
+        app.tabBars.buttons["Add Recipe"].tap()
+
+        // Enter a YouTube URL
+        let urlTextField = app.textFields["urlTextField"]
+        XCTAssertTrue(urlTextField.waitForExistence(timeout: 5))
+        urlTextField.tap()
+        urlTextField.typeText("https://www.youtube.com/watch?v=dQw4w9WgXcQ")
+
+        // Verify timestamp section appears
+        let videoSection = app.staticTexts["YouTube Video"]
+        XCTAssertTrue(videoSection.waitForExistence(timeout: 3),
+                      "Video timestamp section should appear for YouTube URL")
+    }
+
+    @MainActor
+    func testTimestampFieldsAppearForTikTokURL() throws {
+        app.launch()
+
+        // Navigate to Add Recipe tab
+        app.tabBars.buttons["Add Recipe"].tap()
+
+        // Enter a TikTok URL
+        let urlTextField = app.textFields["urlTextField"]
+        XCTAssertTrue(urlTextField.waitForExistence(timeout: 5))
+        urlTextField.tap()
+        urlTextField.typeText("https://www.tiktok.com/@chef/video/1234567890")
+
+        // Verify timestamp section appears
+        let videoSection = app.staticTexts["TikTok Video"]
+        XCTAssertTrue(videoSection.waitForExistence(timeout: 3),
+                      "Video timestamp section should appear for TikTok URL")
+    }
+
+    @MainActor
+    func testTimestampFieldsHiddenForRegularURL() throws {
+        app.launch()
+
+        // Navigate to Add Recipe tab
+        app.tabBars.buttons["Add Recipe"].tap()
+
+        // Enter a regular recipe website URL
+        let urlTextField = app.textFields["urlTextField"]
+        XCTAssertTrue(urlTextField.waitForExistence(timeout: 5))
+        urlTextField.tap()
+        urlTextField.typeText("https://www.allrecipes.com/recipe/12345")
+
+        // Wait a moment for UI to update
+        Thread.sleep(forTimeInterval: 0.5)
+
+        // Verify timestamp section does NOT appear
+        let videoSection = app.staticTexts["Video"]
+        XCTAssertFalse(videoSection.exists,
+                       "Video timestamp section should NOT appear for regular URLs")
+    }
+
+    @MainActor
+    func testTimestampFieldsDisappearWhenURLCleared() throws {
+        app.launch()
+
+        // Navigate to Add Recipe tab
+        app.tabBars.buttons["Add Recipe"].tap()
+
+        // Enter a YouTube URL
+        let urlTextField = app.textFields["urlTextField"]
+        XCTAssertTrue(urlTextField.waitForExistence(timeout: 5))
+        urlTextField.tap()
+        urlTextField.typeText("https://www.youtube.com/watch?v=dQw4w9WgXcQ")
+
+        // Verify timestamp section appears
+        let videoSection = app.staticTexts["YouTube Video"]
+        XCTAssertTrue(videoSection.waitForExistence(timeout: 3))
+
+        // Clear the URL field
+        urlTextField.tap()
+        // Select all and delete
+        urlTextField.doubleTap()
+        if app.menuItems["Select All"].waitForExistence(timeout: 1) {
+            app.menuItems["Select All"].tap()
+        }
+        app.keys["delete"].tap()
+
+        // Wait a moment for UI to update
+        Thread.sleep(forTimeInterval: 0.5)
+
+        // Verify timestamp section disappears
+        XCTAssertFalse(app.staticTexts["YouTube Video"].exists,
+                       "Video timestamp section should disappear when URL is cleared")
+    }
 }

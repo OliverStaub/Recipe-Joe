@@ -383,6 +383,104 @@ struct RecipeJoeTests {
         #expect(!germanName.isEmpty, "German display name should not be empty")
     }
 
+    // MARK: - Video URL Detection Tests
+
+    @Test func testIsVideoURL_YouTube() async throws {
+        let viewModel = await RecipeImportViewModel()
+        #expect(await viewModel.isVideoURL("https://www.youtube.com/watch?v=dQw4w9WgXcQ") == true)
+        #expect(await viewModel.isVideoURL("https://youtube.com/watch?v=dQw4w9WgXcQ") == true)
+    }
+
+    @Test func testIsVideoURL_YouTubeShorts() async throws {
+        let viewModel = await RecipeImportViewModel()
+        #expect(await viewModel.isVideoURL("https://www.youtube.com/shorts/dQw4w9WgXcQ") == true)
+        #expect(await viewModel.isVideoURL("https://youtube.com/shorts/abc123def45") == true)
+    }
+
+    @Test func testIsVideoURL_YouTubeShortLink() async throws {
+        let viewModel = await RecipeImportViewModel()
+        #expect(await viewModel.isVideoURL("https://youtu.be/dQw4w9WgXcQ") == true)
+    }
+
+    @Test func testIsVideoURL_InstagramReels() async throws {
+        let viewModel = await RecipeImportViewModel()
+        #expect(await viewModel.isVideoURL("https://www.instagram.com/reel/ABC123def45/") == true)
+        #expect(await viewModel.isVideoURL("https://instagram.com/reel/xyz789ghi12/") == true)
+    }
+
+    @Test func testIsVideoURL_InstagramPost() async throws {
+        let viewModel = await RecipeImportViewModel()
+        #expect(await viewModel.isVideoURL("https://www.instagram.com/p/ABC123def45/") == true)
+    }
+
+    @Test func testIsVideoURL_TikTok() async throws {
+        let viewModel = await RecipeImportViewModel()
+        #expect(await viewModel.isVideoURL("https://www.tiktok.com/@username/video/1234567890123456789") == true)
+        #expect(await viewModel.isVideoURL("https://tiktok.com/@chef.name/video/9876543210987654321") == true)
+    }
+
+    @Test func testIsVideoURL_TikTokShortLink() async throws {
+        let viewModel = await RecipeImportViewModel()
+        #expect(await viewModel.isVideoURL("https://vm.tiktok.com/ZMrABC123/") == true)
+    }
+
+    @Test func testIsVideoURL_RegularWebsite() async throws {
+        let viewModel = await RecipeImportViewModel()
+        #expect(await viewModel.isVideoURL("https://www.allrecipes.com/recipe/12345") == false)
+        #expect(await viewModel.isVideoURL("https://www.seriouseats.com/best-lasagna-recipe") == false)
+        #expect(await viewModel.isVideoURL("https://example.com/recipe") == false)
+    }
+
+    @Test func testVideoPlatformName_YouTube() async throws {
+        let viewModel = await RecipeImportViewModel()
+        #expect(await viewModel.videoPlatformName("https://www.youtube.com/watch?v=dQw4w9WgXcQ") == "YouTube")
+        #expect(await viewModel.videoPlatformName("https://youtu.be/dQw4w9WgXcQ") == "YouTube")
+    }
+
+    @Test func testVideoPlatformName_Instagram() async throws {
+        let viewModel = await RecipeImportViewModel()
+        #expect(await viewModel.videoPlatformName("https://www.instagram.com/reel/ABC123def45/") == "Instagram")
+    }
+
+    @Test func testVideoPlatformName_TikTok() async throws {
+        let viewModel = await RecipeImportViewModel()
+        #expect(await viewModel.videoPlatformName("https://www.tiktok.com/@username/video/1234567890") == "TikTok")
+    }
+
+    @Test func testVideoPlatformName_NotVideo() async throws {
+        let viewModel = await RecipeImportViewModel()
+        #expect(await viewModel.videoPlatformName("https://www.allrecipes.com/recipe/12345") == nil)
+    }
+
+    // MARK: - Timestamp Validation Tests
+
+    @Test func testIsValidTimestamp_Empty() async throws {
+        let viewModel = await RecipeImportViewModel()
+        #expect(await viewModel.isValidTimestamp("") == true)
+    }
+
+    @Test func testIsValidTimestamp_MinutesSeconds() async throws {
+        let viewModel = await RecipeImportViewModel()
+        #expect(await viewModel.isValidTimestamp("1:30") == true)
+        #expect(await viewModel.isValidTimestamp("0:00") == true)
+        #expect(await viewModel.isValidTimestamp("59:59") == true)
+        #expect(await viewModel.isValidTimestamp("10:45") == true)
+    }
+
+    @Test func testIsValidTimestamp_HoursMinutesSeconds() async throws {
+        let viewModel = await RecipeImportViewModel()
+        #expect(await viewModel.isValidTimestamp("1:30:00") == true)
+        #expect(await viewModel.isValidTimestamp("0:00:00") == true)
+        #expect(await viewModel.isValidTimestamp("2:15:30") == true)
+    }
+
+    @Test func testIsValidTimestamp_Invalid() async throws {
+        let viewModel = await RecipeImportViewModel()
+        #expect(await viewModel.isValidTimestamp("abc") == false)
+        #expect(await viewModel.isValidTimestamp("1:2:3:4") == false)
+        #expect(await viewModel.isValidTimestamp("hello") == false)
+    }
+
     // MARK: - Helper Functions
 
     private func createTestRecipe(id: UUID) -> SupabaseRecipe {
