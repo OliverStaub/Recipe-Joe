@@ -24,7 +24,8 @@ import {
   getVideoTranscript,
   TranscriptNotAvailableError,
 } from "./utils/supadata-client.ts";
-import { transcribeWithWhisper } from "./utils/whisper-client.ts";
+// Whisper fallback disabled for now - most videos have captions
+// import { transcribeWithWhisper } from "./utils/whisper-client.ts";
 import { getVideoMetadata, getWorkingYouTubeThumbnail } from "./utils/video-thumbnail.ts";
 
 const corsHeaders = {
@@ -122,25 +123,16 @@ serve(async (req) => {
         console.log(`Got transcript: ${transcript.segmentCount} segments, language: ${transcriptLanguage}`);
       } catch (error) {
         if (error instanceof TranscriptNotAvailableError) {
-          // Check if Whisper is configured before trying fallback
-          const openaiKey = Deno.env.get('OPENAI_API_KEY');
-          if (!openaiKey) {
-            console.log('No captions available and Whisper not configured');
-            const response: ImportResponse = {
-              success: false,
-              error: 'This video has no captions available. Please try a different video with subtitles enabled.',
-            };
-            return new Response(JSON.stringify(response), {
-              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-              status: 400,
-            });
-          }
-
-          console.log('No captions available, falling back to Whisper transcription...');
-          const whisperResult = await transcribeWithWhisper(url, platform, { language });
-          transcriptText = whisperResult.text;
-          transcriptLanguage = whisperResult.language;
-          console.log(`Whisper transcription complete (${transcriptText.length} chars)`);
+          // Whisper fallback disabled for now - return user-friendly error
+          console.log('No captions available for this video');
+          const response: ImportResponse = {
+            success: false,
+            error: 'This video has no captions/subtitles available. Please try a different video with subtitles enabled.',
+          };
+          return new Response(JSON.stringify(response), {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            status: 400,
+          });
         } else {
           throw error;
         }

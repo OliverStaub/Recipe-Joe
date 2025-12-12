@@ -66,13 +66,30 @@ final class HomeViewModel: ObservableObject {
     // MARK: - Fetch Recipes
 
     func fetchRecipes() async {
-        isLoading = true
         error = nil
 
+        // 1. Load cached data immediately for fast startup
+        if !hasLoadedOnce {
+            if let cached = await RecipeCacheService.shared.loadCachedRecipes() {
+                recipes = cached
+                isLoading = false
+            } else {
+                isLoading = true
+            }
+        }
+
+        // 2. Fetch fresh data from network
         do {
-            recipes = try await SupabaseService.shared.fetchRecipes()
+            let fresh = try await SupabaseService.shared.fetchRecipes()
+            recipes = fresh
+            // 3. Cache the fresh data for next time
+            try? await RecipeCacheService.shared.cacheRecipes(fresh)
         } catch {
-            self.error = error.localizedDescription
+            // Only show error if we have no cached data
+            if recipes.isEmpty {
+                self.error = error.localizedDescription
+            }
+            // Otherwise silently use cached data
         }
 
         isLoading = false

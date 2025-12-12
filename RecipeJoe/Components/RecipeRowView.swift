@@ -5,6 +5,7 @@
 //  Recipe list row component
 //
 
+import Kingfisher
 import SwiftUI
 
 struct RecipeRowView: View {
@@ -12,22 +13,17 @@ struct RecipeRowView: View {
 
     var body: some View {
         HStack(spacing: 12) {
-            // Image thumbnail
+            // Image thumbnail with Kingfisher caching
             Group {
                 if let imageUrl = recipe.imageUrl,
                    let url = URL(string: imageUrl) {
-                    AsyncImage(url: url) { phase in
-                        switch phase {
-                        case .success(let image):
-                            image
-                                .resizable()
-                                .scaledToFill()
-                        case .failure, .empty:
-                            RecipeImagePlaceholder()
-                        @unknown default:
-                            RecipeImagePlaceholder()
-                        }
-                    }
+                    KFImage(url)
+                        .placeholder { RecipeImagePlaceholder() }
+                        .loadDiskFileSynchronously()
+                        .cacheMemoryOnly(false)
+                        .fade(duration: 0.25)
+                        .resizable()
+                        .scaledToFill()
                 } else {
                     RecipeImagePlaceholder()
                 }
