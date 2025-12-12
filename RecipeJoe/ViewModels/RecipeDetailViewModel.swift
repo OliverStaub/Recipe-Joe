@@ -14,16 +14,36 @@ final class RecipeDetailViewModel: ObservableObject {
     @Published var isLoading: Bool = false
     @Published var error: String?
 
+    private var hasLoadedOnce = false
+
     func fetchRecipeDetail(id: UUID) async {
-        isLoading = true
         error = nil
 
+        // 1. Load cached data immediately for fast display
+        if !hasLoadedOnce {
+            if let cached = await RecipeCacheService.shared.loadCachedRecipeDetail(id: id) {
+                recipeDetail = cached
+                isLoading = false
+            } else {
+                isLoading = true
+            }
+        }
+
+        // 2. Fetch fresh data from network
         do {
-            recipeDetail = try await SupabaseService.shared.fetchRecipeDetail(id: id)
+            let fresh = try await SupabaseService.shared.fetchRecipeDetail(id: id)
+            recipeDetail = fresh
+            // 3. Cache the fresh data for next time
+            try? await RecipeCacheService.shared.cacheRecipeDetail(fresh)
         } catch {
-            self.error = error.localizedDescription
+            // Only show error if we have no cached data
+            if recipeDetail == nil {
+                self.error = error.localizedDescription
+            }
+            // Otherwise silently use cached data
         }
 
         isLoading = false
+        hasLoadedOnce = true
     }
 }

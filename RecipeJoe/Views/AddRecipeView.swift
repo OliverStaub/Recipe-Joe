@@ -36,11 +36,23 @@ struct AddRecipeView: View {
                     PlatformIconsView()
                         .padding(.leading, 40)
 
+                    // Video Timestamp Section (only shown for video URLs)
+                    if importViewModel.isVideoURL(urlText) {
+                        TimestampInputSection(
+                            startTimestamp: $importViewModel.startTimestamp,
+                            endTimestamp: $importViewModel.endTimestamp,
+                            platformName: importViewModel.videoPlatformName(urlText)
+                        )
+                        .padding(.horizontal, 24)
+                        .transition(.opacity.combined(with: .move(edge: .top)))
+                    }
+
                     // Import Status Section
                     ImportStatusSection(viewModel: importViewModel)
                         .padding(.horizontal, 24)
                         .padding(.top, 8)
                 }
+                .animation(.easeInOut(duration: 0.2), value: importViewModel.isVideoURL(urlText))
 
                 Spacer()
             }

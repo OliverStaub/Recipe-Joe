@@ -275,3 +275,227 @@ function truncateHtml(html: string, maxLength: number): string {
   }
   return cleaned;
 }
+
+// ============================================
+// TRANSCRIPT-BASED RECIPE EXTRACTION (Video)
+// ============================================
+
+import type { VideoPlatform, VideoMetadata } from '../types.ts';
+
+interface TranscriptCallOptions {
+  transcript: string;
+  videoMetadata: VideoMetadata;
+  existingIngredients: ExistingIngredient[];
+  measurementTypes: MeasurementType[];
+  targetLanguage: 'en' | 'de';
+  reword: boolean;
+}
+
+/**
+ * Call Claude to extract recipe from video transcript
+ */
+export async function callClaudeWithTranscript(options: TranscriptCallOptions): Promise<ClaudeResponse> {
+  const anthropicApiKey = Deno.env.get('ANTHROPIC_API_KEY');
+  if (!anthropicApiKey) {
+    throw new Error('ANTHROPIC_API_KEY not configured');
+  }
+
+  const systemPrompt = buildTranscriptSystemPrompt(options);
+  const userPrompt = buildTranscriptUserPrompt(options);
+
+  const response = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': anthropicApiKey,
+      'anthropic-version': '2023-06-01',
+    },
+    body: JSON.stringify({
+      model: 'claude-3-5-haiku-20241022',
+      max_tokens: 8192,
+      system: systemPrompt,
+      messages: [
+        { role: 'user', content: userPrompt },
+      ],
+    }),
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`Anthropic API error: ${response.status} - ${errorText}`);
+  }
+
+  const anthropicResponse = await response.json();
+  const textContent = anthropicResponse.content?.[0]?.text || '';
+
+  // Parse and validate the JSON response
+  let jsonString = textContent;
+
+  // Try to extract JSON from markdown code block if present
+  const jsonMatch = textContent.match(/```(?:json)?\s*\n?([\s\S]*?)\n?```/);
+  if (jsonMatch) {
+    jsonString = jsonMatch[1].trim();
+  }
+
+  try {
+    const parsedData = JSON.parse(jsonString);
+    const validatedData = RecipeImportSchema.parse(parsedData);
+
+    return {
+      data: validatedData,
+      usage: {
+        input_tokens: anthropicResponse.usage?.input_tokens || 0,
+        output_tokens: anthropicResponse.usage?.output_tokens || 0,
+      },
+    };
+  } catch (parseError) {
+    console.error('Failed to parse Claude response:', textContent);
+    throw new Error(`Failed to parse recipe data: ${parseError instanceof Error ? parseError.message : 'Unknown error'}`);
+  }
+}
+
+function buildTranscriptSystemPrompt(options: TranscriptCallOptions): string {
+  const { existingIngredients, measurementTypes, targetLanguage, reword, videoMetadata } = options;
+
+  const ingredientsList = existingIngredients.length > 0
+    ? existingIngredients.map(i => `- ${i.id}: ${i.name_en} / ${i.name_de}`).join('\n')
+    : 'No existing ingredients yet - all ingredients will be new.';
+
+  const measurementsList = measurementTypes
+    .map(m => `- ${m.name_en} (${m.name_de})`)
+    .join('\n');
+
+  const langName = targetLanguage === 'de' ? 'German' : 'English';
+  const platformName = videoMetadata.platform.charAt(0).toUpperCase() + videoMetadata.platform.slice(1);
+
+  // Build language instructions based on reword setting
+  const languageInstructions = reword
+    ? `## CRITICAL: Output Language = ${langName.toUpperCase()}
+- Recipe name, description, category, cuisine: MUST be in ${langName}
+- All step instructions: MUST be in ${langName}
+- Ingredient notes: MUST be in ${langName}
+- Category prefixes (prep, cook, etc.): Keep in English (they are keywords)`
+    : `## CRITICAL: Keep Original Language
+- Recipe name, description, category, cuisine: Keep in ORIGINAL language from transcript
+- All step instructions: Keep in ORIGINAL language, only add category prefix
+- Ingredient notes: Keep in ORIGINAL language
+- Category prefixes (prep, cook, etc.): Always in English (they are keywords)`;
+
+  return `You are a recipe extraction assistant specialized in extracting recipes from VIDEO TRANSCRIPTS.
+
+## Source: ${platformName} Video
+- Title: ${videoMetadata.title}
+- Creator: ${videoMetadata.author}
+
+## Important Context: This is SPOKEN content from a cooking video
+- The text is a transcript of someone speaking while cooking
+- Measurements may be imprecise (e.g., "a handful", "some", "a bit of", "about")
+- Convert imprecise measurements to reasonable estimates:
+  - "a handful" → approximately 50g or 1/4 cup
+  - "some" or "a bit" → 1-2 tablespoons for liquids/sauces, 1/4 cup for solids
+  - "a pinch" → approximately 1/4 teaspoon
+  - "a splash" → approximately 1-2 tablespoons
+  - "season to taste" → note as "to taste" in notes field
+- The speaker may skip obvious steps or mention things out of order
+- There may be filler words, corrections, or tangents - focus on the recipe content
+
+${languageInstructions}
+
+## Your Task:
+1. Validate the transcript contains recipe content. Set is_valid_recipe=false if no recipe found.
+2. Extract the recipe name from context (what they're making). If unclear, use the video title.
+3. ${reword ? `Extract and translate all details to ${langName}.` : 'Extract all details, keeping original language.'}
+4. CRITICAL: For EVERY ingredient, you MUST provide BOTH:
+   - name_en: The ingredient name in ENGLISH
+   - name_de: The ingredient name in GERMAN
+   These MUST be actual translations!
+5. Infer reasonable quantities when not explicitly stated based on typical recipes.
+6. Structure the spoken instructions into clear, sequential cooking steps.
+7. Match ingredients to existing ones when possible.
+8. Use ONLY the measurement types listed below.
+
+## Existing Ingredients (id: name_en / name_de):
+${ingredientsList}
+
+## Valid Measurement Types (use English name in output):
+${measurementsList}
+
+## Step Formatting Rules:
+- Convert casual spoken instructions into clear, actionable steps
+- Each step should describe ONE main action
+- Add appropriate category prefixes:
+  - prep: Preparation (cutting, measuring, etc.)
+  - heat: Heating steps (preheat, heat pan, etc.)
+  - cook: Active cooking (sauté, boil, simmer, etc.)
+  - mix: Mixing/combining
+  - assemble: Assembly steps
+  - bake: Oven cooking
+  - rest: Resting/cooling
+  - finish: Garnishing, serving
+
+### Examples${targetLanguage === 'de' ? ' (in German)' : ''}:
+${targetLanguage === 'de' ? `- "prep: Zwiebeln in feine Würfel schneiden"
+- "heat: Olivenöl in einer großen Pfanne erhitzen"
+- "cook: Zwiebeln glasig dünsten (ca. 5 Min)"
+- "mix: Alle Gewürze gut unterrühren"` : `- "prep: Dice the onions into small cubes"
+- "heat: Heat olive oil in a large pan"
+- "cook: Sauté onions until translucent (about 5 min)"
+- "mix: Stir in all the spices until combined"`}
+
+## Handling Missing Information:
+- If prep time isn't mentioned, estimate based on complexity
+- If cook time isn't mentioned, estimate based on cooking method
+- If servings aren't mentioned, assume 4 servings
+- Always try to extract a complete recipe even if some details are implied
+
+## Output Format:
+Respond with ONLY valid JSON (no markdown, no explanation). The JSON must match this schema:
+{
+  "is_valid_recipe": boolean,
+  "error_message": string | null,
+  "recipe": {
+    "name": string,
+    "author": string | null,
+    "description": string | null,
+    "prep_time_minutes": number | null,
+    "cook_time_minutes": number | null,
+    "recipe_yield": string | null,
+    "category": string | null,
+    "cuisine": string | null,
+    "keywords": string[],
+    "image_url": string | null
+  } | null,
+  "steps": [{ "step_number": number, "instruction": string, "duration_minutes": number | null }] | null,
+  "ingredients": [{
+    "name_en": string,
+    "name_de": string,
+    "quantity": number | null,
+    "measurement_type": string,
+    "notes": string | null,
+    "is_new": boolean,
+    "existing_ingredient_id": string | null
+  }] | null
+}`;
+}
+
+function buildTranscriptUserPrompt(options: TranscriptCallOptions): string {
+  const { transcript, videoMetadata } = options;
+
+  // Truncate transcript if too long (keep more than HTML since it's cleaner)
+  const maxLength = 30000;
+  const truncatedTranscript = transcript.length > maxLength
+    ? transcript.substring(0, maxLength) + '\n... [transcript truncated]'
+    : transcript;
+
+  return `Extract the recipe from this ${videoMetadata.platform} video transcript:
+
+## Video Information:
+- Title: ${videoMetadata.title}
+- Creator: ${videoMetadata.author}
+- Platform: ${videoMetadata.platform}
+
+## Transcript:
+${truncatedTranscript}
+
+Return ONLY the JSON object, no other text.`;
+}

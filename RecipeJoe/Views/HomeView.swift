@@ -10,19 +10,37 @@ import SwiftUI
 struct HomeView: View {
     @StateObject private var viewModel = HomeViewModel()
     @State private var showingSettings = false
+    @Environment(\.locale) private var locale
+
+    @ViewBuilder
+    private var contentView: some View {
+        VStack(spacing: 0) {
+            // Always show filter bar
+            FilterBar(
+                filters: $viewModel.filters,
+                availableCategories: viewModel.availableCategories,
+                availableCuisines: viewModel.availableCuisines
+            )
+
+            // Content based on state
+            if viewModel.isLoading && viewModel.recipes.isEmpty {
+                loadingView
+            } else if viewModel.recipes.isEmpty && !viewModel.filters.hasActiveFilters {
+                // No recipes and no filters applied
+                emptyStateView
+            } else if viewModel.filteredRecipes.isEmpty {
+                // Either no recipes with filters, or filters filtered everything out
+                noFilterResultsView
+            } else {
+                recipeListView
+            }
+        }
+    }
 
     var body: some View {
         NavigationStack {
-            Group {
-                if viewModel.isLoading && viewModel.recipes.isEmpty {
-                    loadingView
-                } else if viewModel.recipes.isEmpty {
-                    emptyStateView
-                } else {
-                    recipeListView
-                }
-            }
-            .navigationTitle("RecipeJoe")
+            contentView
+                .navigationTitle("RecipeJoe")
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button {
@@ -54,6 +72,7 @@ struct HomeView: View {
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
     // MARK: - Empty State
@@ -89,6 +108,7 @@ struct HomeView: View {
                 .tint(Color.terracotta)
             }
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
         .accessibilityIdentifier("emptyHomeView")
     }
 
@@ -96,19 +116,49 @@ struct HomeView: View {
 
     private var recipeListView: some View {
         List {
-            ForEach(viewModel.recipes) { recipe in
+            ForEach(viewModel.filteredRecipes) { recipe in
                 NavigationLink(destination: RecipeDetailView(recipeId: recipe.id)) {
                     RecipeRowView(recipe: recipe)
                 }
             }
             .onDelete { indexSet in
+                // Map filtered index to original index
+                let recipesToDelete = indexSet.map { viewModel.filteredRecipes[$0] }
                 Task {
-                    await viewModel.deleteRecipes(at: indexSet)
+                    for recipe in recipesToDelete {
+                        _ = await viewModel.deleteRecipe(id: recipe.id)
+                    }
                 }
             }
         }
         .listStyle(.plain)
         .accessibilityIdentifier("recipeList")
+    }
+
+    // MARK: - No Filter Results
+
+    private var noFilterResultsView: some View {
+        VStack(spacing: 20) {
+            Image(systemName: "line.3.horizontal.decrease.circle")
+                .font(.system(size: 60))
+                .foregroundStyle(Color.terracotta)
+
+            Text("No Matching Recipes".localized(for: locale))
+                .font(.title2)
+                .fontWeight(.bold)
+
+            Text("Try adjusting your filters".localized(for: locale))
+                .font(.body)
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
+
+            Button("Clear Filters".localized(for: locale)) {
+                viewModel.filters.reset()
+            }
+            .buttonStyle(.borderedProminent)
+            .tint(Color.terracotta)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 }
 

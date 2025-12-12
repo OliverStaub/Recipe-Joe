@@ -14,11 +14,17 @@ struct PlatformIconsView: View {
                 .font(.caption)
                 .foregroundStyle(.secondary)
 
-            HStack(spacing: 16) {
+            HStack(spacing: 12) {
                 PlatformIcon(
                     iconName: "play.rectangle.fill",
                     iconColor: .red,
                     platformName: "YouTube"
+                )
+
+                PlatformIcon(
+                    iconName: "camera.fill",
+                    iconColor: .purple,
+                    platformName: "Reels"
                 )
 
                 PlatformIcon(
@@ -30,7 +36,7 @@ struct PlatformIconsView: View {
                 PlatformIcon(
                     iconName: "safari",
                     iconColor: Color.terracotta,
-                    platformName: "Recipe sites"
+                    platformName: "Recipes"
                 )
             }
             .accessibilityIdentifier("platformIcons")

@@ -14,6 +14,8 @@ struct RecipeImportRequest: Codable, Sendable {
     let url: String
     let language: String
     let reword: Bool
+    let startTimestamp: String?
+    let endTimestamp: String?
 }
 
 /// Response from recipe import Edge Function

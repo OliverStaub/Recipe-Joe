@@ -18,6 +18,26 @@ export interface ImportRequest {
   url: string;
   language?: 'en' | 'de'; // Target language for recipe translation
   reword?: boolean; // If false, keep original text but add category prefixes
+  startTimestamp?: string; // Optional start time for video (MM:SS or HH:MM:SS)
+  endTimestamp?: string; // Optional end time for video (MM:SS or HH:MM:SS)
+}
+
+// Video-specific types
+export type VideoPlatform = 'youtube' | 'instagram' | 'tiktok';
+
+export interface TranscriptSegment {
+  text: string;
+  offset: number; // Start time in milliseconds
+  duration: number; // Duration in milliseconds
+}
+
+export interface VideoMetadata {
+  title: string;
+  author: string;
+  thumbnailUrl: string | null;
+  duration: number; // Duration in seconds
+  platform: VideoPlatform;
+  videoId: string;
 }
 
 export interface ImportResponse {

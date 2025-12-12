@@ -16,6 +16,7 @@ struct ImportProgressView: View {
     private var stepTitle: String {
         switch currentStep {
         case .fetching: return "Fetching recipe...".localized(for: locale)
+        case .fetchingTranscript: return "Fetching transcript...".localized(for: locale)
         case .parsing: return "Analyzing with AI...".localized(for: locale)
         case .extracting: return "Extracting ingredients...".localized(for: locale)
         case .saving: return "Saving recipe...".localized(for: locale)
@@ -23,13 +24,7 @@ struct ImportProgressView: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            // Step indicator text
-            Text(stepTitle)
-                .font(.subheadline)
-                .fontWeight(.medium)
-                .foregroundStyle(Color.terracotta)
-
+        VStack(alignment: .leading, spacing: 12) {
             // Progress bar with shimmer
             GeometryReader { geometry in
                 ZStack(alignment: .leading) {
@@ -67,23 +62,11 @@ struct ImportProgressView: View {
             }
             .frame(height: 12)
 
-            // Step dots
-            HStack(spacing: 0) {
-                ForEach(RecipeImportViewModel.ImportStep.allCases, id: \.rawValue) { step in
-                    HStack(spacing: 4) {
-                        Circle()
-                            .fill(step.rawValue <= currentStep.rawValue ? Color.terracotta : Color(.systemGray4))
-                            .frame(width: 8, height: 8)
-
-                        if step != RecipeImportViewModel.ImportStep.allCases.last {
-                            Rectangle()
-                                .fill(step.rawValue < currentStep.rawValue ? Color.terracotta : Color(.systemGray4))
-                                .frame(height: 2)
-                        }
-                    }
-                }
-            }
-            .padding(.horizontal, 4)
+            // Step indicator text
+            Text(stepTitle)
+                .font(.subheadline)
+                .fontWeight(.medium)
+                .foregroundStyle(Color.terracotta)
         }
         .padding(16)
         .background(Color(.systemGray6))

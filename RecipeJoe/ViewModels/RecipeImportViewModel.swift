@@ -19,6 +19,27 @@ final class RecipeImportViewModel: ObservableObject {
     @Published var lastImportedRecipeName: String?
     @Published var lastImportStats: ImportStats?
 
+    // Video timestamp properties
+    @Published var startTimestamp: String = ""
+    @Published var endTimestamp: String = ""
+
+    // MARK: - Video URL Detection Patterns
+
+    private static let videoPatterns: [(platform: String, pattern: NSRegularExpression)] = {
+        let patterns: [(String, String)] = [
+            ("youtube", #"(?:youtube\.com\/(?:watch\?.*v=|shorts\/)|youtu\.be\/)[a-zA-Z0-9_-]+"#),
+            ("instagram", #"instagram\.com\/(?:reel|p)\/[a-zA-Z0-9_-]+"#),
+            ("tiktok", #"tiktok\.com\/@[\w.-]+\/video\/\d+"#),
+            ("tiktok", #"vm\.tiktok\.com\/[a-zA-Z0-9]+"#),
+        ]
+        return patterns.compactMap { (platform, pattern) in
+            guard let regex = try? NSRegularExpression(pattern: pattern, options: .caseInsensitive) else {
+                return nil
+            }
+            return (platform, regex)
+        }
+    }()
+
     // MARK: - Types
 
     enum ImportState: Equatable {
@@ -40,13 +61,15 @@ final class RecipeImportViewModel: ObservableObject {
 
     enum ImportStep: Int, CaseIterable {
         case fetching = 0
-        case parsing = 1
-        case extracting = 2
-        case saving = 3
+        case fetchingTranscript = 1
+        case parsing = 2
+        case extracting = 3
+        case saving = 4
 
         var title: String {
             switch self {
             case .fetching: return String(localized: "Fetching recipe...")
+            case .fetchingTranscript: return String(localized: "Fetching transcript...")
             case .parsing: return String(localized: "Analyzing with AI...")
             case .extracting: return String(localized: "Extracting ingredients...")
             case .saving: return String(localized: "Saving recipe...")
@@ -70,6 +93,8 @@ final class RecipeImportViewModel: ObservableObject {
             return
         }
 
+        let isVideo = isVideoURL(urlString)
+
         importState = .importing
         currentStep = .fetching
 
@@ -77,6 +102,13 @@ final class RecipeImportViewModel: ObservableObject {
             // Simulate step progression (actual work happens in Edge Function)
             // Step 1: Fetching
             try await Task.sleep(for: .milliseconds(500))
+
+            // For video URLs, show transcript fetching step
+            if isVideo {
+                currentStep = .fetchingTranscript
+                try await Task.sleep(for: .milliseconds(600))
+            }
+
             currentStep = .parsing
 
             // Step 2: Parsing - Use language and reword settings
@@ -87,10 +119,16 @@ final class RecipeImportViewModel: ObservableObject {
             try await Task.sleep(for: .milliseconds(800))
             currentStep = .extracting
 
+            // Prepare timestamps (empty string means use full video)
+            let startTs = startTimestamp.isEmpty ? nil : startTimestamp
+            let endTs = endTimestamp.isEmpty ? nil : endTimestamp
+
             let response = try await SupabaseService.shared.importRecipe(
                 from: urlString,
                 language: language,
-                reword: reword
+                reword: reword,
+                startTimestamp: startTs,
+                endTimestamp: endTs
             )
 
             // Step 3 & 4: Extracting & Saving happen in the Edge Function
@@ -120,6 +158,8 @@ final class RecipeImportViewModel: ObservableObject {
         lastImportedRecipeId = nil
         lastImportedRecipeName = nil
         lastImportStats = nil
+        startTimestamp = ""
+        endTimestamp = ""
     }
 
     /// Check if a URL looks valid for import
@@ -129,6 +169,55 @@ final class RecipeImportViewModel: ObservableObject {
               url.host != nil else {
             return false
         }
+        return true
+    }
+
+    // MARK: - Video URL Detection
+
+    /// Check if a URL is from a supported video platform
+    /// - Parameter urlString: The URL to check
+    /// - Returns: true if the URL is a YouTube, Instagram Reel, or TikTok video
+    func isVideoURL(_ urlString: String) -> Bool {
+        let range = NSRange(urlString.startIndex..., in: urlString)
+        for (_, pattern) in Self.videoPatterns {
+            if pattern.firstMatch(in: urlString, options: [], range: range) != nil {
+                return true
+            }
+        }
+        return false
+    }
+
+    /// Get the video platform name for display
+    /// - Parameter urlString: The URL to check
+    /// - Returns: The platform name (e.g., "YouTube", "Instagram", "TikTok") or nil if not a video
+    func videoPlatformName(_ urlString: String) -> String? {
+        let range = NSRange(urlString.startIndex..., in: urlString)
+        for (platform, pattern) in Self.videoPatterns {
+            if pattern.firstMatch(in: urlString, options: [], range: range) != nil {
+                switch platform {
+                case "youtube": return "YouTube"
+                case "instagram": return "Instagram"
+                case "tiktok": return "TikTok"
+                default: return platform.capitalized
+                }
+            }
+        }
+        return nil
+    }
+
+    /// Validate timestamp format (MM:SS or HH:MM:SS)
+    /// - Parameter timestamp: The timestamp string to validate
+    /// - Returns: true if the timestamp is valid or empty
+    func isValidTimestamp(_ timestamp: String) -> Bool {
+        if timestamp.isEmpty { return true }
+
+        let parts = timestamp.split(separator: ":")
+        guard parts.count == 2 || parts.count == 3 else { return false }
+
+        for part in parts {
+            guard let _ = Int(part), part.count <= 2 else { return false }
+        }
+
         return true
     }
 }

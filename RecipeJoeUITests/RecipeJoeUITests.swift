@@ -228,4 +228,58 @@ final class RecipeJoeUITests: XCTestCase {
         Thread.sleep(forTimeInterval: 1)
         XCTAssertTrue(app.navigationBars["RecipeJoe"].exists, "Should be back on Home screen after dismissing Settings")
     }
+
+    // MARK: - Filter Bar Tests
+
+    @MainActor
+    func testFilterBarAppearsWithRecipes() throws {
+        app.launch()
+
+        // Wait for the home screen to load
+        XCTAssertTrue(app.navigationBars["RecipeJoe"].waitForExistence(timeout: 5), "Home screen should load")
+
+        // Check if we have recipes (recipe list exists) or empty state
+        let recipeList = app.collectionViews["recipeList"]
+        let emptyState = app.staticTexts["No Recipes Yet"]
+
+        // Wait for either state
+        let hasRecipes = recipeList.waitForExistence(timeout: 10)
+        let isEmpty = emptyState.exists
+
+        if hasRecipes {
+            // If recipes exist, filter bar should be visible
+            let filterBar = app.scrollViews["filterBar"]
+            XCTAssertTrue(filterBar.waitForExistence(timeout: 5), "Filter bar should appear when recipes exist")
+
+            // Verify filter chips are visible
+            XCTAssertTrue(app.buttons["All"].exists || app.staticTexts["All"].exists, "All filter should be visible")
+        } else if isEmpty {
+            // If no recipes, filter bar should NOT be visible
+            let filterBar = app.scrollViews["filterBar"]
+            XCTAssertFalse(filterBar.exists, "Filter bar should not appear when no recipes exist")
+        }
+    }
+
+    @MainActor
+    func testFilterBarHasTimeFilters() throws {
+        app.launch()
+
+        // Wait for home screen and recipes to load
+        XCTAssertTrue(app.navigationBars["RecipeJoe"].waitForExistence(timeout: 5), "Home screen should load")
+
+        let recipeList = app.collectionViews["recipeList"]
+        guard recipeList.waitForExistence(timeout: 10) else {
+            // Skip test if no recipes - can't test filters without data
+            throw XCTSkip("No recipes available to test filter bar")
+        }
+
+        // Filter bar should exist
+        let filterBar = app.scrollViews["filterBar"]
+        XCTAssertTrue(filterBar.waitForExistence(timeout: 5), "Filter bar should exist")
+
+        // Check for time filter buttons (they contain clock icons and text)
+        // The "All" button should be selected by default
+        let allButton = filterBar.buttons.matching(NSPredicate(format: "label CONTAINS[c] 'All' OR label CONTAINS[c] 'Alli'")).firstMatch
+        XCTAssertTrue(allButton.exists, "All time filter should exist")
+    }
 }

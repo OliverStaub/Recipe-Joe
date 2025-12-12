@@ -6,6 +6,7 @@
 //
 
 import Combine
+import Kingfisher
 import PhotosUI
 import SwiftUI
 import UIKit
@@ -17,6 +18,7 @@ struct RecipeDetailView: View {
     @State private var selectedPhotoItem: PhotosPickerItem?
     @State private var isUploadingImage = false
     @State private var uploadError: String?
+    @Environment(\.locale) private var locale
 
     var body: some View {
         ScrollView {
@@ -74,24 +76,17 @@ struct RecipeDetailView: View {
     @ViewBuilder
     private func headerImageSection(recipe: SupabaseRecipe) -> some View {
         ZStack {
-            // Image placeholder or actual image
+            // Image with Kingfisher caching
             if let imageUrl = recipe.imageUrl,
                let url = URL(string: imageUrl) {
-                AsyncImage(url: url) { phase in
-                    switch phase {
-                    case .success(let image):
-                        image
-                            .resizable()
-                            .scaledToFill()
-                    case .failure:
-                        placeholderContent
-                    case .empty:
-                        ProgressView()
-                            .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    @unknown default:
-                        placeholderContent
-                    }
-                }
+                KFImage(url)
+                    .placeholder { ProgressView().frame(maxWidth: .infinity, maxHeight: .infinity) }
+                    .onFailure { _ in }
+                    .loadDiskFileSynchronously()
+                    .cacheMemoryOnly(false)
+                    .fade(duration: 0.25)
+                    .resizable()
+                    .scaledToFill()
             } else {
                 placeholderContent
             }
@@ -299,7 +294,7 @@ struct RecipeDetailView: View {
     @ViewBuilder
     private func ingredientsSection(ingredients: [SupabaseRecipeIngredient]) -> some View {
         VStack(alignment: .leading, spacing: 12) {
-            SectionHeader(title: "Ingredients", icon: "basket.fill")
+            SectionHeader(title: "Ingredients".localized(for: locale), icon: "basket.fill")
 
             VStack(alignment: .leading, spacing: 8) {
                 ForEach(ingredients) { ingredient in
@@ -317,7 +312,7 @@ struct RecipeDetailView: View {
     @ViewBuilder
     private func stepsSection(steps: [SupabaseRecipeStep]) -> some View {
         VStack(alignment: .leading, spacing: 12) {
-            SectionHeader(title: "Instructions", icon: "list.number")
+            SectionHeader(title: "Instructions".localized(for: locale), icon: "list.number")
 
             VStack(alignment: .leading, spacing: 16) {
                 ForEach(steps) { step in
