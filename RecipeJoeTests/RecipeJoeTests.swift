@@ -481,6 +481,19 @@ struct RecipeJoeTests {
         #expect(await viewModel.isValidTimestamp("hello") == false)
     }
 
+    // MARK: - AuthenticationError Tests
+
+    @Test func testAuthenticationErrorDescriptions() async throws {
+        let invalidCredential = AuthenticationError.invalidCredential
+        #expect(invalidCredential.errorDescription?.contains("Apple ID") == true)
+
+        let notAuthenticated = AuthenticationError.notAuthenticated
+        #expect(notAuthenticated.errorDescription?.contains("signed in") == true)
+
+        let signInFailed = AuthenticationError.signInFailed("Test error")
+        #expect(signInFailed.errorDescription?.contains("Test error") == true)
+    }
+
     // MARK: - Helper Functions
 
     private func createTestRecipe(id: UUID) -> SupabaseRecipe {

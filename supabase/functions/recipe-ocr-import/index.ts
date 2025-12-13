@@ -49,6 +49,23 @@ serve(async (req) => {
     // Initialize Supabase client
     const supabase = getSupabaseClient();
 
+    // Extract user ID from auth header
+    const authHeader = req.headers.get('Authorization');
+    let userId: string | null = null;
+
+    if (authHeader) {
+      const token = authHeader.replace('Bearer ', '');
+      const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+      if (user && !authError) {
+        userId = user.id;
+        console.log(`Authenticated user: ${userId}`);
+      }
+    }
+
+    if (!userId) {
+      throw new Error('Authentication required');
+    }
+
     // Step 1: Download file from storage
     console.log('Downloading file from storage...');
     const { data: fileData, error: downloadError } = await supabase.storage
@@ -138,7 +155,8 @@ serve(async (req) => {
       '', // No source URL for media imports
       measurementTypes,
       language,
-      null // No image URL (the source was an image, not a web page with an image)
+      null, // No image URL (the source was an image, not a web page with an image)
+      userId
     );
 
     console.log(`Created recipe ${recipeId} with ${newIngredientsCount} new ingredients`);

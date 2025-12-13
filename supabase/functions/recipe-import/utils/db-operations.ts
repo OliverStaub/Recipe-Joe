@@ -56,7 +56,8 @@ export async function insertRecipe(
   sourceUrl: string,
   measurementTypes: MeasurementType[],
   language: string = 'en',
-  imageUrl?: string | null
+  imageUrl?: string | null,
+  userId?: string | null
 ): Promise<InsertResult> {
   const recipe = recipeData.recipe;
 
@@ -68,7 +69,7 @@ export async function insertRecipe(
   const { data: recipeRow, error: recipeError } = await supabase
     .from('recipes')
     .insert({
-      user_id: null, // No auth yet - will be set when auth is enabled
+      user_id: userId || null, // User ID from auth, required for RLS
       name: recipe.name,
       author: recipe.author,
       description: recipe.description,
@@ -119,10 +120,23 @@ export async function insertRecipe(
 
     for (let i = 0; i < recipeData.ingredients.length; i++) {
       const ing = recipeData.ingredients[i];
-      let ingredientId = ing.existing_ingredient_id;
+      let ingredientId: string | null = null;
 
-      // Create new ingredient if needed
-      if (ing.is_new || !ingredientId) {
+      // If Claude provided an existing ingredient ID, verify it exists
+      if (ing.existing_ingredient_id && !ing.is_new) {
+        const { data: existingById } = await supabase
+          .from('ingredients')
+          .select('id')
+          .eq('id', ing.existing_ingredient_id)
+          .maybeSingle();
+
+        if (existingById) {
+          ingredientId = existingById.id;
+        }
+      }
+
+      // If no valid ID yet, try to find by name or create new
+      if (!ingredientId) {
         // First check if ingredient already exists (by name)
         // Try matching by English name first, then German name
         let existingIng = null;

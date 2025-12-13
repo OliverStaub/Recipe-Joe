@@ -30,9 +30,20 @@ final class RecipeImportUITests: XCTestCase {
         app = nil
     }
 
+    /// Helper to check if user is authenticated (main tab bar is visible)
+    /// Throws XCTSkip if not authenticated since these tests require authentication
+    @MainActor
+    func requireAuthentication() throws {
+        let tabBar = app.tabBars.firstMatch
+        guard tabBar.waitForExistence(timeout: 5) else {
+            throw XCTSkip("User is not authenticated - these tests require authentication")
+        }
+    }
+
     @MainActor
     func testURLTextFieldExists() throws {
         app.launch()
+        try requireAuthentication()
 
         // Navigate to Add Recipe tab
         app.tabBars.buttons["Add Recipe"].tap()
@@ -46,6 +57,7 @@ final class RecipeImportUITests: XCTestCase {
     @MainActor
     func testActionButtonExists() throws {
         app.launch()
+        try requireAuthentication()
 
         // Navigate to Add Recipe tab
         app.tabBars.buttons["Add Recipe"].tap()
@@ -59,6 +71,7 @@ final class RecipeImportUITests: XCTestCase {
     @MainActor
     func testActionButtonShowsMenuWhenNoURL() throws {
         app.launch()
+        try requireAuthentication()
 
         // Navigate to Add Recipe tab
         app.tabBars.buttons["Add Recipe"].tap()
@@ -73,6 +86,7 @@ final class RecipeImportUITests: XCTestCase {
     @MainActor
     func testActionButtonEnabledWhenURLEntered() throws {
         app.launch()
+        try requireAuthentication()
 
         // Navigate to Add Recipe tab
         app.tabBars.buttons["Add Recipe"].tap()
@@ -92,6 +106,7 @@ final class RecipeImportUITests: XCTestCase {
     @MainActor
     func testPlatformIconsVisible() throws {
         app.launch()
+        try requireAuthentication()
 
         // Navigate to Add Recipe tab
         app.tabBars.buttons["Add Recipe"].tap()
@@ -105,6 +120,7 @@ final class RecipeImportUITests: XCTestCase {
     @MainActor
     func testNewRecipeTitleVisible() throws {
         app.launch()
+        try requireAuthentication()
 
         // Navigate to Add Recipe tab
         app.tabBars.buttons["Add Recipe"].tap()
@@ -120,6 +136,7 @@ final class RecipeImportUITests: XCTestCase {
     @MainActor
     func testTimestampFieldsAppearForYouTubeURL() throws {
         app.launch()
+        try requireAuthentication()
 
         // Navigate to Add Recipe tab
         app.tabBars.buttons["Add Recipe"].tap()
@@ -139,6 +156,7 @@ final class RecipeImportUITests: XCTestCase {
     @MainActor
     func testTimestampFieldsAppearForTikTokURL() throws {
         app.launch()
+        try requireAuthentication()
 
         // Navigate to Add Recipe tab
         app.tabBars.buttons["Add Recipe"].tap()
@@ -158,6 +176,7 @@ final class RecipeImportUITests: XCTestCase {
     @MainActor
     func testTimestampFieldsHiddenForRegularURL() throws {
         app.launch()
+        try requireAuthentication()
 
         // Navigate to Add Recipe tab
         app.tabBars.buttons["Add Recipe"].tap()
@@ -180,6 +199,7 @@ final class RecipeImportUITests: XCTestCase {
     @MainActor
     func testTimestampFieldsDisappearWhenURLCleared() throws {
         app.launch()
+        try requireAuthentication()
 
         // Navigate to Add Recipe tab
         app.tabBars.buttons["Add Recipe"].tap()
@@ -216,6 +236,7 @@ final class RecipeImportUITests: XCTestCase {
     @MainActor
     func testPlusButtonShowsMenuWithImportOptions() throws {
         app.launch()
+        try requireAuthentication()
 
         // Navigate to Add Recipe tab
         app.tabBars.buttons["Add Recipe"].tap()
@@ -247,6 +268,7 @@ final class RecipeImportUITests: XCTestCase {
     @MainActor
     func testMenuHidesWhenURLEntered() throws {
         app.launch()
+        try requireAuthentication()
 
         // Navigate to Add Recipe tab
         app.tabBars.buttons["Add Recipe"].tap()

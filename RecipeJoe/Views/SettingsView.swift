@@ -9,7 +9,10 @@ import SwiftUI
 
 struct SettingsView: View {
     @ObservedObject private var userSettings = UserSettings.shared
+    @ObservedObject private var authService = AuthenticationService.shared
     @Environment(\.locale) private var locale
+    @State private var showSignOutConfirmation = false
+    @State private var showDeleteAccountConfirmation = false
 
     var body: some View {
         NavigationStack {
@@ -71,8 +74,71 @@ struct SettingsView: View {
                             .foregroundStyle(.secondary)
                     }
                 }
+
+                // MARK: - Account Section
+                Section("Account".localized(for: locale)) {
+                    // User info
+                    if let email = authService.currentUserEmail {
+                        HStack {
+                            Label("Signed in as".localized(for: locale), systemImage: "person.circle")
+                            Spacer()
+                            Text(email)
+                                .foregroundStyle(.secondary)
+                                .lineLimit(1)
+                        }
+                    } else {
+                        HStack {
+                            Label("Signed in".localized(for: locale), systemImage: "person.circle")
+                            Spacer()
+                            Text("Apple ID")
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+
+                    // Sign Out button
+                    Button {
+                        showSignOutConfirmation = true
+                    } label: {
+                        Label("Sign Out".localized(for: locale), systemImage: "rectangle.portrait.and.arrow.right")
+                    }
+
+                    // Delete Account button
+                    Button(role: .destructive) {
+                        showDeleteAccountConfirmation = true
+                    } label: {
+                        Label("Delete Account".localized(for: locale), systemImage: "trash")
+                    }
+                }
             }
             .navigationTitle("Settings".localized(for: locale))
+            .confirmationDialog(
+                "Sign Out".localized(for: locale),
+                isPresented: $showSignOutConfirmation,
+                titleVisibility: .visible
+            ) {
+                Button("Sign Out".localized(for: locale), role: .destructive) {
+                    Task {
+                        try? await authService.signOut()
+                    }
+                }
+                Button("Cancel".localized(for: locale), role: .cancel) {}
+            } message: {
+                Text("Are you sure you want to sign out?".localized(for: locale))
+            }
+            .confirmationDialog(
+                "Delete Account".localized(for: locale),
+                isPresented: $showDeleteAccountConfirmation,
+                titleVisibility: .visible
+            ) {
+                Button("Delete Account".localized(for: locale), role: .destructive) {
+                    Task {
+                        try? await authService.deleteAccount()
+                    }
+                }
+                Button("Cancel".localized(for: locale), role: .cancel) {}
+            } message: {
+                Text("This will permanently delete your account and all your recipes. This action cannot be undone.".localized(for: locale))
+            }
         }
     }
 }

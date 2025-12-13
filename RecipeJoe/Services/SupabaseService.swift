@@ -17,7 +17,8 @@ final class SupabaseService {
 
     // MARK: - Properties
 
-    private let client: SupabaseClient
+    /// The Supabase client - exposed for auth operations
+    let client: SupabaseClient
 
     // MARK: - Configuration
 
