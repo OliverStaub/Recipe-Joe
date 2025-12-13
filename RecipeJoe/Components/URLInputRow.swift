@@ -12,6 +12,9 @@ struct URLInputRow: View {
     @FocusState.Binding var isTextFieldFocused: Bool
     let isLoading: Bool
     let onImport: () -> Void
+    var onSelectPhoto: (() -> Void)?
+    var onTakePhoto: (() -> Void)?
+    var onSelectPDF: (() -> Void)?
 
     private var hasURL: Bool {
         !urlText.trimmingCharacters(in: .whitespaces).isEmpty
@@ -36,30 +39,46 @@ struct URLInputRow: View {
                 }
                 .accessibilityIdentifier("urlTextField")
 
-            Button(action: {
-                if hasURL {
-                    onImport()
+            if isLoading {
+                ProgressView()
+                    .progressViewStyle(CircularProgressViewStyle())
+                    .scaleEffect(0.8)
+                    .frame(width: 36, height: 36)
+                    .foregroundStyle(Color.terracotta)
+                    .padding(6)
+            } else if hasURL {
+                Button(action: onImport) {
+                    Image(systemName: "arrow.forward.circle.fill")
+                        .font(.system(size: 36))
+                        .foregroundStyle(Color.terracotta)
+                        .padding(6)
                 }
-                // TODO: Plus button for file picker when no URL
-            }) {
-                Group {
-                    if isLoading {
-                        ProgressView()
-                            .progressViewStyle(CircularProgressViewStyle())
-                            .scaleEffect(0.8)
-                            .frame(width: 36, height: 36)
-                    } else {
-                        Image(systemName: hasURL ? "arrow.forward.circle.fill" : "plus.circle.fill")
-                            .font(.system(size: 36))
+                .accessibilityIdentifier("actionButton")
+            } else {
+                Menu {
+                    Button(action: { onSelectPhoto?() }) {
+                        Label(String(localized: "Photo Library"), systemImage: "photo.on.rectangle")
                     }
+                    .accessibilityIdentifier("photoLibraryButton")
+
+                    Button(action: { onTakePhoto?() }) {
+                        Label(String(localized: "Take Photo"), systemImage: "camera")
+                    }
+                    .accessibilityIdentifier("takePhotoButton")
+
+                    Button(action: { onSelectPDF?() }) {
+                        Label(String(localized: "Import PDF"), systemImage: "doc.fill")
+                    }
+                    .accessibilityIdentifier("importPDFButton")
+                } label: {
+                    Image(systemName: "plus.circle.fill")
+                        .font(.system(size: 36))
+                        .foregroundStyle(Color.terracotta)
+                        .padding(6)
                 }
-                .foregroundStyle(Color.terracotta)
-                .contentTransition(.symbolEffect(.replace))
-                .padding(6)
+                .accessibilityIdentifier("actionButton")
             }
-            .disabled(isLoading || !hasURL)
-            .accessibilityIdentifier("actionButton")
-            .animation(.spring(response: 0.3, dampingFraction: 0.7), value: hasURL)
         }
+        .animation(.spring(response: 0.3, dampingFraction: 0.7), value: hasURL)
     }
 }

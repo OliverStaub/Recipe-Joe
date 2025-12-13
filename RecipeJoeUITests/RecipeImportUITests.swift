@@ -57,17 +57,17 @@ final class RecipeImportUITests: XCTestCase {
     }
 
     @MainActor
-    func testActionButtonDisabledWhenNoURL() throws {
+    func testActionButtonShowsMenuWhenNoURL() throws {
         app.launch()
 
         // Navigate to Add Recipe tab
         app.tabBars.buttons["Add Recipe"].tap()
 
-        // Verify action button is disabled when URL is empty
+        // Verify action button exists and is enabled (it's now a menu)
         let actionButton = app.buttons["actionButton"]
         XCTAssertTrue(actionButton.waitForExistence(timeout: 5))
-        XCTAssertFalse(actionButton.isEnabled,
-                       "Action button should be disabled when URL is empty")
+        XCTAssertTrue(actionButton.isEnabled,
+                      "Action button should be enabled (shows menu when no URL)")
     }
 
     @MainActor
@@ -209,5 +209,63 @@ final class RecipeImportUITests: XCTestCase {
         // Verify timestamp section disappears
         XCTAssertFalse(app.staticTexts["YouTube Video"].exists,
                        "Video timestamp section should disappear when URL is cleared")
+    }
+
+    // MARK: - Media Import Tests (Photos/PDFs)
+
+    @MainActor
+    func testPlusButtonShowsMenuWithImportOptions() throws {
+        app.launch()
+
+        // Navigate to Add Recipe tab
+        app.tabBars.buttons["Add Recipe"].tap()
+
+        // Ensure URL field is empty (shows menu)
+        let urlTextField = app.textFields["urlTextField"]
+        XCTAssertTrue(urlTextField.waitForExistence(timeout: 5))
+
+        // Tap the action button (plus button when no URL)
+        let actionButton = app.buttons["actionButton"]
+        XCTAssertTrue(actionButton.waitForExistence(timeout: 5))
+        actionButton.tap()
+
+        // Verify menu options appear
+        // Note: Menu items may have different accessibility depending on iOS version
+        let photoLibraryButton = app.buttons["Photo Library"]
+        let takePhotoButton = app.buttons["Take Photo"]
+        let importPDFButton = app.buttons["Import PDF"]
+
+        // At least one of the menu buttons should exist
+        XCTAssertTrue(
+            photoLibraryButton.waitForExistence(timeout: 2) ||
+            takePhotoButton.exists ||
+            importPDFButton.exists,
+            "Menu should show import options when plus button is tapped"
+        )
+    }
+
+    @MainActor
+    func testMenuHidesWhenURLEntered() throws {
+        app.launch()
+
+        // Navigate to Add Recipe tab
+        app.tabBars.buttons["Add Recipe"].tap()
+
+        // Enter a URL
+        let urlTextField = app.textFields["urlTextField"]
+        XCTAssertTrue(urlTextField.waitForExistence(timeout: 5))
+        urlTextField.tap()
+        urlTextField.typeText("https://example.com/recipe")
+
+        // Tap the action button
+        let actionButton = app.buttons["actionButton"]
+        XCTAssertTrue(actionButton.waitForExistence(timeout: 5))
+        actionButton.tap()
+
+        // The button should trigger URL import, not show a menu
+        // Photo Library menu option should NOT exist
+        let photoLibraryButton = app.buttons["Photo Library"]
+        XCTAssertFalse(photoLibraryButton.waitForExistence(timeout: 1),
+                       "Menu should not appear when URL is entered")
     }
 }

@@ -17,6 +17,8 @@ struct ImportProgressView: View {
         switch currentStep {
         case .fetching: return "Fetching recipe...".localized(for: locale)
         case .fetchingTranscript: return "Fetching transcript...".localized(for: locale)
+        case .uploading: return "Uploading file...".localized(for: locale)
+        case .recognizing: return "Reading text...".localized(for: locale)
         case .parsing: return "Analyzing with AI...".localized(for: locale)
         case .extracting: return "Extracting ingredients...".localized(for: locale)
         case .saving: return "Saving recipe...".localized(for: locale)

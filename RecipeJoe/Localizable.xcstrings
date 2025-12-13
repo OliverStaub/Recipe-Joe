@@ -704,6 +704,28 @@
         }
       }
     },
+    "Import PDF" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "PDF importieren"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Import PDF"
+          }
+        },
+        "gsw" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "PDF importiere"
+          }
+        }
+      }
+    },
     "Import failed" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -1111,6 +1133,28 @@
         }
       }
     },
+    "Photo Library" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fotomediathek"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Photo Library"
+          }
+        },
+        "gsw" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fotomediathek"
+          }
+        }
+      }
+    },
     "Prep" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -1153,6 +1197,28 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Schnäll"
+          }
+        }
+      }
+    },
+    "Reading text..." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Text wird erkannt..."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reading text..."
+          }
+        },
+        "gsw" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Täxt wird erkannt..."
           }
         }
       }
@@ -1633,6 +1699,28 @@
         }
       }
     },
+    "Take Photo" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Foto aufnehmen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Take Photo"
+          }
+        },
+        "gsw" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Foti ufneh"
+          }
+        }
+      }
+    },
     "to taste" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -1765,6 +1853,28 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Wird ufeglade..."
+          }
+        }
+      }
+    },
+    "Uploading file..." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Datei wird hochgeladen..."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Uploading file..."
+          }
+        },
+        "gsw" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Datei wird ufeglade..."
           }
         }
       }
