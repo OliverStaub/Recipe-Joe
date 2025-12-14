@@ -48,6 +48,24 @@ serve(async (req) => {
       throw new Error('URL is required');
     }
 
+    // Extract user ID from auth header
+    const authHeader = req.headers.get('Authorization');
+    let userId: string | null = null;
+
+    if (authHeader) {
+      const supabaseForAuth = getSupabaseClient();
+      const token = authHeader.replace('Bearer ', '');
+      const { data: { user }, error: authError } = await supabaseForAuth.auth.getUser(token);
+      if (user && !authError) {
+        userId = user.id;
+        console.log(`Authenticated user: ${userId}`);
+      }
+    }
+
+    if (!userId) {
+      throw new Error('Authentication required');
+    }
+
     // Validate URL format
     let parsedUrl: URL;
     try {
@@ -220,7 +238,8 @@ serve(async (req) => {
       url,
       measurementTypes,
       language,
-      uploadedImageUrl
+      uploadedImageUrl,
+      userId
     );
 
     console.log(`Created recipe ${recipeId} with ${newIngredientsCount} new ingredients`);

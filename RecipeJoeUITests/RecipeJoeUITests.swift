@@ -7,30 +7,16 @@
 
 import XCTest
 
-final class RecipeJoeUITests: XCTestCase {
+/// Main UI tests for RecipeJoe app navigation and features
+/// Extends BaseUITestCase for consistent setup and cleanup
+final class RecipeJoeUITests: BaseUITestCase {
 
-    /// Configured app instance with English locale for consistent UI tests
-    var app: XCUIApplication!
-
-    override func setUpWithError() throws {
-        // In UI tests it is usually best to stop immediately when a failure occurs.
-        continueAfterFailure = false
-
-        // Configure app to launch in English for consistent UI tests
-        app = XCUIApplication()
-
-        // Set system locale to English
-        app.launchArguments += ["-AppleLanguages", "(en)"]
-        app.launchArguments += ["-AppleLocale", "en_US"]
-
-        // Reset the app's internal language setting to English via UserDefaults
-        // This overrides the app's own language preference stored in UserDefaults
-        app.launchArguments += ["-appLanguage", "en"]
-    }
-
-    override func tearDownWithError() throws {
-        app = nil
-    }
+    // Inherits from BaseUITestCase which provides:
+    // - app: XCUIApplication (configured with English locale)
+    // - requireAuthentication() helper
+    // - setUpWithError() with locale configuration
+    // - tearDownWithError() with cleanup
+    // - Navigation helpers (navigateToHome, navigateToAddRecipe, etc.)
 
     @MainActor
     func testExample() throws {
@@ -53,6 +39,7 @@ final class RecipeJoeUITests: XCTestCase {
     @MainActor
     func testTabBarExists() throws {
         app.launch()
+        try requireAuthentication()
 
         // Verify tab bar exists
         let tabBar = app.tabBars.firstMatch
@@ -62,6 +49,7 @@ final class RecipeJoeUITests: XCTestCase {
     @MainActor
     func testAllTabsExist() throws {
         app.launch()
+        try requireAuthentication()
 
         let tabBar = app.tabBars.firstMatch
 
@@ -74,6 +62,7 @@ final class RecipeJoeUITests: XCTestCase {
     @MainActor
     func testHomeTabContent() throws {
         app.launch()
+        try requireAuthentication()
 
         // Home tab should be selected by default
         XCTAssertTrue(app.navigationBars["RecipeJoe"].exists, "RecipeJoe navigation bar should be visible on Home tab")
@@ -87,6 +76,7 @@ final class RecipeJoeUITests: XCTestCase {
     @MainActor
     func testAddRecipeTabContent() throws {
         app.launch()
+        try requireAuthentication()
 
         // Switch to Add Recipe tab
         let addRecipeTab = app.tabBars.buttons["Add Recipe"]
@@ -108,6 +98,7 @@ final class RecipeJoeUITests: XCTestCase {
     @MainActor
     func testAddRecipeButtonStateChange() throws {
         app.launch()
+        try requireAuthentication()
 
         // Switch to Add Recipe tab
         app.tabBars.buttons["Add Recipe"].tap()
@@ -143,6 +134,7 @@ final class RecipeJoeUITests: XCTestCase {
     @MainActor
     func testSearchTabContent() throws {
         app.launch()
+        try requireAuthentication()
 
         // Switch to Search tab
         app.tabBars.buttons["Search"].tap()
@@ -156,6 +148,7 @@ final class RecipeJoeUITests: XCTestCase {
     @MainActor
     func testSearchTabHasSearchBar() throws {
         app.launch()
+        try requireAuthentication()
 
         // Switch to Search tab
         app.tabBars.buttons["Search"].tap()
@@ -168,6 +161,7 @@ final class RecipeJoeUITests: XCTestCase {
     @MainActor
     func testLiquidGlassSearchTabIsSeparated() throws {
         app.launch()
+        try requireAuthentication()
 
         let tabBar = app.tabBars.firstMatch
 
@@ -183,6 +177,7 @@ final class RecipeJoeUITests: XCTestCase {
     @MainActor
     func testSettingsButtonExists() throws {
         app.launch()
+        try requireAuthentication()
 
         // Settings button should be in the Home tab toolbar
         let settingsButton = app.buttons["settingsButton"]
@@ -192,6 +187,7 @@ final class RecipeJoeUITests: XCTestCase {
     @MainActor
     func testSettingsButtonOpensSheet() throws {
         app.launch()
+        try requireAuthentication()
 
         // Tap settings button
         let settingsButton = app.buttons["settingsButton"]
@@ -205,6 +201,7 @@ final class RecipeJoeUITests: XCTestCase {
     @MainActor
     func testSettingsShowsVersion() throws {
         app.launch()
+        try requireAuthentication()
 
         // Open settings
         app.buttons["settingsButton"].tap()
@@ -216,6 +213,7 @@ final class RecipeJoeUITests: XCTestCase {
     @MainActor
     func testSettingsCanBeDismissed() throws {
         app.launch()
+        try requireAuthentication()
 
         // Open settings
         app.buttons["settingsButton"].tap()
@@ -234,6 +232,7 @@ final class RecipeJoeUITests: XCTestCase {
     @MainActor
     func testFilterBarAppearsWithRecipes() throws {
         app.launch()
+        try requireAuthentication()
 
         // Wait for the home screen to load
         XCTAssertTrue(app.navigationBars["RecipeJoe"].waitForExistence(timeout: 5), "Home screen should load")
@@ -263,6 +262,7 @@ final class RecipeJoeUITests: XCTestCase {
     @MainActor
     func testFilterBarHasTimeFilters() throws {
         app.launch()
+        try requireAuthentication()
 
         // Wait for home screen and recipes to load
         XCTAssertTrue(app.navigationBars["RecipeJoe"].waitForExistence(timeout: 5), "Home screen should load")

@@ -5,12 +5,24 @@
 //  Created by Oliver Staub on 23.11.2025.
 //
 
+import PhotosUI
 import SwiftUI
 
 struct AddRecipeView: View {
     @State private var urlText: String = ""
     @FocusState private var isTextFieldFocused: Bool
     @StateObject private var importViewModel = RecipeImportViewModel()
+
+    // Photo picker state
+    @State private var showPhotoPicker = false
+    @State private var selectedPhotoItem: PhotosPickerItem?
+
+    // Camera state
+    @State private var showCamera = false
+    @State private var capturedImage: UIImage?
+
+    // Document picker state
+    @State private var showDocumentPicker = false
 
     var body: some View {
         NavigationStack {
@@ -29,7 +41,10 @@ struct AddRecipeView: View {
                         urlText: $urlText,
                         isTextFieldFocused: $isTextFieldFocused,
                         isLoading: importViewModel.importState.isLoading,
-                        onImport: importRecipe
+                        onImport: importRecipe,
+                        onSelectPhoto: { showPhotoPicker = true },
+                        onTakePhoto: { showCamera = true },
+                        onSelectPDF: { showDocumentPicker = true }
                     )
                     .padding(.horizontal, 24)
 
@@ -61,14 +76,93 @@ struct AddRecipeView: View {
             .onTapGesture {
                 isTextFieldFocused = false
             }
+            // Photo picker
+            .photosPicker(
+                isPresented: $showPhotoPicker,
+                selection: $selectedPhotoItem,
+                matching: .images
+            )
+            .onChange(of: selectedPhotoItem) { _, newItem in
+                handlePhotoSelection(newItem)
+            }
+            // Camera
+            .fullScreenCover(isPresented: $showCamera) {
+                CameraView(capturedImage: $capturedImage)
+            }
+            .onChange(of: capturedImage) { _, newImage in
+                handleCameraCapture(newImage)
+            }
+            // Document picker
+            .sheet(isPresented: $showDocumentPicker) {
+                DocumentPickerView { pdfData in
+                    handlePDFSelection(pdfData)
+                }
+            }
         }
     }
+
+    // MARK: - URL Import
 
     private func importRecipe() {
         guard !urlText.isEmpty else { return }
         isTextFieldFocused = false
         Task {
             await importViewModel.importRecipe(from: urlText)
+        }
+    }
+
+    // MARK: - Photo Import
+
+    private func handlePhotoSelection(_ item: PhotosPickerItem?) {
+        guard let item = item else { return }
+
+        Task {
+            if let data = try? await item.loadTransferable(type: Data.self) {
+                // Compress image if needed
+                if let image = UIImage(data: data),
+                   let compressedData = compressImage(image) {
+                    await importViewModel.importRecipeFromImage(compressedData)
+                }
+            }
+            // Reset selection
+            selectedPhotoItem = nil
+        }
+    }
+
+    private func handleCameraCapture(_ image: UIImage?) {
+        guard let image = image else { return }
+
+        Task {
+            if let compressedData = compressImage(image) {
+                await importViewModel.importRecipeFromImage(compressedData)
+            }
+            // Reset captured image
+            capturedImage = nil
+        }
+    }
+
+    private func compressImage(_ image: UIImage, maxSizeMB: Int = 5) -> Data? {
+        let maxBytes = maxSizeMB * 1024 * 1024
+        var quality: CGFloat = 0.8
+
+        while quality > 0.1 {
+            if let data = image.jpegData(compressionQuality: quality) {
+                if data.count <= maxBytes {
+                    return data
+                }
+            }
+            quality -= 0.1
+        }
+
+        // Last resort: return with lowest quality
+        return image.jpegData(compressionQuality: 0.1)
+    }
+
+    // MARK: - PDF Import
+
+    private func handlePDFSelection(_ pdfData: Data) {
+        Task {
+            await importViewModel.importRecipeFromPDF(pdfData)
         }
     }
 }

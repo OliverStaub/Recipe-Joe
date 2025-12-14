@@ -1,0 +1,52 @@
+{
+  "configurations" : [
+    {
+      "id" : "BEE6EC53-FB20-4936-AD04-35B2FB732A59",
+      "name" : "Test Scheme Action",
+      "options" : {
+
+      }
+    }
+  ],
+  "defaultOptions" : {
+    "environmentVariableEntries" : [
+      {
+        "key" : "TEST_USER_PASSWORD",
+        "value" : "afjdkafödhfjahfdäajfdljfdklfjalfdadafdaf"
+      },
+      {
+        "key" : "SUPABASE_SERVICE_ROLE_KEY",
+        "value" : "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlxYW1qbnl1dnZtdmFramRvYnNtIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2NDk0MDg2MSwiZXhwIjoyMDgwNTE2ODYxfQ.27SjOaQNHEp5YKKtLPs5vdrfKlCiLa0sWu55F12L_uk"
+      },
+      {
+        "key" : "TEST_USER_EMAIL",
+        "value" : "uitest@recipejoe.test"
+      }
+    ],
+    "performanceAntipatternCheckerEnabled" : true,
+    "targetForVariableExpansion" : {
+      "containerPath" : "container:RecipeJoe.xcodeproj",
+      "identifier" : "3D195E5F2ED381B400EAC766",
+      "name" : "RecipeJoe"
+    }
+  },
+  "testTargets" : [
+    {
+      "parallelizable" : true,
+      "target" : {
+        "containerPath" : "container:RecipeJoe.xcodeproj",
+        "identifier" : "3D195E6C2ED381B500EAC766",
+        "name" : "RecipeJoeTests"
+      }
+    },
+    {
+      "parallelizable" : true,
+      "target" : {
+        "containerPath" : "container:RecipeJoe.xcodeproj",
+        "identifier" : "3D195E762ED381B500EAC766",
+        "name" : "RecipeJoeUITests"
+      }
+    }
+  ],
+  "version" : 1
+}

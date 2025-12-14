@@ -61,6 +61,32 @@ struct TokenUsage: Codable, Sendable {
     }
 }
 
+// MARK: - Media Import (OCR)
+
+/// Media type for OCR import
+enum MediaImportType: String, Codable, Sendable {
+    case image
+    case pdf
+}
+
+/// Request to import a recipe from image/PDF via OCR
+struct MediaImportRequest: Codable, Sendable {
+    let storagePath: String
+    let mediaType: String
+    let language: String
+    let reword: Bool
+
+    enum CodingKeys: String, CodingKey {
+        case storagePath = "storage_path"
+        case mediaType = "media_type"
+        case language
+        case reword
+    }
+}
+
+/// Response from media import Edge Function (same structure as URL import)
+typealias MediaImportResponse = RecipeImportResponse
+
 // MARK: - Database Models
 
 /// Recipe as stored in Supabase
