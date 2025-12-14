@@ -15,34 +15,34 @@ final class SetupDiagnosticsTests: XCTestCase {
     // MARK: - Environment Variable Checks
 
     func test0_A_ServiceRoleKeyIsSet() throws {
-        let serviceKey = ProcessInfo.processInfo.environment["SUPABASE_SERVICE_ROLE_KEY"]
+        // Check TestConfig which reads from .env file
+        let serviceKey = TestConfig.serviceRoleKey
 
         if serviceKey == nil {
             XCTFail("""
                 ❌ SUPABASE_SERVICE_ROLE_KEY is NOT set!
 
                 To fix:
-                1. Open Xcode
-                2. Edit Scheme → Test → Arguments → Environment Variables
-                3. Add: SUPABASE_SERVICE_ROLE_KEY = (your key from Supabase Dashboard → Settings → API)
+                1. Create a .env file in the project root (copy from .env.template)
+                2. Add: SUPABASE_SERVICE_ROLE_KEY=your_key_from_supabase_dashboard
                 """)
         } else {
             print("✅ SUPABASE_SERVICE_ROLE_KEY is set (length: \(serviceKey!.count) chars)")
-            XCTAssertTrue(serviceKey!.count > 50, "Service role key seems too short - verify it's correct")
+            XCTAssertTrue(serviceKey!.count > 20, "Service role key seems too short - verify it's correct")
         }
     }
 
     func test0_B_TestUserEmailIsSet() throws {
-        let email = ProcessInfo.processInfo.environment["TEST_USER_EMAIL"]
+        // Check TestConfig which reads from .env file
+        let email = TestConfig.testUserEmail
 
         if email == nil {
             XCTFail("""
                 ❌ TEST_USER_EMAIL is NOT set!
 
                 To fix:
-                1. Open Xcode
-                2. Edit Scheme → Test → Arguments → Environment Variables
-                3. Add: TEST_USER_EMAIL = uitest@recipejoe.test (or your preferred test email)
+                1. Create a .env file in the project root (copy from .env.template)
+                2. Add: TEST_USER_EMAIL=uitest@recipejoe.test
                 """)
         } else {
             print("✅ TEST_USER_EMAIL is set: \(email!)")
@@ -51,16 +51,16 @@ final class SetupDiagnosticsTests: XCTestCase {
     }
 
     func test0_C_TestUserPasswordIsSet() throws {
-        let password = ProcessInfo.processInfo.environment["TEST_USER_PASSWORD"]
+        // Check TestConfig which reads from .env file
+        let password = TestConfig.testUserPassword
 
         if password == nil {
             XCTFail("""
                 ❌ TEST_USER_PASSWORD is NOT set!
 
                 To fix:
-                1. Open Xcode
-                2. Edit Scheme → Test → Arguments → Environment Variables
-                3. Add: TEST_USER_PASSWORD = YourSecurePassword123!
+                1. Create a .env file in the project root (copy from .env.template)
+                2. Add: TEST_USER_PASSWORD=YourSecurePassword123!
                 """)
         } else {
             print("✅ TEST_USER_PASSWORD is set (length: \(password!.count) chars)")
@@ -71,14 +71,15 @@ final class SetupDiagnosticsTests: XCTestCase {
     // MARK: - API Connectivity Checks
 
     func test0_D_CanConnectToSupabase() throws {
-        guard ProcessInfo.processInfo.environment["SUPABASE_SERVICE_ROLE_KEY"] != nil else {
-            throw XCTSkip("SUPABASE_SERVICE_ROLE_KEY not set - skipping API test")
+        guard let anonKey = TestConfig.supabaseAnonKey else {
+            throw XCTSkip("SUPABASE_ANON_KEY not set - skipping API test")
         }
 
-        // Try to hit the Supabase health endpoint
-        let url = URL(string: "\(TestConfig.supabaseURL)/rest/v1/")!
+        // Try to hit the Supabase REST API with a simple query
+        // Use the recipes table with a limit of 0 to just check connectivity
+        let url = URL(string: "\(TestConfig.supabaseURL)/rest/v1/recipes?limit=0")!
         var request = URLRequest(url: url)
-        request.setValue(TestConfig.supabaseAnonKey, forHTTPHeaderField: "apikey")
+        request.setValue(anonKey, forHTTPHeaderField: "apikey")
 
         let expectation = XCTestExpectation(description: "Supabase connection")
         var connectionSuccess = false
@@ -87,7 +88,8 @@ final class SetupDiagnosticsTests: XCTestCase {
         URLSession.shared.dataTask(with: request) { _, response, error in
             if let httpResponse = response as? HTTPURLResponse {
                 statusCode = httpResponse.statusCode
-                connectionSuccess = (200...299).contains(httpResponse.statusCode)
+                // 200 = success, 401 = auth required (but connection works)
+                connectionSuccess = [200, 401].contains(httpResponse.statusCode)
             }
             expectation.fulfill()
         }.resume()
@@ -95,16 +97,16 @@ final class SetupDiagnosticsTests: XCTestCase {
         wait(for: [expectation], timeout: 10)
 
         XCTAssertTrue(connectionSuccess, "❌ Cannot connect to Supabase (status: \(statusCode)). Check your internet connection and Supabase URL.")
-        print("✅ Successfully connected to Supabase")
+        print("✅ Successfully connected to Supabase (status: \(statusCode))")
     }
 
     // MARK: - Test User Checks
 
     func test0_E_TestUserExistsOrCanBeCreated() throws {
-        guard let serviceKey = ProcessInfo.processInfo.environment["SUPABASE_SERVICE_ROLE_KEY"],
-              let email = ProcessInfo.processInfo.environment["TEST_USER_EMAIL"],
-              let password = ProcessInfo.processInfo.environment["TEST_USER_PASSWORD"] else {
-            throw XCTSkip("Environment variables not set - skipping user check")
+        guard let serviceKey = TestConfig.serviceRoleKey,
+              let email = TestConfig.testUserEmail,
+              let password = TestConfig.testUserPassword else {
+            throw XCTSkip(".env configuration not set - skipping user check")
         }
 
         // First, try to call the Admin API to check connectivity
@@ -173,8 +175,8 @@ final class SetupDiagnosticsTests: XCTestCase {
 
         var request = URLRequest(url: url)
         request.httpMethod = "GET"
-        request.setValue(TestConfig.supabaseAnonKey, forHTTPHeaderField: "apikey")
-        request.setValue("Bearer \(serviceKey)", forHTTPHeaderField: "Authorization")
+        // New Supabase API keys: use secret key directly in apikey header (not Bearer)
+        request.setValue(serviceKey, forHTTPHeaderField: "apikey")
 
         var userId: UUID?
         var errorMessage: String?
@@ -222,8 +224,8 @@ final class SetupDiagnosticsTests: XCTestCase {
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.setValue(TestConfig.supabaseAnonKey, forHTTPHeaderField: "apikey")
-        request.setValue("Bearer \(serviceKey)", forHTTPHeaderField: "Authorization")
+        // New Supabase API keys: use secret key directly in apikey header (not Bearer)
+        request.setValue(serviceKey, forHTTPHeaderField: "apikey")
         request.httpBody = body
 
         var userId: UUID?
@@ -259,8 +261,8 @@ final class SetupDiagnosticsTests: XCTestCase {
 
         var request = URLRequest(url: url)
         request.httpMethod = "DELETE"
-        request.setValue(TestConfig.supabaseAnonKey, forHTTPHeaderField: "apikey")
-        request.setValue("Bearer \(serviceKey)", forHTTPHeaderField: "Authorization")
+        // New Supabase API keys: use secret key directly in apikey header (not Bearer)
+        request.setValue(serviceKey, forHTTPHeaderField: "apikey")
 
         var errorMessage: String?
         let semaphore = DispatchSemaphore(value: 0)
@@ -294,7 +296,10 @@ final class SetupDiagnosticsTests: XCTestCase {
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.setValue(TestConfig.supabaseAnonKey, forHTTPHeaderField: "apikey")
+        // For sign-in, use the publishable key (anon equivalent)
+        if let anonKey = TestConfig.supabaseAnonKey {
+            request.setValue(anonKey, forHTTPHeaderField: "apikey")
+        }
         request.httpBody = body
 
         var token: String?
@@ -323,9 +328,9 @@ final class SetupDiagnosticsTests: XCTestCase {
     }
 
     func test0_F_CanSeedTestRecipes() throws {
-        guard let serviceKey = ProcessInfo.processInfo.environment["SUPABASE_SERVICE_ROLE_KEY"],
-              let email = ProcessInfo.processInfo.environment["TEST_USER_EMAIL"] else {
-            throw XCTSkip("Environment variables not set - skipping recipe seed test")
+        guard let serviceKey = TestConfig.serviceRoleKey,
+              let email = TestConfig.testUserEmail else {
+            throw XCTSkip(".env configuration not set - skipping recipe seed test")
         }
 
         // Get user ID using our diagnostic helper (more reliable)
@@ -382,8 +387,8 @@ final class SetupDiagnosticsTests: XCTestCase {
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.setValue("return=representation", forHTTPHeaderField: "Prefer")
-        request.setValue(TestConfig.supabaseAnonKey, forHTTPHeaderField: "apikey")
-        request.setValue("Bearer \(serviceKey)", forHTTPHeaderField: "Authorization")
+        // New Supabase API keys: use secret key directly in apikey header (not Bearer)
+        request.setValue(serviceKey, forHTTPHeaderField: "apikey")
         request.httpBody = body
 
         var resultId: UUID?
@@ -417,13 +422,15 @@ final class SetupDiagnosticsTests: XCTestCase {
         📋 TEST ENVIRONMENT SETUP SUMMARY
         ═══════════════════════════════════════════════════════════
 
-        Environment Variables:
-        • SUPABASE_SERVICE_ROLE_KEY: \(ProcessInfo.processInfo.environment["SUPABASE_SERVICE_ROLE_KEY"] != nil ? "✅ Set" : "❌ Missing")
-        • TEST_USER_EMAIL: \(ProcessInfo.processInfo.environment["TEST_USER_EMAIL"] ?? "❌ Missing")
-        • TEST_USER_PASSWORD: \(ProcessInfo.processInfo.environment["TEST_USER_PASSWORD"] != nil ? "✅ Set" : "❌ Missing")
+        .env Configuration (from TestConfig):
+        • SUPABASE_URL: \(TestConfig.supabaseURL)
+        • SUPABASE_ANON_KEY: \(TestConfig.supabaseAnonKey != nil ? "✅ Set" : "❌ Missing")
+        • SUPABASE_SERVICE_ROLE_KEY: \(TestConfig.serviceRoleKey != nil ? "✅ Set" : "❌ Missing")
+        • TEST_USER_EMAIL: \(TestConfig.testUserEmail ?? "❌ Missing")
+        • TEST_USER_PASSWORD: \(TestConfig.testUserPassword != nil ? "✅ Set" : "❌ Missing")
 
         If all checks passed, your test environment is ready!
-        If any failed, fix the issues above before running other tests.
+        If any failed, ensure your .env file exists in the project root.
 
         ═══════════════════════════════════════════════════════════
         """)

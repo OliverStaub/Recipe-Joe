@@ -14,6 +14,9 @@
 		3DBFCB142EE31E620043D501 /* Storage in Frameworks */ = {isa = PBXBuildFile; productRef = 3DBFCB132EE31E620043D501 /* Storage */; };
 		3DBFCB162EE322440043D501 /* Supabase in Frameworks */ = {isa = PBXBuildFile; productRef = 3DBFCB152EE322440043D501 /* Supabase */; };
 		3DBFCF6A2EEC592F0043D501 /* Kingfisher in Frameworks */ = {isa = PBXBuildFile; productRef = 3DBFCF692EEC592F0043D501 /* Kingfisher */; };
+		3DE3EB342EEF3614001A902B /* Base.xcconfig in Resources */ = {isa = PBXBuildFile; fileRef = 3DE3EB2F2EEF3614001A902B /* Base.xcconfig */; };
+		3DE3EB372EEF3614001A902B /* Base.xcconfig in Resources */ = {isa = PBXBuildFile; fileRef = 3DE3EB2F2EEF3614001A902B /* Base.xcconfig */; };
+		3DE3EB3A2EEF3614001A902B /* Base.xcconfig in Resources */ = {isa = PBXBuildFile; fileRef = 3DE3EB2F2EEF3614001A902B /* Base.xcconfig */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -38,6 +41,7 @@
 		3D195E6D2ED381B500EAC766 /* RecipeJoeTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = RecipeJoeTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		3D195E772ED381B500EAC766 /* RecipeJoeUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = RecipeJoeUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		3DE3EB2A2EEEDFDF001A902B /* RecipeJoe.xctestplan */ = {isa = PBXFileReference; lastKnownFileType = text; path = RecipeJoe.xctestplan; sourceTree = "<group>"; };
+		3DE3EB2F2EEF3614001A902B /* Base.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Base.xcconfig; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -93,6 +97,7 @@
 		3D195E572ED381B400EAC766 = {
 			isa = PBXGroup;
 			children = (
+				3DE3EB322EEF3614001A902B /* Config */,
 				3DE3EB2A2EEEDFDF001A902B /* RecipeJoe.xctestplan */,
 				3D195E622ED381B400EAC766 /* RecipeJoe */,
 				3D195E702ED381B500EAC766 /* RecipeJoeTests */,
@@ -109,6 +114,14 @@
 				3D195E772ED381B500EAC766 /* RecipeJoeUITests.xctest */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		3DE3EB322EEF3614001A902B /* Config */ = {
+			isa = PBXGroup;
+			children = (
+				3DE3EB2F2EEF3614001A902B /* Base.xcconfig */,
+			);
+			path = Config;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -242,6 +255,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				3DE3EB342EEF3614001A902B /* Base.xcconfig in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -249,6 +263,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				3DE3EB3A2EEF3614001A902B /* Base.xcconfig in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -256,6 +271,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				3DE3EB372EEF3614001A902B /* Base.xcconfig in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -420,6 +436,7 @@
 		};
 		3D195E822ED381B500EAC766 /* Debug */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = 3DE3EB2F2EEF3614001A902B /* Base.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
@@ -488,6 +505,7 @@
 		};
 		3D195E852ED381B500EAC766 /* Debug */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = 3DE3EB2F2EEF3614001A902B /* Base.xcconfig */;
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CODE_SIGN_STYLE = Automatic;
@@ -530,6 +548,7 @@
 		};
 		3D195E882ED381B500EAC766 /* Debug */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = 3DE3EB2F2EEF3614001A902B /* Base.xcconfig */;
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;

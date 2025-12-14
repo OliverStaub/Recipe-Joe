@@ -9,20 +9,6 @@
     }
   ],
   "defaultOptions" : {
-    "environmentVariableEntries" : [
-      {
-        "key" : "TEST_USER_PASSWORD",
-        "value" : "afjdkafödhfjahfdäajfdljfdklfjalfdadafdaf"
-      },
-      {
-        "key" : "SUPABASE_SERVICE_ROLE_KEY",
-        "value" : "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlxYW1qbnl1dnZtdmFramRvYnNtIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2NDk0MDg2MSwiZXhwIjoyMDgwNTE2ODYxfQ.27SjOaQNHEp5YKKtLPs5vdrfKlCiLa0sWu55F12L_uk"
-      },
-      {
-        "key" : "TEST_USER_EMAIL",
-        "value" : "uitest@recipejoe.test"
-      }
-    ],
     "performanceAntipatternCheckerEnabled" : true,
     "targetForVariableExpansion" : {
       "containerPath" : "container:RecipeJoe.xcodeproj",

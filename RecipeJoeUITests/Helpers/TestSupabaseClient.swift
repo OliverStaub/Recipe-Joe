@@ -48,8 +48,8 @@ final class TestSupabaseClient {
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.setValue(TestConfig.supabaseAnonKey, forHTTPHeaderField: "apikey")
-        request.setValue("Bearer \(serviceKey)", forHTTPHeaderField: "Authorization")
+        // New Supabase API keys: use secret key directly in apikey header (not Bearer)
+        request.setValue(serviceKey, forHTTPHeaderField: "apikey")
         request.httpBody = body
 
         var userId: UUID?
@@ -92,8 +92,8 @@ final class TestSupabaseClient {
 
         var request = URLRequest(url: url)
         request.httpMethod = "DELETE"
-        request.setValue(TestConfig.supabaseAnonKey, forHTTPHeaderField: "apikey")
-        request.setValue("Bearer \(serviceKey)", forHTTPHeaderField: "Authorization")
+        // New Supabase API keys: use secret key directly in apikey header (not Bearer)
+        request.setValue(serviceKey, forHTTPHeaderField: "apikey")
 
         let semaphore = DispatchSemaphore(value: 0)
 
@@ -125,8 +125,8 @@ final class TestSupabaseClient {
 
         var request = URLRequest(url: url)
         request.httpMethod = "GET"
-        request.setValue(TestConfig.supabaseAnonKey, forHTTPHeaderField: "apikey")
-        request.setValue("Bearer \(serviceKey)", forHTTPHeaderField: "Authorization")
+        // New Supabase API keys: use secret key directly in apikey header (not Bearer)
+        request.setValue(serviceKey, forHTTPHeaderField: "apikey")
 
         var userId: UUID?
         let semaphore = DispatchSemaphore(value: 0)
@@ -168,7 +168,9 @@ final class TestSupabaseClient {
 
         var request = URLRequest(url: url)
         request.httpMethod = "GET"
-        request.setValue(TestConfig.supabaseAnonKey, forHTTPHeaderField: "apikey")
+        if let anonKey = TestConfig.supabaseAnonKey {
+            request.setValue(anonKey, forHTTPHeaderField: "apikey")
+        }
         request.setValue("Bearer \(authToken)", forHTTPHeaderField: "Authorization")
 
         var recipeIds: [UUID] = []
@@ -211,7 +213,9 @@ final class TestSupabaseClient {
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.setValue(TestConfig.supabaseAnonKey, forHTTPHeaderField: "apikey")
+        if let anonKey = TestConfig.supabaseAnonKey {
+            request.setValue(anonKey, forHTTPHeaderField: "apikey")
+        }
         request.httpBody = body
 
         var accessToken: String?
@@ -245,8 +249,8 @@ final class TestSupabaseClient {
 
         var request = URLRequest(url: url)
         request.httpMethod = "DELETE"
-        request.setValue(TestConfig.supabaseAnonKey, forHTTPHeaderField: "apikey")
-        request.setValue("Bearer \(serviceKey)", forHTTPHeaderField: "Authorization")
+        // New Supabase API keys: use secret key directly in apikey header (not Bearer)
+        request.setValue(serviceKey, forHTTPHeaderField: "apikey")
 
         let semaphore = DispatchSemaphore(value: 0)
 
@@ -281,8 +285,8 @@ final class TestSupabaseClient {
 
         var request = URLRequest(url: url)
         request.httpMethod = "DELETE"
-        request.setValue(TestConfig.supabaseAnonKey, forHTTPHeaderField: "apikey")
-        request.setValue("Bearer \(serviceKey)", forHTTPHeaderField: "Authorization")
+        // New Supabase API keys: use secret key directly in apikey header (not Bearer)
+        request.setValue(serviceKey, forHTTPHeaderField: "apikey")
 
         let semaphore = DispatchSemaphore(value: 0)
 
@@ -347,8 +351,8 @@ final class TestSupabaseClient {
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.setValue("return=representation", forHTTPHeaderField: "Prefer")
-        request.setValue(TestConfig.supabaseAnonKey, forHTTPHeaderField: "apikey")
-        request.setValue("Bearer \(serviceKey)", forHTTPHeaderField: "Authorization")
+        // New Supabase API keys: use secret key directly in apikey header (not Bearer)
+        request.setValue(serviceKey, forHTTPHeaderField: "apikey")
         request.httpBody = body
 
         var success = false
@@ -438,8 +442,8 @@ final class TestSupabaseClient {
 
         var request = URLRequest(url: url)
         request.httpMethod = "GET"
-        request.setValue(TestConfig.supabaseAnonKey, forHTTPHeaderField: "apikey")
-        request.setValue("Bearer \(serviceKey)", forHTTPHeaderField: "Authorization")
+        // New Supabase API keys: use secret key directly in apikey header (not Bearer)
+        request.setValue(serviceKey, forHTTPHeaderField: "apikey")
 
         var count = 0
         let semaphore = DispatchSemaphore(value: 0)

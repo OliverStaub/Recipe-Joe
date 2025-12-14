@@ -1,34 +1,23 @@
 //
-//  RecipeJoeUITests.swift
+//  NavigationUITests.swift
 //  RecipeJoeUITests
 //
-//  Created by Oliver Staub on 23.11.2025.
+//  UI tests for app navigation:
+//  - Tab bar and tabs
+//  - Settings sheet
+//  - Filter bar
+//  - Search tab (iOS 26 Liquid Glass)
 //
 
 import XCTest
 
-/// Main UI tests for RecipeJoe app navigation and features
-/// Extends BaseUITestCase for consistent setup and cleanup
-final class RecipeJoeUITests: BaseUITestCase {
+/// UI tests for app navigation and structure
+final class NavigationUITests: BaseUITestCase {
 
-    // Inherits from BaseUITestCase which provides:
-    // - app: XCUIApplication (configured with English locale)
-    // - requireAuthentication() helper
-    // - setUpWithError() with locale configuration
-    // - tearDownWithError() with cleanup
-    // - Navigation helpers (navigateToHome, navigateToAddRecipe, etc.)
-
-    @MainActor
-    func testExample() throws {
-        // UI tests must launch the application that they test.
-        app.launch()
-
-        // Use XCTAssert and related functions to verify your tests produce the correct results.
-    }
+    // MARK: - Launch Tests
 
     @MainActor
     func testLaunchPerformance() throws {
-        // This measures how long it takes to launch your application.
         measure(metrics: [XCTApplicationLaunchMetric()]) {
             app.launch()
         }
@@ -41,7 +30,6 @@ final class RecipeJoeUITests: BaseUITestCase {
         app.launch()
         try requireAuthentication()
 
-        // Verify tab bar exists
         let tabBar = app.tabBars.firstMatch
         XCTAssertTrue(tabBar.exists, "Tab bar should exist")
     }
@@ -53,10 +41,9 @@ final class RecipeJoeUITests: BaseUITestCase {
 
         let tabBar = app.tabBars.firstMatch
 
-        // Verify all three tabs exist (Home, Add Recipe, and Search with liquid glass)
         XCTAssertTrue(tabBar.buttons["Home"].exists, "Home tab should exist")
         XCTAssertTrue(tabBar.buttons["Add Recipe"].exists, "Add Recipe tab should exist")
-        XCTAssertTrue(tabBar.buttons["Search"].exists, "Search tab should exist (separated with liquid glass effect)")
+        XCTAssertTrue(tabBar.buttons["Search"].exists, "Search tab should exist")
     }
 
     @MainActor
@@ -66,10 +53,11 @@ final class RecipeJoeUITests: BaseUITestCase {
 
         // Home tab should be selected by default
         XCTAssertTrue(app.navigationBars["RecipeJoe"].exists, "RecipeJoe navigation bar should be visible on Home tab")
-        // Check for empty state OR recipe list (depends on whether recipes exist)
+
+        // Check for empty state OR recipe list
         let emptyState = app.staticTexts["No Recipes Yet"]
         let recipeList = app.collectionViews["recipeList"]
-        XCTAssertTrue(emptyState.waitForExistence(timeout: 5) || recipeList.waitForExistence(timeout: 5),
+        XCTAssertTrue(emptyState.waitForExistence(timeout: TestConfig.standardTimeout) || recipeList.waitForExistence(timeout: TestConfig.standardTimeout),
                       "Home should show either empty state or recipe list")
     }
 
@@ -78,21 +66,14 @@ final class RecipeJoeUITests: BaseUITestCase {
         app.launch()
         try requireAuthentication()
 
-        // Switch to Add Recipe tab
-        let addRecipeTab = app.tabBars.buttons["Add Recipe"]
-        XCTAssertTrue(addRecipeTab.waitForExistence(timeout: 5), "Add Recipe tab should exist")
-        addRecipeTab.tap()
+        navigateToAddRecipe()
 
-        // Wait a moment for the view to load
-        Thread.sleep(forTimeInterval: 1)
-
-        // Verify URL text field exists (most important element)
+        // Wait for view to load
         let urlTextField = app.textFields["urlTextField"]
-        XCTAssertTrue(urlTextField.waitForExistence(timeout: 5), "URL text field should exist")
+        XCTAssertTrue(urlTextField.waitForExistence(timeout: TestConfig.standardTimeout), "URL text field should exist")
 
-        // Verify action button exists
         let actionButton = app.buttons["actionButton"]
-        XCTAssertTrue(actionButton.waitForExistence(timeout: 5), "Action button should exist")
+        XCTAssertTrue(actionButton.waitForExistence(timeout: TestConfig.standardTimeout), "Action button should exist")
     }
 
     @MainActor
@@ -100,32 +81,26 @@ final class RecipeJoeUITests: BaseUITestCase {
         app.launch()
         try requireAuthentication()
 
-        // Switch to Add Recipe tab
-        app.tabBars.buttons["Add Recipe"].tap()
+        navigateToAddRecipe()
 
-        // Get references to UI elements
         let urlTextField = app.textFields["urlTextField"]
         let actionButton = app.buttons["actionButton"]
 
-        // Verify button exists in default state (plus icon)
         XCTAssertTrue(actionButton.exists, "Action button should exist")
 
-        // Tap text field and enter URL
+        // Enter URL
         urlTextField.tap()
         urlTextField.typeText("https://www.example.com/recipe")
 
-        // Button should still exist (now in send/go state)
         XCTAssertTrue(actionButton.exists, "Action button should still exist after entering URL")
 
         // Clear the text field
         urlTextField.tap()
-        // Select all and delete (clearing the field)
         if let value = urlTextField.value as? String, !value.isEmpty {
             let deleteString = String(repeating: XCUIKeyboardKey.delete.rawValue, count: value.count)
             urlTextField.typeText(deleteString)
         }
 
-        // Button should still exist (back to plus icon state)
         XCTAssertTrue(actionButton.exists, "Action button should exist after clearing URL")
     }
 
@@ -136,10 +111,8 @@ final class RecipeJoeUITests: BaseUITestCase {
         app.launch()
         try requireAuthentication()
 
-        // Switch to Search tab
-        app.tabBars.buttons["Search"].tap()
+        navigateToSearch()
 
-        // Verify Search view content
         XCTAssertTrue(app.navigationBars["Search"].exists, "Search navigation bar should be visible")
         XCTAssertTrue(app.staticTexts["Search Recipes"].exists, "Search Recipes text should be visible")
         XCTAssertTrue(app.staticTexts["Search by name, category, cuisine, or ingredients"].exists, "Search instruction text should be visible")
@@ -150,10 +123,8 @@ final class RecipeJoeUITests: BaseUITestCase {
         app.launch()
         try requireAuthentication()
 
-        // Switch to Search tab
-        app.tabBars.buttons["Search"].tap()
+        navigateToSearch()
 
-        // Verify search field exists (iOS 26 searchable modifier)
         let searchField = app.searchFields.firstMatch
         XCTAssertTrue(searchField.exists, "Search field should exist in Search tab")
     }
@@ -164,10 +135,8 @@ final class RecipeJoeUITests: BaseUITestCase {
         try requireAuthentication()
 
         let tabBar = app.tabBars.firstMatch
-
-        // The Search tab should exist as a separate button with role: .search
-        // In iOS 26 Liquid Glass, this appears separated from other tabs
         let searchTab = tabBar.buttons["Search"]
+
         XCTAssertTrue(searchTab.exists, "Liquid Glass search tab should exist")
         XCTAssertTrue(searchTab.isHittable, "Search tab should be tappable")
     }
@@ -179,9 +148,8 @@ final class RecipeJoeUITests: BaseUITestCase {
         app.launch()
         try requireAuthentication()
 
-        // Settings button should be in the Home tab toolbar
         let settingsButton = app.buttons["settingsButton"]
-        XCTAssertTrue(settingsButton.waitForExistence(timeout: 5), "Settings button should exist in Home toolbar")
+        XCTAssertTrue(settingsButton.waitForExistence(timeout: TestConfig.standardTimeout), "Settings button should exist in Home toolbar")
     }
 
     @MainActor
@@ -189,13 +157,9 @@ final class RecipeJoeUITests: BaseUITestCase {
         app.launch()
         try requireAuthentication()
 
-        // Tap settings button
-        let settingsButton = app.buttons["settingsButton"]
-        XCTAssertTrue(settingsButton.waitForExistence(timeout: 5), "Settings button should exist")
-        settingsButton.tap()
+        openSettings()
 
-        // Verify Settings view appears
-        XCTAssertTrue(app.navigationBars["Settings"].waitForExistence(timeout: 5), "Settings navigation bar should appear")
+        XCTAssertTrue(app.navigationBars["Settings"].waitForExistence(timeout: TestConfig.standardTimeout), "Settings navigation bar should appear")
     }
 
     @MainActor
@@ -203,11 +167,9 @@ final class RecipeJoeUITests: BaseUITestCase {
         app.launch()
         try requireAuthentication()
 
-        // Open settings
-        app.buttons["settingsButton"].tap()
+        openSettings()
 
-        // Verify version info exists
-        XCTAssertTrue(app.staticTexts["Version"].waitForExistence(timeout: 5), "Version label should exist in Settings")
+        XCTAssertTrue(app.staticTexts["Version"].waitForExistence(timeout: TestConfig.standardTimeout), "Version label should exist in Settings")
     }
 
     @MainActor
@@ -215,16 +177,15 @@ final class RecipeJoeUITests: BaseUITestCase {
         app.launch()
         try requireAuthentication()
 
-        // Open settings
-        app.buttons["settingsButton"].tap()
-        XCTAssertTrue(app.navigationBars["Settings"].waitForExistence(timeout: 5), "Settings should be open")
+        openSettings()
+        XCTAssertTrue(app.navigationBars["Settings"].waitForExistence(timeout: TestConfig.standardTimeout), "Settings should be open")
 
         // Swipe down to dismiss
         app.swipeDown()
 
-        // Wait for sheet to dismiss and verify we're back on Home
-        Thread.sleep(forTimeInterval: 1)
-        XCTAssertTrue(app.navigationBars["RecipeJoe"].exists, "Should be back on Home screen after dismissing Settings")
+        // Wait for sheet to dismiss
+        let homeNavBar = app.navigationBars["RecipeJoe"]
+        XCTAssertTrue(homeNavBar.waitForExistence(timeout: TestConfig.standardTimeout), "Should be back on Home screen after dismissing Settings")
     }
 
     // MARK: - Filter Bar Tests
@@ -234,26 +195,19 @@ final class RecipeJoeUITests: BaseUITestCase {
         app.launch()
         try requireAuthentication()
 
-        // Wait for the home screen to load
-        XCTAssertTrue(app.navigationBars["RecipeJoe"].waitForExistence(timeout: 5), "Home screen should load")
+        XCTAssertTrue(app.navigationBars["RecipeJoe"].waitForExistence(timeout: TestConfig.standardTimeout), "Home screen should load")
 
-        // Check if we have recipes (recipe list exists) or empty state
         let recipeList = app.collectionViews["recipeList"]
         let emptyState = app.staticTexts["No Recipes Yet"]
 
-        // Wait for either state
-        let hasRecipes = recipeList.waitForExistence(timeout: 10)
+        let hasRecipes = recipeList.waitForExistence(timeout: TestConfig.authTimeout)
         let isEmpty = emptyState.exists
 
         if hasRecipes {
-            // If recipes exist, filter bar should be visible
             let filterBar = app.scrollViews["filterBar"]
-            XCTAssertTrue(filterBar.waitForExistence(timeout: 5), "Filter bar should appear when recipes exist")
-
-            // Verify filter chips are visible
+            XCTAssertTrue(filterBar.waitForExistence(timeout: TestConfig.standardTimeout), "Filter bar should appear when recipes exist")
             XCTAssertTrue(app.buttons["All"].exists || app.staticTexts["All"].exists, "All filter should be visible")
         } else if isEmpty {
-            // If no recipes, filter bar should NOT be visible
             let filterBar = app.scrollViews["filterBar"]
             XCTAssertFalse(filterBar.exists, "Filter bar should not appear when no recipes exist")
         }
@@ -264,21 +218,16 @@ final class RecipeJoeUITests: BaseUITestCase {
         app.launch()
         try requireAuthentication()
 
-        // Wait for home screen and recipes to load
-        XCTAssertTrue(app.navigationBars["RecipeJoe"].waitForExistence(timeout: 5), "Home screen should load")
+        XCTAssertTrue(app.navigationBars["RecipeJoe"].waitForExistence(timeout: TestConfig.standardTimeout), "Home screen should load")
 
         let recipeList = app.collectionViews["recipeList"]
-        guard recipeList.waitForExistence(timeout: 10) else {
-            // Skip test if no recipes - can't test filters without data
+        guard recipeList.waitForExistence(timeout: TestConfig.authTimeout) else {
             throw XCTSkip("No recipes available to test filter bar")
         }
 
-        // Filter bar should exist
         let filterBar = app.scrollViews["filterBar"]
-        XCTAssertTrue(filterBar.waitForExistence(timeout: 5), "Filter bar should exist")
+        XCTAssertTrue(filterBar.waitForExistence(timeout: TestConfig.standardTimeout), "Filter bar should exist")
 
-        // Check for time filter buttons (they contain clock icons and text)
-        // The "All" button should be selected by default
         let allButton = filterBar.buttons.matching(NSPredicate(format: "label CONTAINS[c] 'All' OR label CONTAINS[c] 'Alli'")).firstMatch
         XCTAssertTrue(allButton.exists, "All time filter should exist")
     }

@@ -22,12 +22,12 @@ final class SupabaseService {
 
     // MARK: - Configuration
 
-    /// Supabase project URL - Replace with your actual project URL
+    /// Supabase project URL
     private static let supabaseURL = "https://iqamjnyuvvmvakjdobsm.supabase.co"
 
-    /// Supabase anon key - Safe to expose in client apps
+    /// Supabase publishable key (safe to include in client apps)
     /// This key only allows access to public resources and Edge Functions
-    private static let supabaseAnonKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlxYW1qbnl1dnZtdmFramRvYnNtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ5NDA4NjEsImV4cCI6MjA4MDUxNjg2MX0.zHhBnHJUTGhSjdriwH8nKswCxHi2g3-LqaoQF51IBnU"
+    private static let supabaseAnonKey = "sb_publishable_bjC-0a3jReGsoS5pprLevA_dDXqwrxn"
 
     // MARK: - Initialization
 

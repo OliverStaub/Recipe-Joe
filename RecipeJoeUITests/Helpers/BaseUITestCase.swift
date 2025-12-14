@@ -174,8 +174,9 @@ class BaseUITestCase: XCTestCase {
             confirmButton.tap()
         }
 
-        // Wait for auth screen
-        Thread.sleep(forTimeInterval: 2)
+        // Wait for auth screen to appear
+        let emailField = app.textFields["emailTextField"]
+        _ = emailField.waitForExistence(timeout: TestConfig.authTimeout)
     }
 
     // MARK: - Test Data Seeding
@@ -256,12 +257,16 @@ class BaseUITestCase: XCTestCase {
     /// Wait for either of two elements to appear
     @MainActor
     func waitForEither(_ element1: XCUIElement, _ element2: XCUIElement, timeout: TimeInterval) -> XCUIElement? {
-        let start = Date()
-        while Date().timeIntervalSince(start) < timeout {
-            if element1.exists { return element1 }
-            if element2.exists { return element2 }
-            Thread.sleep(forTimeInterval: 0.5)
-        }
+        let expectation = XCTNSPredicateExpectation(
+            predicate: NSPredicate { _, _ in
+                element1.exists || element2.exists
+            },
+            object: nil
+        )
+        _ = XCTWaiter.wait(for: [expectation], timeout: timeout)
+
+        if element1.exists { return element1 }
+        if element2.exists { return element2 }
         return nil
     }
 }

@@ -166,11 +166,10 @@ final class RecipeImportUITests: BaseUITestCase {
         urlTextField.tap()
         urlTextField.typeText("https://www.allrecipes.com/recipe/12345")
 
-        // Wait a moment for UI to update
-        Thread.sleep(forTimeInterval: 0.5)
-
-        // Verify timestamp section does NOT appear
+        // Wait for UI to update - check that video section does NOT appear
         let videoSection = app.staticTexts["Video"]
+        // Give a short wait then verify it's not there
+        _ = videoSection.waitForExistence(timeout: 1)
         XCTAssertFalse(videoSection.exists,
                        "Video timestamp section should NOT appear for regular URLs")
     }
@@ -202,11 +201,11 @@ final class RecipeImportUITests: BaseUITestCase {
         }
         app.keys["delete"].tap()
 
-        // Wait a moment for UI to update
-        Thread.sleep(forTimeInterval: 0.5)
-
-        // Verify timestamp section disappears
-        XCTAssertFalse(app.staticTexts["YouTube Video"].exists,
+        // Wait for UI to update and verify timestamp section disappears
+        let youtubeSection = app.staticTexts["YouTube Video"]
+        // Give a short wait then verify it's gone
+        _ = youtubeSection.waitForExistence(timeout: 1)
+        XCTAssertFalse(youtubeSection.exists,
                        "Video timestamp section should disappear when URL is cleared")
     }
 
@@ -305,11 +304,8 @@ final class RecipeImportUITests: BaseUITestCase {
         // The app should navigate to home or show success after import
         let homeTab = app.tabBars.buttons["Home"]
 
-        // Give the import time to complete
-        Thread.sleep(forTimeInterval: 5)
-
-        // Navigate to Home to check for the recipe
-        if homeTab.waitForExistence(timeout: 5) {
+        // Wait for home tab to be available (import may auto-navigate or we navigate)
+        if homeTab.waitForExistence(timeout: 10) {
             homeTab.tap()
         }
 
