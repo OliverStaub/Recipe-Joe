@@ -271,6 +271,203 @@ final class RecipeImportUITests: BaseUITestCase {
 
     // MARK: - Full Import Flow Tests
 
+    /// Test importing a real recipe from YouTube video
+    /// Uses a popular cooking video with English transcript
+    /// Note: Requires network access and Supadata API for transcripts
+    @MainActor
+    func testImportRecipeFromYouTubeVideo() throws {
+        app.launch()
+        try requireAuthentication()
+
+        // Navigate to Add Recipe tab
+        navigateToAddRecipe()
+
+        // Enter a real YouTube recipe video URL
+        // Using Keerthana Cooks' Spicy Penne Arrabiata (known to have captions and work)
+        let urlTextField = app.textFields["urlTextField"]
+        XCTAssertTrue(urlTextField.waitForExistence(timeout: 5), "URL text field should exist")
+        urlTextField.tap()
+        urlTextField.typeText("https://www.youtube.com/watch?v=mhDJNfV7hjk")
+
+        // Verify timestamp section appears (confirms video URL detection)
+        let videoSection = app.staticTexts["YouTube Video"]
+        XCTAssertTrue(videoSection.waitForExistence(timeout: 3),
+                      "Video timestamp section should appear for YouTube URL")
+
+        // Dismiss keyboard by tapping elsewhere
+        app.tap()
+        Thread.sleep(forTimeInterval: 0.5)
+
+        // Tap the import button
+        let actionButton = app.buttons["actionButton"]
+        XCTAssertTrue(actionButton.waitForExistence(timeout: 5), "Action button should exist")
+        actionButton.tap()
+
+        // Wait for import to complete (video imports can take up to 3 minutes)
+        let importTimeout: TimeInterval = 180
+
+        // Wait for either success or error - check for text labels since they're more reliable
+        let startTime = Date()
+        var completed = false
+        var succeeded = false
+        var errorMessage = ""
+
+        while Date().timeIntervalSince(startTime) < importTimeout {
+            // Check for success message
+            if app.staticTexts["Recipe imported!"].exists {
+                completed = true
+                succeeded = true
+                break
+            }
+
+            // Check for error message
+            if app.staticTexts["Import failed"].exists {
+                completed = true
+                succeeded = false
+                // Try to get the error details
+                let allTexts = app.staticTexts.allElementsBoundByIndex.map { $0.label }
+                errorMessage = allTexts.joined(separator: " | ")
+                break
+            }
+
+            // Check for progress (import is running)
+            let progressTexts = ["Fetching recipe...", "Fetching transcript...", "Analyzing with AI...",
+                                "Extracting ingredients...", "Saving recipe..."]
+            let isImporting = progressTexts.contains { app.staticTexts[$0].exists }
+
+            // If not importing and no result yet, wait a bit
+            if !isImporting && Date().timeIntervalSince(startTime) > 15 {
+                // Check if we're stuck - no progress and no result
+                let allTexts = app.staticTexts.allElementsBoundByIndex.map { $0.label }
+                if allTexts.contains(where: { $0.contains("error") || $0.contains("failed") || $0.contains("Error") }) {
+                    completed = true
+                    succeeded = false
+                    errorMessage = allTexts.joined(separator: " | ")
+                    break
+                }
+            }
+
+            Thread.sleep(forTimeInterval: 2.0)
+        }
+
+        if !completed {
+            // Take a screenshot for debugging
+            let screenshot = app.screenshot()
+            let attachment = XCTAttachment(screenshot: screenshot)
+            attachment.lifetime = .keepAlways
+            add(attachment)
+            XCTFail("YouTube import did not complete within \(Int(importTimeout)) seconds")
+            return
+        }
+
+        if !succeeded {
+            XCTFail("YouTube import failed: \(errorMessage)")
+            return
+        }
+
+        // Cleanup any test recipes
+        cleanupAllTestRecipes()
+    }
+
+    /// Test importing a real recipe from TikTok video
+    /// Uses a recipe video with available transcript
+    /// Note: Requires network access and Supadata API for transcripts
+    @MainActor
+    func testImportRecipeFromTikTokVideo() throws {
+
+        app.launch()
+        try requireAuthentication()
+
+        // Navigate to Add Recipe tab
+        navigateToAddRecipe()
+
+        // Enter a real TikTok recipe video URL
+        // Using a known working recipe video (tested with Supadata API)
+        let urlTextField = app.textFields["urlTextField"]
+        XCTAssertTrue(urlTextField.waitForExistence(timeout: 5), "URL text field should exist")
+        urlTextField.tap()
+        urlTextField.typeText("https://www.tiktok.com/@fit__laura/video/7402633952399199521")
+
+        // Verify timestamp section appears (confirms video URL detection)
+        let videoSection = app.staticTexts["TikTok Video"]
+        XCTAssertTrue(videoSection.waitForExistence(timeout: 3),
+                      "Video timestamp section should appear for TikTok URL")
+
+        // Dismiss keyboard by tapping elsewhere
+        app.tap()
+        Thread.sleep(forTimeInterval: 0.5)
+
+        // Tap the import button
+        let actionButton = app.buttons["actionButton"]
+        XCTAssertTrue(actionButton.waitForExistence(timeout: 5), "Action button should exist")
+        actionButton.tap()
+
+        // Wait for import to complete (video imports can take up to 3 minutes)
+        let importTimeout: TimeInterval = 180
+
+        // Wait for either success or error - check for text labels since they're more reliable
+        let startTime = Date()
+        var completed = false
+        var succeeded = false
+        var errorMessage = ""
+
+        while Date().timeIntervalSince(startTime) < importTimeout {
+            // Check for success message
+            if app.staticTexts["Recipe imported!"].exists {
+                completed = true
+                succeeded = true
+                break
+            }
+
+            // Check for error message
+            if app.staticTexts["Import failed"].exists {
+                completed = true
+                succeeded = false
+                // Try to get the error details
+                let allTexts = app.staticTexts.allElementsBoundByIndex.map { $0.label }
+                errorMessage = allTexts.joined(separator: " | ")
+                break
+            }
+
+            // Check for progress (import is running)
+            let progressTexts = ["Fetching recipe...", "Fetching transcript...", "Analyzing with AI...",
+                                "Extracting ingredients...", "Saving recipe..."]
+            let isImporting = progressTexts.contains { app.staticTexts[$0].exists }
+
+            // If not importing and no result yet, wait a bit
+            if !isImporting && Date().timeIntervalSince(startTime) > 15 {
+                // Check if we're stuck - no progress and no result
+                let allTexts = app.staticTexts.allElementsBoundByIndex.map { $0.label }
+                if allTexts.contains(where: { $0.contains("error") || $0.contains("failed") || $0.contains("Error") }) {
+                    completed = true
+                    succeeded = false
+                    errorMessage = allTexts.joined(separator: " | ")
+                    break
+                }
+            }
+
+            Thread.sleep(forTimeInterval: 2.0)
+        }
+
+        if !completed {
+            // Take a screenshot for debugging
+            let screenshot = app.screenshot()
+            let attachment = XCTAttachment(screenshot: screenshot)
+            attachment.lifetime = .keepAlways
+            add(attachment)
+            XCTFail("TikTok import did not complete within \(Int(importTimeout)) seconds")
+            return
+        }
+
+        if !succeeded {
+            XCTFail("TikTok import failed - this may indicate TikTok import is broken: \(errorMessage)")
+            return
+        }
+
+        // Cleanup any test recipes
+        cleanupAllTestRecipes()
+    }
+
     /// Test importing a real recipe via URL
     /// This test creates actual data in Supabase and verifies it appears in the app
     /// Note: Cleanup requires TestConfig.sandboxUserId and SUPABASE_SERVICE_ROLE_KEY to be set

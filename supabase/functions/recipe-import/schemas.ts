@@ -6,7 +6,7 @@ export const IngredientSchema = z.object({
   name_en: z.string().describe("Ingredient name in English"),
   name_de: z.string().describe("Ingredient name in German"),
   quantity: z.number().nullable().describe("Numeric quantity, null if 'to taste' or unspecified"),
-  measurement_type: z.string().describe("Measurement unit in English (e.g., 'gram', 'cup', 'piece')"),
+  measurement_type: z.string().nullable().describe("Measurement unit in English (e.g., 'gram', 'cup', 'piece'), null if unspecified"),
   notes: z.string().nullable().describe("Preparation notes (e.g., 'finely chopped', 'room temperature')"),
   is_new: z.boolean().describe("True if this ingredient is not in the existing ingredients list"),
   existing_ingredient_id: z.string().nullable().describe("UUID of existing ingredient if is_new is false, null otherwise"),
@@ -22,7 +22,7 @@ export const StepSchema = z.object({
 // Full recipe schema for Claude output
 export const RecipeImportSchema = z.object({
   is_valid_recipe: z.boolean().describe("False if the URL does not contain a recipe"),
-  error_message: z.string().nullable().describe("Error message if not a valid recipe"),
+  error_message: z.string().nullish().describe("Error message if not a valid recipe"),
   recipe: z.object({
     name: z.string(),
     author: z.string().nullable(),

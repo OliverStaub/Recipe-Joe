@@ -45,19 +45,47 @@ run_tests() {
     echo -e "${YELLOW}Running $test_type...${NC}"
     echo ""
 
-    # Run xcodebuild and let it output directly to terminal
+    # Run xcodebuild with fail-fast: stop on first test failure
+    # -test-timeouts-enabled YES: Enable test timeouts
+    # We run without parallel testing for more predictable results
     local exit_code=0
+
+    # Run xcodebuild, monitoring for failures to stop early
     if [ -n "$test_target" ]; then
         xcodebuild test \
             -project "$XCODE_PROJECT" \
             -scheme "$scheme" \
             -destination 'platform=iOS Simulator,name=iPhone Air' \
-            -only-testing:"$test_target" || exit_code=$?
+            -only-testing:"$test_target" \
+            -parallel-testing-enabled NO \
+            -test-timeouts-enabled YES 2>&1 | while IFS= read -r line; do
+            echo "$line"
+            # Check for test failure and exit early
+            if echo "$line" | grep -q "failed ("; then
+                echo ""
+                echo -e "${RED}❌ Test failure detected - stopping immediately${NC}"
+                pkill -f "xcodebuild.*$scheme" 2>/dev/null || true
+                exit 1
+            fi
+        done
+        exit_code=${PIPESTATUS[0]}
     else
         xcodebuild test \
             -project "$XCODE_PROJECT" \
             -scheme "$scheme" \
-            -destination 'platform=iOS Simulator,name=iPhone Air' || exit_code=$?
+            -destination 'platform=iOS Simulator,name=iPhone Air' \
+            -parallel-testing-enabled NO \
+            -test-timeouts-enabled YES 2>&1 | while IFS= read -r line; do
+            echo "$line"
+            # Check for test failure and exit early
+            if echo "$line" | grep -q "failed ("; then
+                echo ""
+                echo -e "${RED}❌ Test failure detected - stopping immediately${NC}"
+                pkill -f "xcodebuild.*$scheme" 2>/dev/null || true
+                exit 1
+            fi
+        done
+        exit_code=${PIPESTATUS[0]}
     fi
 
     echo ""
@@ -73,6 +101,22 @@ run_tests() {
         return 1
     fi
 }
+
+# Run Edge Function unit tests (if Deno is installed)
+if command -v deno &> /dev/null; then
+    echo -e "${YELLOW}Running Edge Function unit tests...${NC}"
+    if "$PROJECT_ROOT/scripts/run-edge-tests.sh" unit; then
+        echo -e "${GREEN}✓ Edge Function unit tests passed${NC}"
+        echo ""
+    else
+        echo -e "${RED}❌ Edge Function unit tests failed. Commit aborted.${NC}"
+        echo -e "${YELLOW}Tip: Use 'git commit --no-verify' to bypass this check${NC}"
+        exit 1
+    fi
+else
+    echo -e "${YELLOW}⏭️  Skipping Edge Function tests (Deno not installed)${NC}"
+    echo ""
+fi
 
 # Run unit tests
 if ! run_tests "RecipeJoe" "Unit Tests" "RecipeJoeTests"; then

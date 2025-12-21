@@ -16,7 +16,6 @@ struct AuthenticationView: View {
     @State private var email = ""
     @State private var password = ""
     @State private var confirmPassword = ""
-    @State private var showForgotPassword = false
     @FocusState private var focusedField: Field?
 
     enum Field {
@@ -158,16 +157,6 @@ struct AuthenticationView: View {
                     .disabled(!isFormValid)
                     .opacity(isFormValid ? 1 : 0.6)
                     .accessibilityIdentifier("emailAuthButton")
-
-                    // Forgot password (only in sign in mode)
-                    if !isSignUpMode {
-                        Button("Forgot Password?") {
-                            showForgotPassword = true
-                        }
-                        .font(.footnote)
-                        .foregroundStyle(.secondary)
-                        .accessibilityIdentifier("forgotPasswordButton")
-                    }
                 }
                 .padding(.horizontal, 40)
 
@@ -222,20 +211,6 @@ struct AuthenticationView: View {
                     .scaleEffect(1.5)
                     .tint(.white)
             }
-        }
-        .alert("Reset Password", isPresented: $showForgotPassword) {
-            TextField("Email", text: $email)
-                .textContentType(.emailAddress)
-                .keyboardType(.emailAddress)
-                .autocapitalization(.none)
-            Button("Cancel", role: .cancel) {}
-            Button("Send Reset Link") {
-                Task {
-                    try? await authService.resetPassword(email: email)
-                }
-            }
-        } message: {
-            Text("Enter your email address and we'll send you a link to reset your password.")
         }
         .onChange(of: isSignUpMode) { _, _ in
             // Clear error when switching modes

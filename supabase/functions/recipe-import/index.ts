@@ -56,9 +56,12 @@ serve(async (req) => {
       const supabaseForAuth = getSupabaseClient();
       const token = authHeader.replace('Bearer ', '');
       const { data: { user }, error: authError } = await supabaseForAuth.auth.getUser(token);
+
       if (user && !authError) {
         userId = user.id;
         console.log(`Authenticated user: ${userId}`);
+      } else if (authError) {
+        console.error(`Auth failed: ${authError.message}`);
       }
     }
 

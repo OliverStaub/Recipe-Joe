@@ -26,7 +26,7 @@ if [ ! -d "$XCODE_PROJECT" ]; then
     exit 1
 fi
 
-# Function to run tests
+# Function to run tests with fail-fast
 run_tests() {
     local scheme=$1
     local test_type=$2
@@ -35,25 +35,57 @@ run_tests() {
     echo -e "${YELLOW}Running $test_type...${NC}"
     echo ""
 
-    # Run xcodebuild and let it output directly to terminal
-    local exit_code=0
+    # Create temp file for output and failure flag
+    local temp_output=$(mktemp)
+    local failure_flag=$(mktemp)
+    echo "0" > "$failure_flag"
+
+    # Build xcodebuild command
+    local xcode_cmd="xcodebuild test -project $XCODE_PROJECT -scheme $scheme -destination 'platform=iOS Simulator,name=iPhone Air' -parallel-testing-enabled NO -test-timeouts-enabled YES"
     if [ -n "$test_target" ]; then
-        xcodebuild test \
-            -project "$XCODE_PROJECT" \
-            -scheme "$scheme" \
-            -destination 'platform=iOS Simulator,name=iPhone Air' \
-            -only-testing:"$test_target" || exit_code=$?
-    else
-        xcodebuild test \
-            -project "$XCODE_PROJECT" \
-            -scheme "$scheme" \
-            -destination 'platform=iOS Simulator,name=iPhone Air' || exit_code=$?
+        xcode_cmd="$xcode_cmd -only-testing:$test_target"
     fi
+
+    # Run xcodebuild in background
+    eval "$xcode_cmd" > "$temp_output" 2>&1 &
+    local xcode_pid=$!
+
+    # Monitor output for failures
+    tail -f "$temp_output" 2>/dev/null &
+    local tail_pid=$!
+
+    # Wait and check for failures
+    while kill -0 $xcode_pid 2>/dev/null; do
+        if grep -q "failed (" "$temp_output" 2>/dev/null; then
+            echo ""
+            echo -e "${RED}❌ Test failure detected - stopping immediately${NC}"
+            echo "1" > "$failure_flag"
+            kill $xcode_pid 2>/dev/null || true
+            kill $tail_pid 2>/dev/null || true
+            # Also kill any simulator processes
+            pkill -f "xcodebuild.*$scheme" 2>/dev/null || true
+            break
+        fi
+        sleep 0.5
+    done
+
+    # Wait for xcodebuild to finish
+    wait $xcode_pid 2>/dev/null || true
+    kill $tail_pid 2>/dev/null || true
+
+    # Check if we detected a failure
+    local failure_detected=$(cat "$failure_flag")
+
+    # Cleanup
+    rm -f "$temp_output" "$failure_flag"
 
     echo ""
 
-    # Check if xcodebuild succeeded
-    if [ $exit_code -eq 0 ]; then
+    if [ "$failure_detected" = "1" ]; then
+        echo -e "${RED}✗ $test_type failed${NC}"
+        echo ""
+        return 1
+    elif grep -q "TEST SUCCEEDED" "$temp_output" 2>/dev/null || [ $? -eq 0 ]; then
         echo -e "${GREEN}✓ $test_type passed${NC}"
         echo ""
         return 0

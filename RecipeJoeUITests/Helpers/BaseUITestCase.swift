@@ -38,6 +38,10 @@ class BaseUITestCase: XCTestCase {
         // Mark as UI test mode
         app.launchArguments += ["-UITestMode", "true"]
 
+        // Disable password autofill to prevent "Automatic Strong Password" popup
+        // This popup interferes with UI tests by blocking password entry
+        app.launchArguments += ["-disableAutomaticPasswordGeneration", "true"]
+
         // Ensure test user exists and seed data (once per test run)
         try ensureTestUserAndData()
     }
@@ -99,13 +103,22 @@ class BaseUITestCase: XCTestCase {
 
     /// Require the user to be authenticated before proceeding
     /// Will automatically sign in with test credentials if auth screen is shown
+    /// IMPORTANT: Always forces a fresh sign-in to avoid stale token issues
     /// - Throws: XCTSkip if credentials not configured or sign-in fails
     @MainActor
     func requireAuthentication() throws {
         // First check if already authenticated
         let tabBar = app.tabBars.firstMatch
         if tabBar.waitForExistence(timeout: 3) {
-            return // Already authenticated
+            // Sign out first to ensure fresh authentication
+            // This prevents stale JWT tokens from causing "User from sub claim does not exist" errors
+            signOut()
+
+            // Wait for sign-out to complete
+            let emailField = app.textFields["emailTextField"]
+            guard emailField.waitForExistence(timeout: TestConfig.authTimeout) else {
+                throw XCTSkip("Failed to sign out - could not reach login screen")
+            }
         }
 
         // Not authenticated - try to sign in with test credentials
@@ -148,6 +161,11 @@ class BaseUITestCase: XCTestCase {
             }
             throw XCTSkip("Sign-in did not complete in time")
         }
+
+        // IMPORTANT: Wait for Supabase session to be fully established
+        // The UI may navigate before the auth token is ready for API calls
+        // This delay ensures the session is properly propagated to the SDK
+        Thread.sleep(forTimeInterval: 2.0)
     }
 
     /// Check if the app is showing the authenticated state
@@ -269,4 +287,5 @@ class BaseUITestCase: XCTestCase {
         if element2.exists { return element2 }
         return nil
     }
+
 }

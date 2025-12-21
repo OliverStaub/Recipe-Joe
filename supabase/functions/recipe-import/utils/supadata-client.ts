@@ -29,19 +29,11 @@ export class VideoNotFoundError extends Error {
 }
 
 /**
- * Get the Supadata API endpoint for a video platform
+ * Get the Supadata API endpoint for transcripts
+ * Supadata uses a unified endpoint for all platforms - the platform is auto-detected from the URL
  */
-function getEndpointForPlatform(platform: VideoPlatform): string {
-  switch (platform) {
-    case 'youtube':
-      return `${SUPADATA_BASE_URL}/youtube/transcript`;
-    case 'instagram':
-      return `${SUPADATA_BASE_URL}/instagram/transcript`;
-    case 'tiktok':
-      return `${SUPADATA_BASE_URL}/tiktok/transcript`;
-    default:
-      throw new Error(`Unsupported platform: ${platform}`);
-  }
+function getTranscriptEndpoint(): string {
+  return `${SUPADATA_BASE_URL}/transcript`;
 }
 
 /**
@@ -49,10 +41,10 @@ function getEndpointForPlatform(platform: VideoPlatform): string {
  */
 export async function fetchTranscript(
   url: string,
-  platform: VideoPlatform,
+  _platform: VideoPlatform,
   preferredLang?: string
 ): Promise<{ segments: TranscriptSegment[]; language: string }> {
-  const endpoint = getEndpointForPlatform(platform);
+  const endpoint = getTranscriptEndpoint();
   const apiKey = Deno.env.get('SUPADATA_API_KEY');
 
   const params = new URLSearchParams({ url });
