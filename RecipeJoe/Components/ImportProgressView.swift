@@ -31,17 +31,17 @@ struct ImportProgressView: View {
             GeometryReader { geometry in
                 ZStack(alignment: .leading) {
                     // Background track
-                    RoundedRectangle(cornerRadius: 6)
+                    RoundedRectangle(cornerRadius: 8)
                         .fill(Color(.systemGray5))
 
                     // Progress fill
-                    RoundedRectangle(cornerRadius: 6)
+                    RoundedRectangle(cornerRadius: 8)
                         .fill(Color.terracotta)
                         .frame(width: geometry.size.width * currentStep.progress)
                         .animation(.easeInOut(duration: 0.4), value: currentStep)
 
                     // Shimmer overlay
-                    RoundedRectangle(cornerRadius: 6)
+                    RoundedRectangle(cornerRadius: 8)
                         .fill(
                             LinearGradient(
                                 colors: [
@@ -56,7 +56,7 @@ struct ImportProgressView: View {
                         .frame(width: 60)
                         .offset(x: shimmerOffset * geometry.size.width)
                         .mask(
-                            RoundedRectangle(cornerRadius: 6)
+                            RoundedRectangle(cornerRadius: 8)
                                 .frame(width: geometry.size.width * currentStep.progress)
                                 .frame(maxWidth: .infinity, alignment: .leading)
                         )

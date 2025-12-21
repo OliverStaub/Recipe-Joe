@@ -23,6 +23,37 @@ struct AuthenticationView: View {
         case email, password, confirmPassword
     }
 
+    // MARK: - Validation
+
+    /// Validate email format (must match AuthenticationService validation)
+    private var isValidEmail: Bool {
+        let emailRegex = #"^[A-Z0-9a-z._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$"#
+        return email.range(of: emailRegex, options: .regularExpression) != nil
+    }
+
+    private var isValidPassword: Bool {
+        password.count >= 6
+    }
+
+    private var passwordsMatch: Bool {
+        password == confirmPassword
+    }
+
+    /// Show email error only after user has typed something
+    private var showEmailError: Bool {
+        !email.isEmpty && !isValidEmail
+    }
+
+    /// Show password error only after user has started typing
+    private var showPasswordError: Bool {
+        !password.isEmpty && !isValidPassword
+    }
+
+    /// Show password mismatch error only after user has typed in confirm field
+    private var showPasswordMismatchError: Bool {
+        isSignUpMode && !confirmPassword.isEmpty && !passwordsMatch
+    }
+
     var body: some View {
         ScrollView {
             VStack(spacing: 24) {
@@ -56,28 +87,58 @@ struct AuthenticationView: View {
                 .accessibilityIdentifier("authModeToggle")
 
                 // Email/Password form
-                VStack(spacing: 16) {
-                    TextField("Email", text: $email)
-                        .textFieldStyle(.roundedBorder)
-                        .textContentType(.emailAddress)
-                        .keyboardType(.emailAddress)
-                        .autocapitalization(.none)
-                        .autocorrectionDisabled()
-                        .focused($focusedField, equals: .email)
-                        .accessibilityIdentifier("emailTextField")
-
-                    SecureField("Password", text: $password)
-                        .textFieldStyle(.roundedBorder)
-                        .textContentType(isSignUpMode ? .newPassword : .password)
-                        .focused($focusedField, equals: .password)
-                        .accessibilityIdentifier("passwordTextField")
-
-                    if isSignUpMode {
-                        SecureField("Confirm Password", text: $confirmPassword)
+                VStack(spacing: 12) {
+                    // Email field
+                    VStack(alignment: .leading, spacing: 4) {
+                        TextField("Email", text: $email)
                             .textFieldStyle(.roundedBorder)
-                            .textContentType(.newPassword)
-                            .focused($focusedField, equals: .confirmPassword)
-                            .accessibilityIdentifier("confirmPasswordTextField")
+                            .textContentType(.emailAddress)
+                            .keyboardType(.emailAddress)
+                            .autocapitalization(.none)
+                            .autocorrectionDisabled()
+                            .focused($focusedField, equals: .email)
+                            .accessibilityIdentifier("emailTextField")
+
+                        if showEmailError {
+                            Text("Please enter a valid email address")
+                                .font(.caption)
+                                .foregroundStyle(.red)
+                                .accessibilityIdentifier("emailValidationError")
+                        }
+                    }
+
+                    // Password field
+                    VStack(alignment: .leading, spacing: 4) {
+                        SecureField("Password", text: $password)
+                            .textFieldStyle(.roundedBorder)
+                            .textContentType(isSignUpMode ? .newPassword : .password)
+                            .focused($focusedField, equals: .password)
+                            .accessibilityIdentifier("passwordTextField")
+
+                        if showPasswordError {
+                            Text("Password must be at least 6 characters")
+                                .font(.caption)
+                                .foregroundStyle(.red)
+                                .accessibilityIdentifier("passwordValidationError")
+                        }
+                    }
+
+                    // Confirm password field (sign up only)
+                    if isSignUpMode {
+                        VStack(alignment: .leading, spacing: 4) {
+                            SecureField("Confirm Password", text: $confirmPassword)
+                                .textFieldStyle(.roundedBorder)
+                                .textContentType(.newPassword)
+                                .focused($focusedField, equals: .confirmPassword)
+                                .accessibilityIdentifier("confirmPasswordTextField")
+
+                            if showPasswordMismatchError {
+                                Text("Passwords do not match")
+                                    .font(.caption)
+                                    .foregroundStyle(.red)
+                                    .accessibilityIdentifier("confirmPasswordValidationError")
+                            }
+                        }
                     }
 
                     // Submit button
@@ -183,13 +244,10 @@ struct AuthenticationView: View {
     }
 
     private var isFormValid: Bool {
-        let emailValid = !email.isEmpty && email.contains("@")
-        let passwordValid = password.count >= 6
-
         if isSignUpMode {
-            return emailValid && passwordValid && password == confirmPassword
+            return isValidEmail && isValidPassword && passwordsMatch
         } else {
-            return emailValid && passwordValid
+            return isValidEmail && isValidPassword
         }
     }
 

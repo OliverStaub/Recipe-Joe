@@ -100,9 +100,91 @@ final class SetupDiagnosticsTests: XCTestCase {
         print("✅ Successfully connected to Supabase (status: \(statusCode))")
     }
 
+    // MARK: - Email Sign-Up Configuration Check
+
+    /// Tests that email sign-up is properly configured in Supabase
+    /// This catches configuration issues like disabled email provider or invalid email restrictions
+    func test0_E_EmailSignUpIsConfigured() throws {
+        guard TestConfig.supabaseAnonKey != nil else {
+            throw XCTSkip("SUPABASE_ANON_KEY not set - skipping email sign-up check")
+        }
+
+        // Try to sign up with a unique test email via the public API (not admin)
+        let testEmail = "signup_test_\(UUID().uuidString.prefix(8))@recipejoe.test"
+        let testPassword = "TestPassword123!"
+
+        let url = URL(string: "\(TestConfig.supabaseURL)/auth/v1/signup")!
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.setValue(TestConfig.supabaseAnonKey!, forHTTPHeaderField: "apikey")
+
+        let body: [String: String] = ["email": testEmail, "password": testPassword]
+        request.httpBody = try? JSONSerialization.data(withJSONObject: body)
+
+        let expectation = XCTestExpectation(description: "Email sign-up check")
+        var signUpSucceeded = false
+        var errorMessage: String?
+        var createdUserId: String?
+
+        URLSession.shared.dataTask(with: request) { data, response, error in
+            if let error = error {
+                errorMessage = "Network error: \(error.localizedDescription)"
+            } else if let data = data {
+                if let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] {
+                    // Check for error in response
+                    if let errorMsg = json["error_description"] as? String {
+                        errorMessage = errorMsg
+                    } else if let msg = json["msg"] as? String {
+                        errorMessage = msg
+                    } else if json["id"] != nil || json["user"] != nil {
+                        // Success - user was created or confirmation email sent
+                        signUpSucceeded = true
+                        // Get user ID for cleanup
+                        if let user = json["user"] as? [String: Any], let id = user["id"] as? String {
+                            createdUserId = id
+                        } else if let id = json["id"] as? String {
+                            createdUserId = id
+                        }
+                    } else if let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 {
+                        // 200 response without error = success
+                        signUpSucceeded = true
+                    }
+                }
+            }
+            expectation.fulfill()
+        }.resume()
+
+        wait(for: [expectation], timeout: 15)
+
+        // Clean up test user if created
+        if let userId = createdUserId, let serviceKey = TestConfig.serviceRoleKey {
+            _ = deleteUserViaAdminAPI(userId: UUID(uuidString: userId)!, serviceKey: serviceKey)
+        }
+
+        if !signUpSucceeded {
+            XCTFail("""
+                ❌ Email sign-up is NOT working!
+
+                Error: \(errorMessage ?? "Unknown error")
+
+                To fix in Supabase Dashboard:
+                1. Go to Authentication → Providers → Email
+                2. Ensure "Enable Email Signup" is ON
+                3. If "Confirm email" is ON, ensure SMTP is configured
+                4. Check Authentication → URL Configuration for domain restrictions
+
+                Test email used: \(testEmail)
+                """)
+        } else {
+            print("✅ Email sign-up is properly configured")
+        }
+    }
+
     // MARK: - Test User Checks
 
-    func test0_E_TestUserExistsOrCanBeCreated() throws {
+    func test0_F_TestUserExistsOrCanBeCreated() throws {
+        // Note: This was renamed from test0_E to test0_F after adding EmailSignUpIsConfigured
         guard let serviceKey = TestConfig.serviceRoleKey,
               let email = TestConfig.testUserEmail,
               let password = TestConfig.testUserPassword else {
@@ -327,7 +409,7 @@ final class SetupDiagnosticsTests: XCTestCase {
         return (token, errorMessage)
     }
 
-    func test0_F_CanSeedTestRecipes() throws {
+    func test0_G_CanSeedTestRecipes() throws {
         guard let serviceKey = TestConfig.serviceRoleKey,
               let email = TestConfig.testUserEmail else {
             throw XCTSkip(".env configuration not set - skipping recipe seed test")

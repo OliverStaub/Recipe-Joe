@@ -18,7 +18,7 @@ struct TimestampInputSection: View {
             // Header
             HStack {
                 Image(systemName: "film")
-                    .foregroundStyle(Color("AccentColor"))
+                    .foregroundStyle(Color.terracotta)
                 Text(platformName != nil
                     ? String(localized: "\(platformName!) Video")
                     : String(localized: "Video"))

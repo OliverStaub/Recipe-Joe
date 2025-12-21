@@ -14,8 +14,8 @@ struct CategoryBadge: View {
     var body: some View {
         Label(text, systemImage: icon)
             .font(.caption)
-            .padding(.horizontal, 10)
-            .padding(.vertical, 6)
+            .padding(.horizontal, 8)
+            .padding(.vertical, 8)
             .background(Color.terracotta.opacity(0.15))
             .foregroundStyle(Color.terracotta)
             .clipShape(Capsule())
