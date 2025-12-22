@@ -20,15 +20,34 @@ struct RecipeDetailView: View {
     @State private var uploadError: String?
     @Environment(\.locale) private var locale
 
+    // Time picker state
+    @State private var showPrepTimePicker = false
+    @State private var showCookTimePicker = false
+    @State private var showTotalTimePicker = false
+    @State private var editTimeMinutes = 0
+
+    // Category/Cuisine edit state
+    @State private var showCategoryEdit = false
+    @State private var showCuisineEdit = false
+    @State private var editCategory = ""
+    @State private var editCuisine = ""
+
     var body: some View {
-        ScrollView {
-            if viewModel.isLoading {
-                ProgressView("Loading recipe...")
-                    .padding(.top, 100)
-            } else if let detail = viewModel.recipeDetail {
-                recipeContent(detail: detail)
-            } else if let error = viewModel.error {
-                errorView(error: error)
+        ZStack {
+            ScrollView {
+                if viewModel.isLoading {
+                    ProgressView("Loading recipe...")
+                        .padding(.top, 100)
+                } else if let detail = viewModel.recipeDetail {
+                    recipeContent(detail: detail)
+                } else if let error = viewModel.error {
+                    errorView(error: error)
+                }
+            }
+
+            // Saving overlay
+            if viewModel.isSaving {
+                savingOverlay
             }
         }
         .navigationTitle(viewModel.recipeDetail?.recipe.name ?? "Recipe")
@@ -36,6 +55,26 @@ struct RecipeDetailView: View {
         .task {
             await viewModel.fetchRecipeDetail(id: recipeId)
         }
+    }
+
+    // MARK: - Saving Overlay
+
+    private var savingOverlay: some View {
+        Color.black.opacity(0.3)
+            .ignoresSafeArea()
+            .overlay {
+                VStack(spacing: 12) {
+                    ProgressView()
+                        .scaleEffect(1.2)
+                        .tint(.white)
+                    Text("Saving...")
+                        .font(.subheadline)
+                        .foregroundStyle(.white)
+                }
+                .padding(24)
+                .background(.ultraThinMaterial)
+                .clipShape(RoundedRectangle(cornerRadius: 16))
+            }
     }
 
     // MARK: - Recipe Content
@@ -217,54 +256,155 @@ struct RecipeDetailView: View {
     @ViewBuilder
     private func recipeInfoSection(recipe: SupabaseRecipe) -> some View {
         VStack(alignment: .leading, spacing: 12) {
-            // Title
-            Text(recipe.name)
-                .font(.title)
-                .fontWeight(.bold)
+            // Editable Title
+            EditableTextField(
+                value: recipe.name,
+                placeholder: "Recipe Title",
+                title: "Recipe Title",
+                onSave: { newValue in
+                    Task { await viewModel.saveName(newValue) }
+                },
+                textStyle: .title,
+                textWeight: .bold
+            )
 
-            // Author
+            // Author (read-only)
             if let author = recipe.author, !author.isEmpty {
                 Text("by \(author)")
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
             }
 
-            // Description
-            if let description = recipe.description, !description.isEmpty {
-                Text(description)
-                    .font(.body)
-                    .foregroundStyle(.secondary)
-            }
+            // Editable Description
+            EditableTextField(
+                value: recipe.description ?? "",
+                placeholder: "Add description...",
+                title: "Description",
+                onSave: { newValue in
+                    Task { await viewModel.saveDescription(newValue) }
+                },
+                textColor: .secondary,
+                multiline: true
+            )
 
             // Time badges
             HStack(spacing: 16) {
                 if let prepTime = recipe.prepTimeMinutes, prepTime > 0 {
-                    TimeBadge(label: "Prep", minutes: prepTime)
+                    TimeBadge(label: "Prep", minutes: prepTime) {
+                        editTimeMinutes = prepTime
+                        showPrepTimePicker = true
+                    }
                 }
                 if let cookTime = recipe.cookTimeMinutes, cookTime > 0 {
-                    TimeBadge(label: "Cook", minutes: cookTime)
+                    TimeBadge(label: "Cook", minutes: cookTime) {
+                        editTimeMinutes = cookTime
+                        showCookTimePicker = true
+                    }
                 }
                 if let totalTime = recipe.totalTimeMinutes, totalTime > 0 {
-                    TimeBadge(label: "Total", minutes: totalTime)
+                    TimeBadge(label: "Total", minutes: totalTime) {
+                        editTimeMinutes = totalTime
+                        showTotalTimePicker = true
+                    }
                 }
             }
 
             // Category & Cuisine
             HStack(spacing: 12) {
                 if let category = recipe.category, !category.isEmpty {
-                    CategoryBadge(text: category, icon: "tag.fill")
+                    CategoryBadge(text: category, icon: "tag.fill") {
+                        editCategory = category
+                        showCategoryEdit = true
+                    }
                 }
                 if let cuisine = recipe.cuisine, !cuisine.isEmpty {
-                    CategoryBadge(text: cuisine, icon: "globe")
+                    CategoryBadge(text: cuisine, icon: "globe") {
+                        editCuisine = cuisine
+                        showCuisineEdit = true
+                    }
                 }
             }
 
-            // Yield
+            // Editable Yield
             if let recipeYield = recipe.recipeYield, !recipeYield.isEmpty {
-                Label(recipeYield, systemImage: "person.2.fill")
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
+                HStack {
+                    Image(systemName: "person.2.fill")
+                    EditableTextField(
+                        value: recipeYield,
+                        placeholder: "Servings",
+                        title: "Servings",
+                        onSave: { newValue in
+                            Task { await viewModel.saveYield(newValue) }
+                        },
+                        textStyle: .subheadline,
+                        textColor: .secondary
+                    )
+                }
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
             }
+        }
+        // Time picker sheets
+        .sheet(isPresented: $showPrepTimePicker) {
+            TimePickerSheet(
+                title: "Prep",
+                minutes: $editTimeMinutes,
+                onSave: {
+                    showPrepTimePicker = false
+                    Task { await viewModel.savePrepTime(editTimeMinutes) }
+                },
+                onCancel: { showPrepTimePicker = false }
+            )
+            .presentationDetents([.height(300)])
+        }
+        .sheet(isPresented: $showCookTimePicker) {
+            TimePickerSheet(
+                title: "Cook",
+                minutes: $editTimeMinutes,
+                onSave: {
+                    showCookTimePicker = false
+                    Task { await viewModel.saveCookTime(editTimeMinutes) }
+                },
+                onCancel: { showCookTimePicker = false }
+            )
+            .presentationDetents([.height(300)])
+        }
+        .sheet(isPresented: $showTotalTimePicker) {
+            TimePickerSheet(
+                title: "Total",
+                minutes: $editTimeMinutes,
+                onSave: {
+                    showTotalTimePicker = false
+                    Task { await viewModel.saveTotalTime(editTimeMinutes) }
+                },
+                onCancel: { showTotalTimePicker = false }
+            )
+            .presentationDetents([.height(300)])
+        }
+        // Category/Cuisine edit sheets
+        .sheet(isPresented: $showCategoryEdit) {
+            TextEditSheet(
+                title: "Category",
+                value: $editCategory,
+                onSave: {
+                    showCategoryEdit = false
+                    Task { await viewModel.saveCategory(editCategory) }
+                },
+                onCancel: { showCategoryEdit = false }
+            )
+            .presentationDetents([.height(200)])
+        }
+        .sheet(isPresented: $showCuisineEdit) {
+            TextEditSheet(
+                title: "Cuisine",
+                value: $editCuisine,
+                onSave: {
+                    showCuisineEdit = false
+                    Task { await viewModel.saveCuisine(editCuisine) }
+                },
+                onCancel: { showCuisineEdit = false }
+            )
+            .presentationDetents([.height(200)])
         }
     }
 
@@ -298,7 +438,15 @@ struct RecipeDetailView: View {
 
             VStack(alignment: .leading, spacing: 8) {
                 ForEach(ingredients) { ingredient in
-                    IngredientRow(ingredient: ingredient)
+                    IngredientRow(ingredient: ingredient) { quantity, notes in
+                        Task {
+                            await viewModel.saveIngredient(
+                                ingredientId: ingredient.id,
+                                quantity: quantity,
+                                notes: notes
+                            )
+                        }
+                    }
                 }
             }
             .padding()
@@ -316,7 +464,14 @@ struct RecipeDetailView: View {
 
             VStack(alignment: .leading, spacing: 16) {
                 ForEach(steps) { step in
-                    StepRow(step: step)
+                    StepRow(step: step) { instruction in
+                        Task {
+                            await viewModel.saveStepInstruction(
+                                stepId: step.id,
+                                instruction: instruction
+                            )
+                        }
+                    }
                 }
             }
         }

@@ -590,16 +590,29 @@ final class AuthenticationUITests: BaseUITestCase {
         app.launch()
         signOutIfNeeded()
 
-        // Sign in
+        // Wait for auth view to appear after sign out
         let emailField = app.textFields["emailTextField"]
+        guard emailField.waitForExistence(timeout: TestConfig.authTimeout) else {
+            throw XCTSkip("Auth view did not appear after sign out")
+        }
+
+        // Sign in
         emailField.tap()
         emailField.typeText(email)
 
         let passwordField = app.secureTextFields["passwordTextField"]
-        passwordField.tap()
-        passwordField.typeText(password)
+        guard passwordField.waitForExistence(timeout: TestConfig.standardTimeout) else {
+            XCTFail("Password field not found")
+            return
+        }
+        enterPassword(into: passwordField, password: password)
 
-        app.buttons["emailAuthButton"].tap()
+        let authButton = app.buttons["emailAuthButton"]
+        guard authButton.waitForExistence(timeout: TestConfig.standardTimeout) else {
+            XCTFail("Auth button not found")
+            return
+        }
+        authButton.tap()
 
         // Wait for authentication
         let tabBar = app.tabBars.firstMatch

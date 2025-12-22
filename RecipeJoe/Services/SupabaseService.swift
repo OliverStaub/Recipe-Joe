@@ -212,6 +212,98 @@ final class SupabaseService {
         return response
     }
 
+    // MARK: - Recipe Updates
+
+    /// Update a recipe's name
+    func updateRecipeName(id: UUID, name: String) async throws {
+        try await client
+            .from("recipes")
+            .update(["name": name])
+            .eq("id", value: id.uuidString)
+            .execute()
+    }
+
+    /// Update a recipe's description
+    func updateRecipeDescription(id: UUID, description: String?) async throws {
+        try await client
+            .from("recipes")
+            .update(RecipeDescriptionUpdate(description: description))
+            .eq("id", value: id.uuidString)
+            .execute()
+    }
+
+    /// Update a recipe's prep time
+    func updateRecipePrepTime(id: UUID, prepTimeMinutes: Int?) async throws {
+        try await client
+            .from("recipes")
+            .update(RecipePrepTimeUpdate(prepTimeMinutes: prepTimeMinutes))
+            .eq("id", value: id.uuidString)
+            .execute()
+    }
+
+    /// Update a recipe's cook time
+    func updateRecipeCookTime(id: UUID, cookTimeMinutes: Int?) async throws {
+        try await client
+            .from("recipes")
+            .update(RecipeCookTimeUpdate(cookTimeMinutes: cookTimeMinutes))
+            .eq("id", value: id.uuidString)
+            .execute()
+    }
+
+    /// Update a recipe's total time
+    func updateRecipeTotalTime(id: UUID, totalTimeMinutes: Int?) async throws {
+        try await client
+            .from("recipes")
+            .update(RecipeTotalTimeUpdate(totalTimeMinutes: totalTimeMinutes))
+            .eq("id", value: id.uuidString)
+            .execute()
+    }
+
+    /// Update a recipe's yield/servings
+    func updateRecipeYield(id: UUID, recipeYield: String?) async throws {
+        try await client
+            .from("recipes")
+            .update(RecipeYieldUpdate(recipeYield: recipeYield))
+            .eq("id", value: id.uuidString)
+            .execute()
+    }
+
+    /// Update a recipe's category
+    func updateRecipeCategory(id: UUID, category: String?) async throws {
+        try await client
+            .from("recipes")
+            .update(RecipeCategoryUpdate(category: category))
+            .eq("id", value: id.uuidString)
+            .execute()
+    }
+
+    /// Update a recipe's cuisine
+    func updateRecipeCuisine(id: UUID, cuisine: String?) async throws {
+        try await client
+            .from("recipes")
+            .update(RecipeCuisineUpdate(cuisine: cuisine))
+            .eq("id", value: id.uuidString)
+            .execute()
+    }
+
+    /// Update a recipe step's instruction
+    func updateRecipeStep(id: UUID, instruction: String) async throws {
+        try await client
+            .from("recipe_steps")
+            .update(["instruction": instruction])
+            .eq("id", value: id.uuidString)
+            .execute()
+    }
+
+    /// Update a recipe ingredient's quantity and notes
+    func updateRecipeIngredient(id: UUID, quantity: Double?, notes: String?) async throws {
+        try await client
+            .from("recipe_ingredients")
+            .update(RecipeIngredientUpdate(quantity: quantity, notes: notes))
+            .eq("id", value: id.uuidString)
+            .execute()
+    }
+
     // MARK: - Delete Recipe
 
     /// Delete a recipe and all its related data (steps, ingredients cascade automatically)

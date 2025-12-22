@@ -40,7 +40,27 @@ class BaseUITestCase: XCTestCase {
 
         // Disable password autofill to prevent "Automatic Strong Password" popup
         // This popup interferes with UI tests by blocking password entry
+        // Note: These arguments help but aren't 100% reliable on all iOS versions
         app.launchArguments += ["-disableAutomaticPasswordGeneration", "true"]
+
+        // Additional settings to disable AutoFill features
+        app.launchEnvironment["DISABLE_AUTOFILL"] = "1"
+
+        // Add UI interruption monitor for password autofill and other system popups
+        // This handles the "Automatic Strong Password" suggestion that can block tests
+        addUIInterruptionMonitor(withDescription: "Password AutoFill") { alert in
+            // Handle various password autofill scenarios
+            let cancelButtons = ["Not Now", "Cancel", "Close", "Dismiss"]
+            for buttonLabel in cancelButtons {
+                let button = alert.buttons[buttonLabel]
+                if button.exists {
+                    button.tap()
+                    return true
+                }
+            }
+            // If it's a keyboard accessory, try tapping elsewhere to dismiss
+            return false
+        }
 
         // Ensure test user exists and seed data (once per test run)
         try ensureTestUserAndData()
@@ -99,6 +119,57 @@ class BaseUITestCase: XCTestCase {
         app = nil
     }
 
+    // MARK: - Password AutoFill Helpers
+
+    /// Dismiss password autofill suggestions if they appear
+    /// The "Automatic Strong Password" keyboard accessory can block password entry
+    @MainActor
+    private func dismissPasswordAutoFillIfNeeded() {
+        // The password autofill appears as a keyboard accessory view
+        // We need to look for and dismiss it before typing
+
+        // Look for "Use Strong Password" or similar autofill UI
+        let strongPasswordButton = app.buttons["Use Strong Password"]
+        let otherOptionsButton = app.buttons["Other Options"]
+        let chooseOwnButton = app.buttons["Choose My Own Password"]
+
+        // If autofill suggestions appear, dismiss them
+        if chooseOwnButton.waitForExistence(timeout: 1) {
+            chooseOwnButton.tap()
+            Thread.sleep(forTimeInterval: 0.3)
+        } else if otherOptionsButton.waitForExistence(timeout: 0.5) {
+            otherOptionsButton.tap()
+            // After tapping other options, look for "Choose My Own Password"
+            if chooseOwnButton.waitForExistence(timeout: 1) {
+                chooseOwnButton.tap()
+            }
+            Thread.sleep(forTimeInterval: 0.3)
+        }
+
+        // Also check for the password bar at top of keyboard
+        // Tapping elsewhere on the screen can dismiss it
+        let passwordBar = app.otherElements["Password AutoFill"]
+        if passwordBar.exists {
+            // Tap on the main app area to dismiss
+            app.tap()
+            Thread.sleep(forTimeInterval: 0.3)
+        }
+    }
+
+    /// Enter text into a secure text field, handling password autofill
+    @MainActor
+    func enterPassword(into field: XCUIElement, password: String) {
+        field.tap()
+        dismissPasswordAutoFillIfNeeded()
+
+        // Tap the field again to ensure focus after dismissing autofill
+        // This is necessary because dismissing autofill can steal focus
+        field.tap()
+        Thread.sleep(forTimeInterval: 0.2)
+
+        field.typeText(password)
+    }
+
     // MARK: - Authentication Helpers
 
     /// Require the user to be authenticated before proceeding
@@ -137,13 +208,12 @@ class BaseUITestCase: XCTestCase {
         emailField.tap()
         emailField.typeText(email)
 
-        // Enter password
+        // Enter password (using helper to handle autofill popup)
         let passwordField = app.secureTextFields["passwordTextField"]
         guard passwordField.waitForExistence(timeout: 3) else {
             throw XCTSkip("Password field not found")
         }
-        passwordField.tap()
-        passwordField.typeText(password)
+        enterPassword(into: passwordField, password: password)
 
         // Tap sign in button
         let signInButton = app.buttons["emailAuthButton"]

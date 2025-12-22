@@ -9,7 +9,11 @@ import SwiftUI
 
 struct StepRow: View {
     let step: SupabaseRecipeStep
+    var onSave: ((String) -> Void)?
     @Environment(\.locale) private var locale
+
+    @State private var showEditSheet = false
+    @State private var editInstruction: String = ""
 
     private var parsedStep: (category: StepCategory, instruction: String) {
         StepCategory.parse(step.instruction)
@@ -56,6 +60,71 @@ struct StepRow: View {
             RoundedRectangle(cornerRadius: 12)
                 .strokeBorder(parsed.category.color.opacity(0.2), lineWidth: 1)
         )
+        .contentShape(Rectangle())
+        .onLongPressGesture {
+            if onSave != nil {
+                editInstruction = step.instruction
+                showEditSheet = true
+            }
+        }
+        .sheet(isPresented: $showEditSheet) {
+            StepEditSheet(
+                stepNumber: step.stepNumber,
+                instruction: $editInstruction,
+                onSave: {
+                    onSave?(editInstruction)
+                    showEditSheet = false
+                },
+                onCancel: {
+                    showEditSheet = false
+                }
+            )
+            .presentationDetents([.medium])
+        }
+    }
+}
+
+// MARK: - Step Edit Sheet
+
+struct StepEditSheet: View {
+    let stepNumber: Int
+    @Binding var instruction: String
+    let onSave: () -> Void
+    let onCancel: () -> Void
+
+    @FocusState private var isFocused: Bool
+
+    var body: some View {
+        NavigationStack {
+            VStack(spacing: 16) {
+                TextEditor(text: $instruction)
+                    .focused($isFocused)
+                    .frame(minHeight: 150)
+                    .padding(8)
+                    .background(Color(.systemGray6))
+                    .clipShape(RoundedRectangle(cornerRadius: 10))
+
+                Text("Tip: Start with a category prefix like \"prep:\", \"cook:\", \"mix:\" for automatic categorization")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+
+                Spacer()
+            }
+            .padding()
+            .onAppear { isFocused = true }
+            .navigationTitle("Step \(stepNumber)")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel", action: onCancel)
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Save", action: onSave)
+                        .fontWeight(.semibold)
+                        .foregroundStyle(Color.terracotta)
+                }
+            }
+        }
     }
 }
 

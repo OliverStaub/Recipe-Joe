@@ -263,3 +263,62 @@ struct SupabaseRecipeDetail: Sendable {
         ingredients.sorted { $0.displayOrder < $1.displayOrder }
     }
 }
+
+// MARK: - Update Models
+
+/// Update model for recipe description
+struct RecipeDescriptionUpdate: Codable {
+    let description: String?
+}
+
+/// Update model for recipe prep time
+struct RecipePrepTimeUpdate: Codable {
+    let prepTimeMinutes: Int?
+
+    enum CodingKeys: String, CodingKey {
+        case prepTimeMinutes = "prep_time_minutes"
+    }
+}
+
+/// Update model for recipe cook time
+struct RecipeCookTimeUpdate: Codable {
+    let cookTimeMinutes: Int?
+
+    enum CodingKeys: String, CodingKey {
+        case cookTimeMinutes = "cook_time_minutes"
+    }
+}
+
+/// Update model for recipe total time
+struct RecipeTotalTimeUpdate: Codable {
+    let totalTimeMinutes: Int?
+
+    enum CodingKeys: String, CodingKey {
+        case totalTimeMinutes = "total_time_minutes"
+    }
+}
+
+/// Update model for recipe yield/servings
+struct RecipeYieldUpdate: Codable {
+    let recipeYield: String?
+
+    enum CodingKeys: String, CodingKey {
+        case recipeYield = "recipe_yield"
+    }
+}
+
+/// Update model for recipe category
+struct RecipeCategoryUpdate: Codable {
+    let category: String?
+}
+
+/// Update model for recipe cuisine
+struct RecipeCuisineUpdate: Codable {
+    let cuisine: String?
+}
+
+/// Update model for recipe ingredient quantity and notes
+struct RecipeIngredientUpdate: Codable {
+    let quantity: Double?
+    let notes: String?
+}
