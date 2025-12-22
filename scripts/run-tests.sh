@@ -75,6 +75,10 @@ run_tests() {
 
     # Check if we detected a failure
     local failure_detected=$(cat "$failure_flag")
+    local test_succeeded=0
+    if grep -q "TEST SUCCEEDED" "$temp_output" 2>/dev/null; then
+        test_succeeded=1
+    fi
 
     # Cleanup
     rm -f "$temp_output" "$failure_flag"
@@ -85,7 +89,7 @@ run_tests() {
         echo -e "${RED}✗ $test_type failed${NC}"
         echo ""
         return 1
-    elif grep -q "TEST SUCCEEDED" "$temp_output" 2>/dev/null || [ $? -eq 0 ]; then
+    elif [ "$test_succeeded" = "1" ]; then
         echo -e "${GREEN}✓ $test_type passed${NC}"
         echo ""
         return 0

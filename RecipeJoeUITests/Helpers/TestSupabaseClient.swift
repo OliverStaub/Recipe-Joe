@@ -79,12 +79,28 @@ final class TestSupabaseClient {
     }
 
     /// Delete a user via Admin API
+    /// SAFETY: Only deletes users with @recipejoe.test email domain to prevent accidental production data loss
     /// - Parameter userId: The user's UUID to delete
     func deleteUserSync(userId: UUID) {
         guard let serviceKey = TestConfig.serviceRoleKey else {
             print("⚠️ TestSupabaseClient: SUPABASE_SERVICE_ROLE_KEY not set, cannot delete user")
             return
         }
+
+        // SAFETY CHECK: First get the user's email and verify it's a test account
+        guard let email = getUserEmailByIdSync(userId: userId) else {
+            print("🚫 SAFETY: Cannot delete user \(userId) - could not verify email")
+            return
+        }
+
+        guard email.hasSuffix("@recipejoe.test") else {
+            print("🚫 SAFETY: Refusing to delete non-test user!")
+            print("🚫 Email: \(email)")
+            print("🚫 Only users with @recipejoe.test emails can be deleted by tests")
+            return
+        }
+
+        print("✅ Verified test user, proceeding with deletion: \(email)")
 
         guard let url = URL(string: "\(TestConfig.supabaseURL)/auth/v1/admin/users/\(userId.uuidString)") else {
             return
@@ -103,11 +119,45 @@ final class TestSupabaseClient {
             } else if let httpResponse = response as? HTTPURLResponse,
                       !(200...299).contains(httpResponse.statusCode) {
                 print("⚠️ TestSupabaseClient delete user failed with status: \(httpResponse.statusCode)")
+            } else {
+                print("✅ Successfully deleted test user: \(email)")
             }
             semaphore.signal()
         }.resume()
 
         _ = semaphore.wait(timeout: .now() + 10)
+    }
+
+    /// Get user email by ID via Admin API (for safety verification)
+    /// - Parameter userId: The user's UUID
+    /// - Returns: The user's email if found
+    private func getUserEmailByIdSync(userId: UUID) -> String? {
+        guard let serviceKey = TestConfig.serviceRoleKey else {
+            return nil
+        }
+
+        guard let url = URL(string: "\(TestConfig.supabaseURL)/auth/v1/admin/users/\(userId.uuidString)") else {
+            return nil
+        }
+
+        var request = URLRequest(url: url)
+        request.httpMethod = "GET"
+        request.setValue(serviceKey, forHTTPHeaderField: "apikey")
+
+        var email: String?
+        let semaphore = DispatchSemaphore(value: 0)
+
+        URLSession.shared.dataTask(with: request) { data, _, _ in
+            if let data = data,
+               let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+               let userEmail = json["email"] as? String {
+                email = userEmail
+            }
+            semaphore.signal()
+        }.resume()
+
+        _ = semaphore.wait(timeout: .now() + 10)
+        return email
     }
 
     /// Get user by email via Admin API
