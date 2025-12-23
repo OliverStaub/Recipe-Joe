@@ -11,6 +11,8 @@ import SwiftUI
 @main
 struct RecipeJoeApp: App {
     @ObservedObject private var userSettings = UserSettings.shared
+    @ObservedObject private var authService = AuthenticationService.shared
+    @State private var deepLinkRecipeId: UUID?
 
     init() {
         configureImageCache()
@@ -18,8 +20,36 @@ struct RecipeJoeApp: App {
 
     var body: some Scene {
         WindowGroup {
-            MainTabView()
-                .environment(\.locale, userSettings.appLocale)
+            Group {
+                if authService.isLoading {
+                    // Loading state while checking auth
+                    ProgressView()
+                } else if authService.isAuthenticated {
+                    // User is authenticated - show main app
+                    MainTabView(deepLinkRecipeId: $deepLinkRecipeId)
+                } else {
+                    // User is not authenticated - show sign in
+                    AuthenticationView()
+                }
+            }
+            .environment(\.locale, userSettings.appLocale)
+            .onOpenURL { url in
+                handleDeepLink(url)
+            }
+        }
+    }
+
+    /// Handle deep links for navigating to recipes
+    /// URL format: recipejoe://recipe/{uuid}
+    private func handleDeepLink(_ url: URL) {
+        guard url.scheme == AppConstants.urlScheme else { return }
+
+        let pathComponents = url.pathComponents.filter { $0 != "/" }
+
+        if pathComponents.count >= 2,
+           pathComponents[0] == "recipe",
+           let recipeId = UUID(uuidString: pathComponents[1]) {
+            deepLinkRecipeId = recipeId
         }
     }
 

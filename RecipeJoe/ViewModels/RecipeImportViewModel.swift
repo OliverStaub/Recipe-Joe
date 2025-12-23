@@ -62,14 +62,18 @@ final class RecipeImportViewModel: ObservableObject {
     enum ImportStep: Int, CaseIterable {
         case fetching = 0
         case fetchingTranscript = 1
-        case parsing = 2
-        case extracting = 3
-        case saving = 4
+        case uploading = 2
+        case recognizing = 3
+        case parsing = 4
+        case extracting = 5
+        case saving = 6
 
         var title: String {
             switch self {
             case .fetching: return String(localized: "Fetching recipe...")
             case .fetchingTranscript: return String(localized: "Fetching transcript...")
+            case .uploading: return String(localized: "Uploading file...")
+            case .recognizing: return String(localized: "Reading text...")
             case .parsing: return String(localized: "Analyzing with AI...")
             case .extracting: return String(localized: "Extracting ingredients...")
             case .saving: return String(localized: "Saving recipe...")
@@ -160,6 +164,144 @@ final class RecipeImportViewModel: ObservableObject {
         lastImportStats = nil
         startTimestamp = ""
         endTimestamp = ""
+    }
+
+    // MARK: - Media Import (OCR)
+
+    /// Maximum file sizes for upload
+    private static let maxImageSizeMB = 10
+    private static let maxPDFSizeMB = 20
+
+    /// Import a recipe from image data (photo or camera capture)
+    /// - Parameter imageData: JPEG image data
+    func importRecipeFromImage(_ imageData: Data) async {
+        await importRecipeFromImages([imageData])
+    }
+
+    /// Import a recipe from multiple images (combined into one recipe)
+    /// - Parameter imagesData: Array of JPEG image data
+    func importRecipeFromImages(_ imagesData: [Data]) async {
+        // Validate file sizes
+        for (index, imageData) in imagesData.enumerated() {
+            let sizeMB = imageData.count / (1024 * 1024)
+            if sizeMB > Self.maxImageSizeMB {
+                importState = .error("Image \(index + 1) too large. Maximum size is \(Self.maxImageSizeMB)MB.")
+                return
+            }
+        }
+
+        importState = .importing
+        currentStep = .uploading
+
+        do {
+            // Step 1: Upload all images to temporary storage
+            var storagePaths: [String] = []
+            for imageData in imagesData {
+                let storagePath = try await SupabaseService.shared.uploadTempImport(
+                    data: imageData,
+                    contentType: "image/jpeg",
+                    fileExtension: "jpg"
+                )
+                storagePaths.append(storagePath)
+            }
+
+            currentStep = .recognizing
+            try await Task.sleep(for: .milliseconds(300))
+
+            // Step 2: Call OCR Edge Function with all paths
+            let language = UserSettings.shared.recipeLanguage.rawValue
+            let reword = !UserSettings.shared.keepOriginalWording
+
+            currentStep = .parsing
+            try await Task.sleep(for: .milliseconds(300))
+
+            currentStep = .extracting
+
+            let response = try await SupabaseService.shared.importRecipeFromMedia(
+                storagePaths: storagePaths,
+                mediaType: .image,
+                language: language,
+                reword: reword
+            )
+
+            currentStep = .saving
+            try await Task.sleep(for: .milliseconds(200))
+
+            if response.success {
+                if let recipeIdString = response.recipeId,
+                   let recipeId = UUID(uuidString: recipeIdString) {
+                    lastImportedRecipeId = recipeId
+                }
+                lastImportedRecipeName = response.recipeName
+                lastImportStats = response.stats
+                importState = .success
+            } else {
+                importState = .error(response.error ?? "Failed to import recipe from images")
+            }
+
+        } catch {
+            importState = .error(error.localizedDescription)
+        }
+    }
+
+    /// Import a recipe from PDF data
+    /// - Parameter pdfData: PDF file data
+    func importRecipeFromPDF(_ pdfData: Data) async {
+        // Validate file size
+        let sizeMB = pdfData.count / (1024 * 1024)
+        if sizeMB > Self.maxPDFSizeMB {
+            importState = .error("PDF too large. Maximum size is \(Self.maxPDFSizeMB)MB.")
+            return
+        }
+
+        importState = .importing
+        currentStep = .uploading
+
+        do {
+            // Step 1: Upload to temporary storage
+            let storagePath = try await SupabaseService.shared.uploadTempImport(
+                data: pdfData,
+                contentType: "application/pdf",
+                fileExtension: "pdf"
+            )
+
+            currentStep = .recognizing
+            try await Task.sleep(for: .milliseconds(300))
+
+            // Step 2: Call OCR Edge Function
+            let language = UserSettings.shared.recipeLanguage.rawValue
+            let reword = !UserSettings.shared.keepOriginalWording
+
+            currentStep = .parsing
+            try await Task.sleep(for: .milliseconds(300))
+
+            currentStep = .extracting
+
+            let response = try await SupabaseService.shared.importRecipeFromMedia(
+                storagePaths: [storagePath],
+                mediaType: .pdf,
+                language: language,
+                reword: reword
+            )
+
+            currentStep = .saving
+            try await Task.sleep(for: .milliseconds(200))
+
+            if response.success {
+                if let recipeIdString = response.recipeId,
+                   let recipeId = UUID(uuidString: recipeIdString) {
+                    lastImportedRecipeId = recipeId
+                }
+                lastImportedRecipeName = response.recipeName
+                lastImportStats = response.stats
+                importState = .success
+            } else {
+                importState = .error(response.error ?? "Failed to import recipe from PDF")
+            }
+
+        } catch {
+            importState = .error(error.localizedDescription)
+        }
     }
 
     /// Check if a URL looks valid for import

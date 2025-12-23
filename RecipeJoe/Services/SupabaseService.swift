@@ -17,16 +17,17 @@ final class SupabaseService {
 
     // MARK: - Properties
 
-    private let client: SupabaseClient
+    /// The Supabase client - exposed for auth operations
+    let client: SupabaseClient
 
     // MARK: - Configuration
 
-    /// Supabase project URL - Replace with your actual project URL
-    private static let supabaseURL = "REMOVED_URL"
+    /// Supabase project URL
+    private static let supabaseURL = "https://iqamjnyuvvmvakjdobsm.supabase.co"
 
-    /// Supabase anon key - Safe to expose in client apps
+    /// Supabase publishable key (safe to include in client apps)
     /// This key only allows access to public resources and Edge Functions
-    private static let supabaseAnonKey = "REMOVED_KEY"
+    private static let supabaseAnonKey = "sb_publishable_bjC-0a3jReGsoS5pprLevA_dDXqwrxn"
 
     // MARK: - Initialization
 
@@ -157,6 +158,152 @@ final class SupabaseService {
             .execute()
     }
 
+    // MARK: - Media Import (OCR)
+
+    /// Upload a temporary file for OCR import processing
+    /// - Parameters:
+    ///   - data: The file data to upload
+    ///   - contentType: MIME type (e.g., "image/jpeg", "application/pdf")
+    ///   - fileExtension: File extension (e.g., "jpg", "pdf")
+    /// - Returns: The storage path for use with importRecipeFromMedia
+    func uploadTempImport(data: Data, contentType: String, fileExtension: String) async throws -> String {
+        let fileName = "\(UUID().uuidString).\(fileExtension)"
+        let filePath = "temp/\(fileName)"
+
+        try await client.storage
+            .from("recipe-imports")
+            .upload(
+                filePath,
+                data: data,
+                options: FileOptions(
+                    contentType: contentType,
+                    upsert: false
+                )
+            )
+
+        return filePath
+    }
+
+    /// Import a recipe from uploaded images or PDF using OCR
+    /// - Parameters:
+    ///   - storagePaths: The storage paths returned from uploadTempImport (for multiple images combined into one recipe)
+    ///   - mediaType: The type of media (.image or .pdf)
+    ///   - language: Target language for the recipe ("en" or "de")
+    ///   - reword: If true, AI will reword and translate. If false, keeps original text with category prefixes only.
+    /// - Returns: The import response with recipe details
+    func importRecipeFromMedia(
+        storagePaths: [String],
+        mediaType: MediaImportType,
+        language: String = "en",
+        reword: Bool = true
+    ) async throws -> MediaImportResponse {
+        let request = MediaImportRequest(
+            storagePaths: storagePaths,
+            mediaType: mediaType.rawValue,
+            language: language,
+            reword: reword
+        )
+
+        let response: MediaImportResponse = try await client.functions.invoke(
+            "recipe-ocr-import",
+            options: FunctionInvokeOptions(body: request)
+        )
+
+        return response
+    }
+
+    // MARK: - Recipe Updates
+
+    /// Update a recipe's name
+    func updateRecipeName(id: UUID, name: String) async throws {
+        try await client
+            .from("recipes")
+            .update(["name": name])
+            .eq("id", value: id.uuidString)
+            .execute()
+    }
+
+    /// Update a recipe's description
+    func updateRecipeDescription(id: UUID, description: String?) async throws {
+        try await client
+            .from("recipes")
+            .update(RecipeDescriptionUpdate(description: description))
+            .eq("id", value: id.uuidString)
+            .execute()
+    }
+
+    /// Update a recipe's prep time
+    func updateRecipePrepTime(id: UUID, prepTimeMinutes: Int?) async throws {
+        try await client
+            .from("recipes")
+            .update(RecipePrepTimeUpdate(prepTimeMinutes: prepTimeMinutes))
+            .eq("id", value: id.uuidString)
+            .execute()
+    }
+
+    /// Update a recipe's cook time
+    func updateRecipeCookTime(id: UUID, cookTimeMinutes: Int?) async throws {
+        try await client
+            .from("recipes")
+            .update(RecipeCookTimeUpdate(cookTimeMinutes: cookTimeMinutes))
+            .eq("id", value: id.uuidString)
+            .execute()
+    }
+
+    /// Update a recipe's total time
+    func updateRecipeTotalTime(id: UUID, totalTimeMinutes: Int?) async throws {
+        try await client
+            .from("recipes")
+            .update(RecipeTotalTimeUpdate(totalTimeMinutes: totalTimeMinutes))
+            .eq("id", value: id.uuidString)
+            .execute()
+    }
+
+    /// Update a recipe's yield/servings
+    func updateRecipeYield(id: UUID, recipeYield: String?) async throws {
+        try await client
+            .from("recipes")
+            .update(RecipeYieldUpdate(recipeYield: recipeYield))
+            .eq("id", value: id.uuidString)
+            .execute()
+    }
+
+    /// Update a recipe's category
+    func updateRecipeCategory(id: UUID, category: String?) async throws {
+        try await client
+            .from("recipes")
+            .update(RecipeCategoryUpdate(category: category))
+            .eq("id", value: id.uuidString)
+            .execute()
+    }
+
+    /// Update a recipe's cuisine
+    func updateRecipeCuisine(id: UUID, cuisine: String?) async throws {
+        try await client
+            .from("recipes")
+            .update(RecipeCuisineUpdate(cuisine: cuisine))
+            .eq("id", value: id.uuidString)
+            .execute()
+    }
+
+    /// Update a recipe step's instruction
+    func updateRecipeStep(id: UUID, instruction: String) async throws {
+        try await client
+            .from("recipe_steps")
+            .update(["instruction": instruction])
+            .eq("id", value: id.uuidString)
+            .execute()
+    }
+
+    /// Update a recipe ingredient's quantity and notes
+    func updateRecipeIngredient(id: UUID, quantity: Double?, notes: String?) async throws {
+        try await client
+            .from("recipe_ingredients")
+            .update(RecipeIngredientUpdate(quantity: quantity, notes: notes))
+            .eq("id", value: id.uuidString)
+            .execute()
+    }
+
     // MARK: - Delete Recipe
 
     /// Delete a recipe and all its related data (steps, ingredients cascade automatically)
@@ -174,6 +321,11 @@ final class SupabaseService {
 enum SupabaseError: LocalizedError {
     case functionError(String)
     case unknownError
+    case uploadFailed(String)
+    case ocrFailed(String)
+    case noRecipeFound
+    case fileTooLarge(maxSizeMB: Int)
+    case unsupportedFileType(String)
 
     var errorDescription: String? {
         switch self {
@@ -181,6 +333,16 @@ enum SupabaseError: LocalizedError {
             return "Function error: \(message)"
         case .unknownError:
             return "An unknown error occurred"
+        case .uploadFailed(let message):
+            return "Upload failed: \(message)"
+        case .ocrFailed(let message):
+            return "Could not read text: \(message)"
+        case .noRecipeFound:
+            return "No recipe found in the image"
+        case .fileTooLarge(let maxSizeMB):
+            return "File too large (max \(maxSizeMB)MB)"
+        case .unsupportedFileType(let type):
+            return "Unsupported file type: \(type)"
         }
     }
 }

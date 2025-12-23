@@ -14,6 +14,7 @@ This is a Recipe App
 - User interaction required: No complex automatic workflows
 - NEVER add features without explicit agreement
 - Only Change Code related to the task we are working on, no random changes in other places.
+- Do not commit yourself. the user will.
 
 ## Testing
 
@@ -27,7 +28,7 @@ This project uses both unit tests and UI tests to ensure code quality.
 - Tests should verify the feature works correctly from the user's perspective
 - Every feature implementation plan must include test writing as a required step
 - Tests should be written in `RecipeJoeUITests` for UI features
-- - remember to run the test when you have built out a new feature
+- - remember to run the test when you have built out a new feature - use a 10 min timeout
 
 ### Test Frameworks
 
@@ -76,6 +77,8 @@ make install-hooks
 - Installed hook: `.git/hooks/pre-commit` (not tracked in git)
 
 ## iOS Recipe App Design System
+
+See **[DESIGN_GUIDELINES.md](RecipeJoe/DESIGN_GUIDELINES.md)** for detailed spacing, layout, forms, and button guidelines.
 
 **Color Scheme**
 

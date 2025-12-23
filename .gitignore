@@ -24,3 +24,6 @@ supabase/.temp/
 # Environment files
 .env
 .env.local
+
+# Secrets - NEVER commit these
+**/Secrets.xcconfig

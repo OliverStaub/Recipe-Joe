@@ -17,9 +17,21 @@ struct ImportProgressView: View {
         switch currentStep {
         case .fetching: return "Fetching recipe...".localized(for: locale)
         case .fetchingTranscript: return "Fetching transcript...".localized(for: locale)
+        case .uploading: return "Uploading file...".localized(for: locale)
+        case .recognizing: return "Reading text...".localized(for: locale)
         case .parsing: return "Analyzing with AI...".localized(for: locale)
         case .extracting: return "Extracting ingredients...".localized(for: locale)
         case .saving: return "Saving recipe...".localized(for: locale)
+        }
+    }
+
+    /// Show hint after upload is complete (during AI processing phases)
+    private var showNoWaitHint: Bool {
+        switch currentStep {
+        case .recognizing, .parsing, .extracting:
+            return true
+        default:
+            return false
         }
     }
 
@@ -29,17 +41,17 @@ struct ImportProgressView: View {
             GeometryReader { geometry in
                 ZStack(alignment: .leading) {
                     // Background track
-                    RoundedRectangle(cornerRadius: 6)
+                    RoundedRectangle(cornerRadius: 8)
                         .fill(Color(.systemGray5))
 
                     // Progress fill
-                    RoundedRectangle(cornerRadius: 6)
+                    RoundedRectangle(cornerRadius: 8)
                         .fill(Color.terracotta)
                         .frame(width: geometry.size.width * currentStep.progress)
                         .animation(.easeInOut(duration: 0.4), value: currentStep)
 
                     // Shimmer overlay
-                    RoundedRectangle(cornerRadius: 6)
+                    RoundedRectangle(cornerRadius: 8)
                         .fill(
                             LinearGradient(
                                 colors: [
@@ -54,7 +66,7 @@ struct ImportProgressView: View {
                         .frame(width: 60)
                         .offset(x: shimmerOffset * geometry.size.width)
                         .mask(
-                            RoundedRectangle(cornerRadius: 6)
+                            RoundedRectangle(cornerRadius: 8)
                                 .frame(width: geometry.size.width * currentStep.progress)
                                 .frame(maxWidth: .infinity, alignment: .leading)
                         )
@@ -67,10 +79,19 @@ struct ImportProgressView: View {
                 .font(.subheadline)
                 .fontWeight(.medium)
                 .foregroundStyle(Color.terracotta)
+
+            // Hint that user doesn't need to wait
+            if showNoWaitHint {
+                Text("You can leave this screen - your recipe will appear when ready.".localized(for: locale))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .transition(.opacity)
+            }
         }
         .padding(16)
         .background(Color(.systemGray6))
         .clipShape(RoundedRectangle(cornerRadius: 12))
+        .animation(.easeInOut(duration: 0.3), value: showNoWaitHint)
         .onAppear {
             withAnimation(.linear(duration: 1.2).repeatForever(autoreverses: false)) {
                 shimmerOffset = 1.5

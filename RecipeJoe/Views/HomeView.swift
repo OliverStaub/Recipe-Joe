@@ -8,9 +8,14 @@
 import SwiftUI
 
 struct HomeView: View {
+    @Binding var navigationPath: NavigationPath
     @StateObject private var viewModel = HomeViewModel()
     @State private var showingSettings = false
     @Environment(\.locale) private var locale
+
+    init(navigationPath: Binding<NavigationPath> = .constant(NavigationPath())) {
+        self._navigationPath = navigationPath
+    }
 
     @ViewBuilder
     private var contentView: some View {
@@ -38,9 +43,12 @@ struct HomeView: View {
     }
 
     var body: some View {
-        NavigationStack {
+        NavigationStack(path: $navigationPath) {
             contentView
                 .navigationTitle("RecipeJoe")
+                .navigationDestination(for: UUID.self) { recipeId in
+                    RecipeDetailView(recipeId: recipeId)
+                }
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button {
@@ -117,7 +125,7 @@ struct HomeView: View {
     private var recipeListView: some View {
         List {
             ForEach(viewModel.filteredRecipes) { recipe in
-                NavigationLink(destination: RecipeDetailView(recipeId: recipe.id)) {
+                NavigationLink(value: recipe.id) {
                     RecipeRowView(recipe: recipe)
                 }
             }

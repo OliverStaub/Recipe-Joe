@@ -10,6 +10,7 @@ import SwiftUI
 struct TimeBadge: View {
     let label: String
     let minutes: Int
+    var onTap: (() -> Void)?
 
     var body: some View {
         VStack(spacing: 2) {
@@ -24,5 +25,10 @@ struct TimeBadge: View {
         .padding(.vertical, 8)
         .background(Color(.systemGray6))
         .clipShape(RoundedRectangle(cornerRadius: 8))
+        .contentShape(Rectangle())
+        .onLongPressGesture {
+            UIImpactFeedbackGenerator(style: .light).impactOccurred()
+            onTap?()
+        }
     }
 }
