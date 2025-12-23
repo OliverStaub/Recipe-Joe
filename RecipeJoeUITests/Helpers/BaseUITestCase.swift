@@ -113,9 +113,18 @@ class BaseUITestCase: XCTestCase {
         }
     }
 
+    @MainActor
     override func tearDownWithError() throws {
         // Cleanup seeded test data
         cleanupSeededRecipes()
+
+        // IMPORTANT: Sign out to prevent test user session from persisting
+        // Without this, the simulator stays logged in as the test user,
+        // and opening the app manually shows test data to the user!
+        if app != nil {
+            signOut()
+        }
+
         app = nil
     }
 

@@ -1,7 +1,7 @@
 // TypeScript interfaces for recipe-ocr-import Edge Function
 
 export interface MediaImportRequest {
-  storage_path: string;
+  storage_paths: string[];
   media_type: 'image' | 'pdf';
   language?: 'en' | 'de';
   reword?: boolean;

@@ -30,21 +30,21 @@ serve(async (req) => {
     // Parse request
     const body = await req.json();
     const {
-      storage_path,
+      storage_paths,
       media_type,
       language = 'en',
       reword = true,
     }: MediaImportRequest = body;
 
-    if (!storage_path) {
-      throw new Error('storage_path is required');
+    if (!storage_paths || !Array.isArray(storage_paths) || storage_paths.length === 0) {
+      throw new Error('storage_paths array is required and must not be empty');
     }
 
     if (!media_type || !['image', 'pdf'].includes(media_type)) {
       throw new Error('media_type must be "image" or "pdf"');
     }
 
-    console.log(`Importing recipe from ${media_type}: ${storage_path}`);
+    console.log(`Importing recipe from ${storage_paths.length} ${media_type}(s): ${storage_paths.join(', ')}`);
 
     // Initialize Supabase client
     const supabase = getSupabaseClient();
@@ -66,23 +66,35 @@ serve(async (req) => {
       throw new Error('Authentication required');
     }
 
-    // Step 1: Download file from storage
-    console.log('Downloading file from storage...');
-    const { data: fileData, error: downloadError } = await supabase.storage
-      .from('recipe-imports')
-      .download(storage_path);
+    // Step 1: Download all files from storage
+    console.log(`Downloading ${storage_paths.length} file(s) from storage...`);
 
-    if (downloadError || !fileData) {
-      throw new Error(`Failed to download file: ${downloadError?.message || 'Unknown error'}`);
+    const filesData: { path: string; base64: string; mediaType: string }[] = [];
+
+    for (const storage_path of storage_paths) {
+      const { data: fileData, error: downloadError } = await supabase.storage
+        .from('recipe-imports')
+        .download(storage_path);
+
+      if (downloadError || !fileData) {
+        throw new Error(`Failed to download file ${storage_path}: ${downloadError?.message || 'Unknown error'}`);
+      }
+
+      // Convert to base64
+      const arrayBuffer = await fileData.arrayBuffer();
+      const base64Data = btoa(
+        new Uint8Array(arrayBuffer).reduce((data, byte) => data + String.fromCharCode(byte), '')
+      );
+
+      // Determine image media type from file extension
+      const extension = storage_path.split('.').pop()?.toLowerCase() || 'jpeg';
+      const imageMediaType = extension === 'png' ? 'image/png' :
+                            extension === 'gif' ? 'image/gif' :
+                            extension === 'webp' ? 'image/webp' : 'image/jpeg';
+
+      filesData.push({ path: storage_path, base64: base64Data, mediaType: imageMediaType });
+      console.log(`File downloaded: ${storage_path} (${arrayBuffer.byteLength} bytes)`);
     }
-
-    // Convert to base64
-    const arrayBuffer = await fileData.arrayBuffer();
-    const base64Data = btoa(
-      new Uint8Array(arrayBuffer).reduce((data, byte) => data + String.fromCharCode(byte), '')
-    );
-
-    console.log(`File downloaded: ${arrayBuffer.byteLength} bytes`);
 
     // Step 2: Fetch existing data for Claude context
     const [existingIngredients, measurementTypes] = await Promise.all([
@@ -93,22 +105,44 @@ serve(async (req) => {
     console.log(`Found ${existingIngredients.length} existing ingredients`);
     console.log(`Found ${measurementTypes.length} measurement types`);
 
-    // Step 3: Extract text using Claude Vision
+    // Step 3: Extract text using Claude Vision from all files
     console.log('Extracting text with Claude Vision...');
-    let ocrResult;
+
+    let combinedOcrText = '';
+    let totalInputTokens = 0;
+    let totalOutputTokens = 0;
 
     if (media_type === 'pdf') {
-      ocrResult = await extractTextFromPDF(base64Data);
+      // For PDF, we only support single file
+      const ocrResult = await extractTextFromPDF(filesData[0].base64);
+      combinedOcrText = ocrResult.text;
+      totalInputTokens = ocrResult.usage.input_tokens;
+      totalOutputTokens = ocrResult.usage.output_tokens;
     } else {
-      // Determine image media type from file extension
-      const extension = storage_path.split('.').pop()?.toLowerCase() || 'jpeg';
-      const imageMediaType = extension === 'png' ? 'image/png' :
-                            extension === 'gif' ? 'image/gif' :
-                            extension === 'webp' ? 'image/webp' : 'image/jpeg';
-      ocrResult = await extractTextFromImage(base64Data, imageMediaType);
+      // For images, process each and combine text
+      for (let i = 0; i < filesData.length; i++) {
+        const file = filesData[i];
+        const ocrResult = await extractTextFromImage(file.base64, file.mediaType);
+
+        // Add separator between multiple images
+        if (i > 0) {
+          combinedOcrText += '\n\n--- Page/Image ' + (i + 1) + ' ---\n\n';
+        }
+        combinedOcrText += ocrResult.text;
+
+        totalInputTokens += ocrResult.usage.input_tokens;
+        totalOutputTokens += ocrResult.usage.output_tokens;
+
+        console.log(`OCR for image ${i + 1}: ${ocrResult.text.length} characters`);
+      }
     }
 
-    console.log(`OCR extracted ${ocrResult.text.length} characters`);
+    const ocrResult = {
+      text: combinedOcrText,
+      usage: { input_tokens: totalInputTokens, output_tokens: totalOutputTokens }
+    };
+
+    console.log(`Total OCR extracted ${ocrResult.text.length} characters from ${filesData.length} file(s)`);
     console.log(`OCR used ${ocrResult.usage.input_tokens} input, ${ocrResult.usage.output_tokens} output tokens`);
 
     // Check if we got meaningful text
@@ -161,14 +195,14 @@ serve(async (req) => {
 
     console.log(`Created recipe ${recipeId} with ${newIngredientsCount} new ingredients`);
 
-    // Step 7: Cleanup - delete temp file from storage
-    console.log('Cleaning up temporary file...');
+    // Step 7: Cleanup - delete all temp files from storage
+    console.log(`Cleaning up ${storage_paths.length} temporary file(s)...`);
     const { error: deleteError } = await supabase.storage
       .from('recipe-imports')
-      .remove([storage_path]);
+      .remove(storage_paths);
 
     if (deleteError) {
-      console.error('Failed to delete temp file:', deleteError);
+      console.error('Failed to delete temp files:', deleteError);
       // Don't fail the request, just log the error
     }
 

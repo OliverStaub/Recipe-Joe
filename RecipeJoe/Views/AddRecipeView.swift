@@ -15,7 +15,7 @@ struct AddRecipeView: View {
 
     // Photo picker state
     @State private var showPhotoPicker = false
-    @State private var selectedPhotoItem: PhotosPickerItem?
+    @State private var selectedPhotoItems: [PhotosPickerItem] = []
 
     // Camera state
     @State private var showCamera = false
@@ -76,14 +76,15 @@ struct AddRecipeView: View {
             .onTapGesture {
                 isTextFieldFocused = false
             }
-            // Photo picker
+            // Photo picker (supports multiple selection)
             .photosPicker(
                 isPresented: $showPhotoPicker,
-                selection: $selectedPhotoItem,
+                selection: $selectedPhotoItems,
+                maxSelectionCount: 10,
                 matching: .images
             )
-            .onChange(of: selectedPhotoItem) { _, newItem in
-                handlePhotoSelection(newItem)
+            .onChange(of: selectedPhotoItems) { _, newItems in
+                handlePhotoSelection(newItems)
             }
             // Camera
             .fullScreenCover(isPresented: $showCamera) {
@@ -113,19 +114,26 @@ struct AddRecipeView: View {
 
     // MARK: - Photo Import
 
-    private func handlePhotoSelection(_ item: PhotosPickerItem?) {
-        guard let item = item else { return }
+    private func handlePhotoSelection(_ items: [PhotosPickerItem]) {
+        guard !items.isEmpty else { return }
 
         Task {
-            if let data = try? await item.loadTransferable(type: Data.self) {
-                // Compress image if needed
-                if let image = UIImage(data: data),
+            var imagesData: [Data] = []
+
+            for item in items {
+                if let data = try? await item.loadTransferable(type: Data.self),
+                   let image = UIImage(data: data),
                    let compressedData = compressImage(image) {
-                    await importViewModel.importRecipeFromImage(compressedData)
+                    imagesData.append(compressedData)
                 }
             }
+
+            if !imagesData.isEmpty {
+                await importViewModel.importRecipeFromImages(imagesData)
+            }
+
             // Reset selection
-            selectedPhotoItem = nil
+            selectedPhotoItems = []
         }
     }
 

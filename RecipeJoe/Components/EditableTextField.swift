@@ -29,6 +29,7 @@ struct EditableTextField: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             .contentShape(Rectangle())
             .onLongPressGesture {
+                UIImpactFeedbackGenerator(style: .light).impactOccurred()
                 editValue = value
                 showEditSheet = true
             }

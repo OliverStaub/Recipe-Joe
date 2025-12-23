@@ -184,21 +184,21 @@ final class SupabaseService {
         return filePath
     }
 
-    /// Import a recipe from an uploaded image or PDF using OCR
+    /// Import a recipe from uploaded images or PDF using OCR
     /// - Parameters:
-    ///   - storagePath: The storage path returned from uploadTempImport
+    ///   - storagePaths: The storage paths returned from uploadTempImport (for multiple images combined into one recipe)
     ///   - mediaType: The type of media (.image or .pdf)
     ///   - language: Target language for the recipe ("en" or "de")
     ///   - reword: If true, AI will reword and translate. If false, keeps original text with category prefixes only.
     /// - Returns: The import response with recipe details
     func importRecipeFromMedia(
-        storagePath: String,
+        storagePaths: [String],
         mediaType: MediaImportType,
         language: String = "en",
         reword: Bool = true
     ) async throws -> MediaImportResponse {
         let request = MediaImportRequest(
-            storagePath: storagePath,
+            storagePaths: storagePaths,
             mediaType: mediaType.rawValue,
             language: language,
             reword: reword

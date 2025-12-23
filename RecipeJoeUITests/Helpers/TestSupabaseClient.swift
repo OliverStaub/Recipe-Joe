@@ -188,11 +188,20 @@ final class TestSupabaseClient {
             if let data = data,
                let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
                let users = json["users"] as? [[String: Any]] {
-                print("📋 Found \(users.count) users matching email")
-                if let firstUser = users.first,
-                   let idString = firstUser["id"] as? String {
-                    userId = UUID(uuidString: idString)
-                    print("✅ Found user: \(idString)")
+                print("📋 Found \(users.count) users in response")
+                // IMPORTANT: The Supabase admin API returns ALL users, not filtered by email!
+                // We must manually find the user with the matching email
+                for user in users {
+                    if let userEmail = user["email"] as? String,
+                       userEmail.lowercased() == email.lowercased(),
+                       let idString = user["id"] as? String {
+                        userId = UUID(uuidString: idString)
+                        print("✅ Found matching user: \(idString) with email: \(userEmail)")
+                        break
+                    }
+                }
+                if userId == nil {
+                    print("⚠️ No user found with email: \(email)")
                 }
             } else if let data = data {
                 let responseString = String(data: data, encoding: .utf8) ?? "Unable to decode"

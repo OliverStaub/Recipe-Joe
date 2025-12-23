@@ -27,6 +27,7 @@ struct TimeBadge: View {
         .clipShape(RoundedRectangle(cornerRadius: 8))
         .contentShape(Rectangle())
         .onLongPressGesture {
+            UIImpactFeedbackGenerator(style: .light).impactOccurred()
             onTap?()
         }
     }

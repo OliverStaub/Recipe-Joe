@@ -175,28 +175,40 @@ final class RecipeImportViewModel: ObservableObject {
     /// Import a recipe from image data (photo or camera capture)
     /// - Parameter imageData: JPEG image data
     func importRecipeFromImage(_ imageData: Data) async {
-        // Validate file size
-        let sizeMB = imageData.count / (1024 * 1024)
-        if sizeMB > Self.maxImageSizeMB {
-            importState = .error("Image too large. Maximum size is \(Self.maxImageSizeMB)MB.")
-            return
+        await importRecipeFromImages([imageData])
+    }
+
+    /// Import a recipe from multiple images (combined into one recipe)
+    /// - Parameter imagesData: Array of JPEG image data
+    func importRecipeFromImages(_ imagesData: [Data]) async {
+        // Validate file sizes
+        for (index, imageData) in imagesData.enumerated() {
+            let sizeMB = imageData.count / (1024 * 1024)
+            if sizeMB > Self.maxImageSizeMB {
+                importState = .error("Image \(index + 1) too large. Maximum size is \(Self.maxImageSizeMB)MB.")
+                return
+            }
         }
 
         importState = .importing
         currentStep = .uploading
 
         do {
-            // Step 1: Upload to temporary storage
-            let storagePath = try await SupabaseService.shared.uploadTempImport(
-                data: imageData,
-                contentType: "image/jpeg",
-                fileExtension: "jpg"
-            )
+            // Step 1: Upload all images to temporary storage
+            var storagePaths: [String] = []
+            for imageData in imagesData {
+                let storagePath = try await SupabaseService.shared.uploadTempImport(
+                    data: imageData,
+                    contentType: "image/jpeg",
+                    fileExtension: "jpg"
+                )
+                storagePaths.append(storagePath)
+            }
 
             currentStep = .recognizing
             try await Task.sleep(for: .milliseconds(300))
 
-            // Step 2: Call OCR Edge Function
+            // Step 2: Call OCR Edge Function with all paths
             let language = UserSettings.shared.recipeLanguage.rawValue
             let reword = !UserSettings.shared.keepOriginalWording
 
@@ -206,7 +218,7 @@ final class RecipeImportViewModel: ObservableObject {
             currentStep = .extracting
 
             let response = try await SupabaseService.shared.importRecipeFromMedia(
-                storagePath: storagePath,
+                storagePaths: storagePaths,
                 mediaType: .image,
                 language: language,
                 reword: reword
@@ -224,7 +236,7 @@ final class RecipeImportViewModel: ObservableObject {
                 lastImportStats = response.stats
                 importState = .success
             } else {
-                importState = .error(response.error ?? "Failed to import recipe from image")
+                importState = .error(response.error ?? "Failed to import recipe from images")
             }
 
         } catch {
@@ -266,7 +278,7 @@ final class RecipeImportViewModel: ObservableObject {
             currentStep = .extracting
 
             let response = try await SupabaseService.shared.importRecipeFromMedia(
-                storagePath: storagePath,
+                storagePaths: [storagePath],
                 mediaType: .pdf,
                 language: language,
                 reword: reword

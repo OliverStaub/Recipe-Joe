@@ -18,6 +18,7 @@ struct RecipeDetailView: View {
     @State private var selectedPhotoItem: PhotosPickerItem?
     @State private var isUploadingImage = false
     @State private var uploadError: String?
+    @State private var showPhotoPicker = false
     @Environment(\.locale) private var locale
 
     // Time picker state
@@ -145,9 +146,9 @@ struct RecipeDetailView: View {
                     }
             }
 
-            // Add Image Button
-            VStack {
-                if let error = uploadError {
+            // Upload error overlay
+            if let error = uploadError {
+                VStack {
                     Text(error)
                         .font(.caption)
                         .foregroundStyle(.white)
@@ -155,25 +156,7 @@ struct RecipeDetailView: View {
                         .background(Color.red)
                         .clipShape(Capsule())
                         .padding(.top, 8)
-                }
-                Spacer()
-                HStack {
                     Spacer()
-                    PhotosPicker(selection: $selectedPhotoItem, matching: .images) {
-                        Label(
-                            recipe.imageUrl != nil ? "Change Photo" : "Add Photo",
-                            systemImage: "camera.fill"
-                        )
-                        .font(.caption)
-                        .fontWeight(.medium)
-                        .foregroundStyle(.white)
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 8)
-                        .background(Color.terracotta)
-                        .clipShape(Capsule())
-                    }
-                    .disabled(isUploadingImage)
-                    .padding(12)
                 }
             }
         }
@@ -181,6 +164,13 @@ struct RecipeDetailView: View {
         .frame(maxWidth: .infinity)
         .background(Color.terracotta.opacity(0.15))
         .clipShape(RoundedRectangle(cornerRadius: 16))
+        .contentShape(Rectangle())
+        .onLongPressGesture {
+            guard !isUploadingImage else { return }
+            UIImpactFeedbackGenerator(style: .light).impactOccurred()
+            showPhotoPicker = true
+        }
+        .photosPicker(isPresented: $showPhotoPicker, selection: $selectedPhotoItem, matching: .images)
         .onChange(of: selectedPhotoItem) { _, newItem in
             Task {
                 await handleImageSelection(newItem)

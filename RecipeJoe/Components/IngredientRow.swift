@@ -79,6 +79,7 @@ struct IngredientRow: View {
         .contentShape(Rectangle())
         .onLongPressGesture {
             if onSave != nil {
+                UIImpactFeedbackGenerator(style: .light).impactOccurred()
                 editQuantity = ingredient.quantity.map { String($0) } ?? ""
                 editNotes = ingredient.notes ?? ""
                 showEditSheet = true

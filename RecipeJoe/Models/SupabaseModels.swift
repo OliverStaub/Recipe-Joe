@@ -71,13 +71,13 @@ enum MediaImportType: String, Codable, Sendable {
 
 /// Request to import a recipe from image/PDF via OCR
 struct MediaImportRequest: Codable, Sendable {
-    let storagePath: String
+    let storagePaths: [String]
     let mediaType: String
     let language: String
     let reword: Bool
 
     enum CodingKeys: String, CodingKey {
-        case storagePath = "storage_path"
+        case storagePaths = "storage_paths"
         case mediaType = "media_type"
         case language
         case reword

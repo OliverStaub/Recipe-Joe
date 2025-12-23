@@ -185,7 +185,7 @@ final class AuthenticationUITests: BaseUITestCase {
         let confirmationText = app.staticTexts.containing(NSPredicate(format: "label CONTAINS[c] 'confirm' OR label CONTAINS[c] 'check your email'")).firstMatch
 
         // Use longer timeout for sign-up which involves network call
-        let signUpTimeout: TimeInterval = 30
+        let signUpTimeout: TimeInterval = 45
 
         let expectation = XCTNSPredicateExpectation(
             predicate: NSPredicate { _, _ in
@@ -201,12 +201,12 @@ final class AuthenticationUITests: BaseUITestCase {
             let loadingIndicator = app.activityIndicators.firstMatch
             if loadingIndicator.exists {
                 // Wait a bit more for loading to complete
-                _ = XCTWaiter.wait(for: [expectation], timeout: 15)
+                _ = XCTWaiter.wait(for: [expectation], timeout: 20)
             }
         }
 
         // Check what we found
-        let signUpCompleted = tabBar.exists || errorMessage.exists || confirmationText.exists
+        var signUpCompleted = tabBar.exists || errorMessage.exists || confirmationText.exists
 
         // Debug output for troubleshooting
         if !signUpCompleted {
@@ -216,15 +216,21 @@ final class AuthenticationUITests: BaseUITestCase {
             print("⚠️ Confirmation text exists: \(confirmationText.exists)")
 
             // Last resort: check if we're still on auth screen or if something changed
-            let emailField = app.textFields["emailTextField"]
-            if !emailField.exists {
+            let emailFieldCheck = app.textFields["emailTextField"]
+            if !emailFieldCheck.exists {
                 // We're no longer on auth screen - likely signed in but tab bar query failed
                 print("ℹ️ Email field no longer exists - likely signed in successfully")
-                // Track user and pass the test
-                if let userId = TestSupabaseClient.shared.getUserByEmailSync(email: email) {
-                    createdUserIds.append(userId)
-                }
-                return // Test passes - we left the auth screen
+                signUpCompleted = true
+            }
+        }
+
+        // Track user for cleanup if created (check before potentially failing)
+        if let userId = TestSupabaseClient.shared.getUserByEmailSync(email: email) {
+            createdUserIds.append(userId)
+            // If user was created in Supabase, the sign-up API worked regardless of UI state
+            if !signUpCompleted {
+                print("ℹ️ User was created in Supabase (ID: \(userId)) - sign-up API worked")
+                return // Test passes - the core functionality worked
             }
         }
 
@@ -249,17 +255,7 @@ final class AuthenticationUITests: BaseUITestCase {
             } else {
                 print("ℹ️ Sign-up completed with expected message: \(errorMessage.label)")
             }
-        }
-
-        // Track user for cleanup if created (regardless of test outcome)
-        if let userId = TestSupabaseClient.shared.getUserByEmailSync(email: email) {
-            createdUserIds.append(userId)
-            // If user was created in Supabase but UI didn't show expected outcome,
-            // it's likely an email confirmation scenario - test passes
-            if !signUpCompleted {
-                print("ℹ️ User was created in Supabase (ID: \(userId)) - sign-up API worked")
-                return // Test passes - the core functionality worked
-            }
+            return // Test passes with acceptable error
         }
 
         XCTAssertTrue(signUpCompleted,

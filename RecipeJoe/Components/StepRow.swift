@@ -63,6 +63,7 @@ struct StepRow: View {
         .contentShape(Rectangle())
         .onLongPressGesture {
             if onSave != nil {
+                UIImpactFeedbackGenerator(style: .light).impactOccurred()
                 editInstruction = step.instruction
                 showEditSheet = true
             }

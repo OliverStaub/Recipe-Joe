@@ -22,6 +22,7 @@ struct CategoryBadge: View {
             .clipShape(Capsule())
             .contentShape(Capsule())
             .onLongPressGesture {
+                UIImpactFeedbackGenerator(style: .light).impactOccurred()
                 onTap?()
             }
     }

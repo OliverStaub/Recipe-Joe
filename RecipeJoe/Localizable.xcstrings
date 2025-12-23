@@ -101,6 +101,7 @@
       }
     },
     "Add Photo" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -353,6 +354,7 @@
       }
     },
     "Change Photo" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
