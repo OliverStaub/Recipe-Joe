@@ -25,6 +25,16 @@ struct ImportProgressView: View {
         }
     }
 
+    /// Show hint after upload is complete (during AI processing phases)
+    private var showNoWaitHint: Bool {
+        switch currentStep {
+        case .recognizing, .parsing, .extracting:
+            return true
+        default:
+            return false
+        }
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             // Progress bar with shimmer
@@ -69,10 +79,19 @@ struct ImportProgressView: View {
                 .font(.subheadline)
                 .fontWeight(.medium)
                 .foregroundStyle(Color.terracotta)
+
+            // Hint that user doesn't need to wait
+            if showNoWaitHint {
+                Text("You can leave this screen - your recipe will appear when ready.".localized(for: locale))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .transition(.opacity)
+            }
         }
         .padding(16)
         .background(Color(.systemGray6))
         .clipShape(RoundedRectangle(cornerRadius: 12))
+        .animation(.easeInOut(duration: 0.3), value: showNoWaitHint)
         .onAppear {
             withAnimation(.linear(duration: 1.2).repeatForever(autoreverses: false)) {
                 shimmerOffset = 1.5

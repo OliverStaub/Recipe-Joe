@@ -101,6 +101,8 @@ final class UserSettings: ObservableObject {
     @Published var recipeLanguage: RecipeLanguage {
         didSet {
             UserDefaults.standard.set(recipeLanguage.rawValue, forKey: Keys.recipeLanguage)
+            // Sync to shared storage for share extension
+            SharedUserDefaults.shared.recipeLanguage = recipeLanguage.rawValue
         }
     }
 
@@ -108,6 +110,8 @@ final class UserSettings: ObservableObject {
     @Published var keepOriginalWording: Bool {
         didSet {
             UserDefaults.standard.set(keepOriginalWording, forKey: Keys.keepOriginalWording)
+            // Sync to shared storage for share extension
+            SharedUserDefaults.shared.keepOriginalWording = keepOriginalWording
         }
     }
 
@@ -134,6 +138,10 @@ final class UserSettings: ObservableObject {
 
         // Load keepOriginalWording (default: false = reword enabled)
         self.keepOriginalWording = UserDefaults.standard.bool(forKey: Keys.keepOriginalWording)
+
+        // Sync to shared storage for share extension
+        SharedUserDefaults.shared.recipeLanguage = self.recipeLanguage.rawValue
+        SharedUserDefaults.shared.keepOriginalWording = self.keepOriginalWording
     }
 
     // MARK: - Computed Properties

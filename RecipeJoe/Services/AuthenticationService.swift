@@ -56,9 +56,12 @@ final class AuthenticationService: ObservableObject {
             let session = try await SupabaseService.shared.client.auth.session
             self.currentUser = session.user
             self.isAuthenticated = true
+            // Sync tokens for share extension
+            await syncTokensToSharedStorage()
         } catch {
             self.currentUser = nil
             self.isAuthenticated = false
+            clearSharedTokens()
         }
         self.isLoading = false
 
@@ -71,13 +74,18 @@ final class AuthenticationService: ObservableObject {
                 case .signedIn:
                     self.currentUser = session?.user
                     self.isAuthenticated = true
+                    // Sync tokens for share extension
+                    await syncTokensToSharedStorage()
                 case .signedOut:
                     self.currentUser = nil
                     self.isAuthenticated = false
-                    // Clear cached data on sign out
+                    // Clear cached data and shared tokens on sign out
                     await clearUserData()
+                    clearSharedTokens()
                 case .tokenRefreshed:
                     self.currentUser = session?.user
+                    // Update shared tokens on refresh
+                    await syncTokensToSharedStorage()
                 case .userUpdated:
                     self.currentUser = session?.user
                 default:
@@ -277,6 +285,22 @@ final class AuthenticationService: ObservableObject {
         } catch {
             print("Failed to clear cache: \(error)")
         }
+    }
+
+    /// Sync authentication tokens to shared storage for share extension access
+    private func syncTokensToSharedStorage() async {
+        do {
+            let session = try await SupabaseService.shared.client.auth.session
+            SharedUserDefaults.shared.accessToken = session.accessToken
+            SharedUserDefaults.shared.refreshToken = session.refreshToken
+        } catch {
+            SharedUserDefaults.shared.clearTokens()
+        }
+    }
+
+    /// Clear shared tokens (called on sign out)
+    private func clearSharedTokens() {
+        SharedUserDefaults.shared.clearTokens()
     }
 
     /// Get the current user's ID

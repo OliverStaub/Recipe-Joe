@@ -17,6 +17,8 @@
 		3DE3EB342EEF3614001A902B /* Base.xcconfig in Resources */ = {isa = PBXBuildFile; fileRef = 3DE3EB2F2EEF3614001A902B /* Base.xcconfig */; };
 		3DE3EB372EEF3614001A902B /* Base.xcconfig in Resources */ = {isa = PBXBuildFile; fileRef = 3DE3EB2F2EEF3614001A902B /* Base.xcconfig */; };
 		3DE3EB3A2EEF3614001A902B /* Base.xcconfig in Resources */ = {isa = PBXBuildFile; fileRef = 3DE3EB2F2EEF3614001A902B /* Base.xcconfig */; };
+		3DSHARE0012EF9A1230043D501 /* RecipeJoeShareExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 3DSHARE0002EF9A1230043D501 /* RecipeJoeShareExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		3DSHARE0022EF9A1230043D501 /* Supabase in Frameworks */ = {isa = PBXBuildFile; productRef = 3DSHARE0032EF9A1230043D501 /* Supabase */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -34,7 +36,28 @@
 			remoteGlobalIDString = 3D195E5F2ED381B400EAC766;
 			remoteInfo = RecipeJoe;
 		};
+		3DSHARE0042EF9A1230043D501 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 3D195E582ED381B400EAC766 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 3DSHARE0102EF9A1230043D501;
+			remoteInfo = RecipeJoeShareExtension;
+		};
 /* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		3DSHARE0052EF9A1230043D501 /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				3DSHARE0012EF9A1230043D501 /* RecipeJoeShareExtension.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
 		3D195E602ED381B400EAC766 /* RecipeJoe.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = RecipeJoe.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -42,7 +65,18 @@
 		3D195E772ED381B500EAC766 /* RecipeJoeUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = RecipeJoeUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		3DE3EB2A2EEEDFDF001A902B /* RecipeJoe.xctestplan */ = {isa = PBXFileReference; lastKnownFileType = text; path = RecipeJoe.xctestplan; sourceTree = "<group>"; };
 		3DE3EB2F2EEF3614001A902B /* Base.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Base.xcconfig; sourceTree = "<group>"; };
+		3DSHARE0002EF9A1230043D501 /* RecipeJoeShareExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = RecipeJoeShareExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
+
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		3DSHARE0142EF9A1230043D501 /* Exceptions for "RecipeJoeShareExtension" folder in "RecipeJoeShareExtension" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 3DSHARE0102EF9A1230043D501 /* RecipeJoeShareExtension */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		3D195E622ED381B400EAC766 /* RecipeJoe */ = {
@@ -58,6 +92,14 @@
 		3D195E7A2ED381B500EAC766 /* RecipeJoeUITests */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			path = RecipeJoeUITests;
+			sourceTree = "<group>";
+		};
+		3DSHARE0062EF9A1230043D501 /* RecipeJoeShareExtension */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				3DSHARE0142EF9A1230043D501 /* Exceptions for "RecipeJoeShareExtension" folder in "RecipeJoeShareExtension" target */,
+			);
+			path = RecipeJoeShareExtension;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -91,6 +133,14 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		3DSHARE0072EF9A1230043D501 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				3DSHARE0022EF9A1230043D501 /* Supabase in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -102,6 +152,7 @@
 				3D195E622ED381B400EAC766 /* RecipeJoe */,
 				3D195E702ED381B500EAC766 /* RecipeJoeTests */,
 				3D195E7A2ED381B500EAC766 /* RecipeJoeUITests */,
+				3DSHARE0062EF9A1230043D501 /* RecipeJoeShareExtension */,
 				3D195E612ED381B400EAC766 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -112,6 +163,7 @@
 				3D195E602ED381B400EAC766 /* RecipeJoe.app */,
 				3D195E6D2ED381B500EAC766 /* RecipeJoeTests.xctest */,
 				3D195E772ED381B500EAC766 /* RecipeJoeUITests.xctest */,
+				3DSHARE0002EF9A1230043D501 /* RecipeJoeShareExtension.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -134,10 +186,12 @@
 				3D195E5C2ED381B400EAC766 /* Sources */,
 				3D195E5D2ED381B400EAC766 /* Frameworks */,
 				3D195E5E2ED381B400EAC766 /* Resources */,
+				3DSHARE0052EF9A1230043D501 /* Embed Foundation Extensions */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				3DSHARE0082EF9A1230043D501 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				3D195E622ED381B400EAC766 /* RecipeJoe */,
@@ -202,6 +256,29 @@
 			productReference = 3D195E772ED381B500EAC766 /* RecipeJoeUITests.xctest */;
 			productType = "com.apple.product-type.bundle.ui-testing";
 		};
+		3DSHARE0102EF9A1230043D501 /* RecipeJoeShareExtension */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 3DSHARE0112EF9A1230043D501 /* Build configuration list for PBXNativeTarget "RecipeJoeShareExtension" */;
+			buildPhases = (
+				3DSHARE0092EF9A1230043D501 /* Sources */,
+				3DSHARE0072EF9A1230043D501 /* Frameworks */,
+				3DSHARE00A2EF9A1230043D501 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				3DSHARE0062EF9A1230043D501 /* RecipeJoeShareExtension */,
+			);
+			name = RecipeJoeShareExtension;
+			packageProductDependencies = (
+				3DSHARE0032EF9A1230043D501 /* Supabase */,
+			);
+			productName = RecipeJoeShareExtension;
+			productReference = 3DSHARE0002EF9A1230043D501 /* RecipeJoeShareExtension.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -222,6 +299,9 @@
 					3D195E762ED381B500EAC766 = {
 						CreatedOnToolsVersion = 26.1.1;
 						TestTargetID = 3D195E5F2ED381B400EAC766;
+					};
+					3DSHARE0102EF9A1230043D501 = {
+						CreatedOnToolsVersion = 26.1.1;
 					};
 				};
 			};
@@ -246,6 +326,7 @@
 				3D195E5F2ED381B400EAC766 /* RecipeJoe */,
 				3D195E6C2ED381B500EAC766 /* RecipeJoeTests */,
 				3D195E762ED381B500EAC766 /* RecipeJoeUITests */,
+				3DSHARE0102EF9A1230043D501 /* RecipeJoeShareExtension */,
 			);
 		};
 /* End PBXProject section */
@@ -275,6 +356,13 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		3DSHARE00A2EF9A1230043D501 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
@@ -299,6 +387,13 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		3DSHARE0092EF9A1230043D501 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
@@ -311,6 +406,11 @@
 			isa = PBXTargetDependency;
 			target = 3D195E5F2ED381B400EAC766 /* RecipeJoe */;
 			targetProxy = 3D195E782ED381B500EAC766 /* PBXContainerItemProxy */;
+		};
+		3DSHARE0082EF9A1230043D501 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 3DSHARE0102EF9A1230043D501 /* RecipeJoeShareExtension */;
+			targetProxy = 3DSHARE0042EF9A1230043D501 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
@@ -446,6 +546,7 @@
 				DEVELOPMENT_TEAM = Z66Q4BXFN7;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleURLTypes = "({CFBundleURLName = \"Oliver.RecipeJoe\"; CFBundleURLSchemes = (recipejoe); })";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -480,6 +581,7 @@
 				DEVELOPMENT_TEAM = Z66Q4BXFN7;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleURLTypes = "({CFBundleURLName = \"Oliver.RecipeJoe\"; CFBundleURLSchemes = (recipejoe); })";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -585,6 +687,66 @@
 			};
 			name = Release;
 		};
+		3DSHARE0122EF9A1230043D501 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = RecipeJoeShareExtension/RecipeJoeShareExtension.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = Z66Q4BXFN7;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = RecipeJoeShareExtension/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = RecipeJoe;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = Oliver.RecipeJoe.ShareExtension;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		3DSHARE0132EF9A1230043D501 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = RecipeJoeShareExtension/RecipeJoeShareExtension.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = Z66Q4BXFN7;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = RecipeJoeShareExtension/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = RecipeJoe;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = Oliver.RecipeJoe.ShareExtension;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -620,6 +782,15 @@
 			buildConfigurations = (
 				3D195E882ED381B500EAC766 /* Debug */,
 				3D195E892ED381B500EAC766 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		3DSHARE0112EF9A1230043D501 /* Build configuration list for PBXNativeTarget "RecipeJoeShareExtension" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				3DSHARE0122EF9A1230043D501 /* Debug */,
+				3DSHARE0132EF9A1230043D501 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
@@ -680,6 +851,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 3DBFCF682EEC592F0043D501 /* XCRemoteSwiftPackageReference "Kingfisher" */;
 			productName = Kingfisher;
+		};
+		3DSHARE0032EF9A1230043D501 /* Supabase */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 3DBFCB0A2EE31E620043D501 /* XCRemoteSwiftPackageReference "supabase-swift" */;
+			productName = Supabase;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};
