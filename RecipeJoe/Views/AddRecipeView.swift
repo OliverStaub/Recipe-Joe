@@ -24,16 +24,25 @@ struct AddRecipeView: View {
     // Document picker state
     @State private var showDocumentPicker = false
 
+    // Token purchase state
+    @State private var showPurchaseSheet = false
+
     var body: some View {
         NavigationStack {
             VStack(alignment: .leading, spacing: 20) {
-                // Title
-                Text("New Recipe")
-                    .font(.largeTitle)
-                    .fontWeight(.bold)
-                    .padding(.leading, 40)
-                    .padding(.top, 8)
-                    .accessibilityIdentifier("newRecipeTitle")
+                // Title with Token Balance
+                HStack {
+                    Text("New Recipe")
+                        .font(.largeTitle)
+                        .fontWeight(.bold)
+                        .accessibilityIdentifier("newRecipeTitle")
+
+                    Spacer()
+
+                    TokenBalanceView()
+                }
+                .padding(.horizontal, 40)
+                .padding(.top, 8)
 
                 // URL Input Section
                 VStack(alignment: .leading, spacing: 12) {
@@ -98,6 +107,22 @@ struct AddRecipeView: View {
                 DocumentPickerView { pdfData in
                     handlePDFSelection(pdfData)
                 }
+            }
+            // Token purchase sheet (triggered by insufficient tokens)
+            .sheet(isPresented: $showPurchaseSheet) {
+                TokenPurchaseView()
+            }
+            // Insufficient tokens alert
+            .alert(
+                "Not Enough Tokens",
+                isPresented: $importViewModel.showInsufficientTokensAlert
+            ) {
+                Button("Cancel", role: .cancel) {}
+                Button("Get Tokens") {
+                    showPurchaseSheet = true
+                }
+            } message: {
+                Text("You need \(importViewModel.requiredTokens) tokens to import this recipe. Tap 'Get Tokens' to purchase more.")
             }
         }
     }

@@ -20,12 +20,16 @@ enum AppConstants {
     /// Supabase publishable key (safe to include in client apps)
     static let supabaseAnonKey = "sb_publishable_bjC-0a3jReGsoS5pprLevA_dDXqwrxn"
 
+    /// RevenueCat publishable API key (safe to include in client apps)
+    static let revenueCatAPIKey = "appl_WCgwdlbyESXHZoEWBLZxlPxrbhj"
+
     /// Keys for shared UserDefaults
     enum Keys {
         static let accessToken = "supabase_access_token"
         static let refreshToken = "supabase_refresh_token"
         static let recipeLanguage = "recipeLanguage"
         static let keepOriginalWording = "keepOriginalWording"
+        static let tokenBalance = "tokenBalance"
     }
 
     /// File size limits

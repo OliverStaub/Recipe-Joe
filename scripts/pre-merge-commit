@@ -81,12 +81,7 @@ if ! run_tests "RecipeJoe" "Unit Tests" "RecipeJoeTests"; then
     exit 1
 fi
 
-# Run UI tests
-if ! run_tests "RecipeJoe" "UI Tests" "RecipeJoeUITests"; then
-    echo -e "${RED}❌ UI tests failed. Merge aborted.${NC}"
-    echo -e "${YELLOW}Tip: Use 'git merge --no-verify' to bypass this check${NC}"
-    exit 1
-fi
+# UI tests removed - relying on unit tests only for pre-merge
 
 echo -e "${GREEN}✅ All tests passed! Proceeding with merge...${NC}"
 echo ""

@@ -40,6 +40,14 @@ final class SharedUserDefaults {
         refreshToken = nil
     }
 
+    // MARK: - Token Balance
+
+    /// Token balance synced from main app for share extension access
+    var tokenBalance: Int {
+        get { defaults?.integer(forKey: AppConstants.Keys.tokenBalance) ?? 0 }
+        set { defaults?.set(newValue, forKey: AppConstants.Keys.tokenBalance) }
+    }
+
     // MARK: - Import Settings
 
     var recipeLanguage: String {

@@ -10,9 +10,11 @@ import SwiftUI
 struct SettingsView: View {
     @ObservedObject private var userSettings = UserSettings.shared
     @ObservedObject private var authService = AuthenticationService.shared
+    @ObservedObject private var tokenService = TokenService.shared
     @Environment(\.locale) private var locale
     @State private var showSignOutConfirmation = false
     @State private var showDeleteAccountConfirmation = false
+    @State private var showPurchaseSheet = false
 
     var body: some View {
         NavigationStack {
@@ -63,6 +65,36 @@ struct SettingsView: View {
                         let template = "Recipes will be imported and translated to %@. This setting applies to future imports only."
                         Text(String(format: template.localized(for: locale), userSettings.recipeLanguage.displayName))
                     }
+                }
+
+                // MARK: - Tokens Section
+                Section {
+                    HStack {
+                        Label("Balance".localized(for: locale), systemImage: "circle.fill")
+                        Spacer()
+                        Text("\(tokenService.tokenBalance) tokens")
+                            .foregroundStyle(.secondary)
+                    }
+
+                    Button {
+                        showPurchaseSheet = true
+                    } label: {
+                        Label("Get More Tokens".localized(for: locale), systemImage: "plus.circle")
+                    }
+                    .accessibilityIdentifier("getMoreTokensButton")
+
+                    Button {
+                        Task {
+                            try? await tokenService.restorePurchases()
+                        }
+                    } label: {
+                        Label("Restore Purchases".localized(for: locale), systemImage: "arrow.clockwise")
+                    }
+                    .accessibilityIdentifier("restorePurchasesButton")
+                } header: {
+                    Text("Tokens".localized(for: locale))
+                } footer: {
+                    Text("Tokens are used to import recipes from websites, videos, and photos.".localized(for: locale))
                 }
 
                 // MARK: - About Section
@@ -138,6 +170,9 @@ struct SettingsView: View {
                 }
             } message: {
                 Text("This will permanently delete your account and all your recipes. This action cannot be undone.".localized(for: locale))
+            }
+            .sheet(isPresented: $showPurchaseSheet) {
+                TokenPurchaseView()
             }
         }
     }

@@ -20,6 +20,7 @@ struct SharedFile: Identifiable {
 enum ShareExtensionState {
     case ready
     case notAuthenticated
+    case insufficientTokens(required: Int, available: Int)
     case importing(step: String)
     case success(recipeName: String?)
     case error(message: String)
@@ -43,6 +44,9 @@ struct ShareExtensionView: View {
 
                 case .notAuthenticated:
                     notAuthenticatedView
+
+                case .insufficientTokens(let required, let available):
+                    insufficientTokensView(required: required, available: available)
 
                 case .importing(let step):
                     importingView(step: step)
@@ -101,6 +105,31 @@ struct ShareExtensionView: View {
                 .fontWeight(.semibold)
 
             Text("Please open RecipeJoe and sign in first to import recipes.")
+                .font(.subheadline)
+                .foregroundColor(.secondary)
+                .multilineTextAlignment(.center)
+
+            Spacer()
+        }
+        .padding(.top, 40)
+    }
+
+    private func insufficientTokensView(required: Int, available: Int) -> some View {
+        VStack(spacing: 16) {
+            Image(systemName: "exclamationmark.circle")
+                .font(.system(size: 60))
+                .foregroundColor(terracotta)
+
+            Text("Not Enough Tokens")
+                .font(.title2)
+                .fontWeight(.semibold)
+
+            Text("You need \(required) tokens to import this recipe, but only have \(available).")
+                .font(.subheadline)
+                .foregroundColor(.secondary)
+                .multilineTextAlignment(.center)
+
+            Text("Open RecipeJoe to purchase more tokens.")
                 .font(.subheadline)
                 .foregroundColor(.secondary)
                 .multilineTextAlignment(.center)
@@ -293,6 +322,16 @@ struct ShareExtensionView: View {
     }
 
     private func startImport() {
+        // Check token balance before importing
+        // Media imports (PDF/images) cost 3 tokens
+        let requiredTokens = 3
+        let availableTokens = SharedUserDefaults.shared.tokenBalance
+
+        guard availableTokens >= requiredTokens else {
+            state = .insufficientTokens(required: requiredTokens, available: availableTokens)
+            return
+        }
+
         let mediaType = files.first?.isPDF == true ? "pdf" : "image"
         state = .importing(step: "Uploading...")
 

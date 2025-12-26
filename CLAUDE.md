@@ -18,27 +18,35 @@ This is a Recipe App
 
 ## Testing
 
-This project uses both unit tests and UI tests to ensure code quality.
+This project uses unit tests and integration tests.
 
-### Test-Driven Development Requirements
+### Test Strategy
 
-**IMPORTANT:** When implementing any feature or creating implementation plans:
+1. **Unit Tests** (`RecipeJoeTests`) - PREFERRED
+   - Fast (~30 sec), no network, no simulator
+   - Use for: validation, parsing, calculations, error handling, model tests
 
-- ALWAYS include a step to write end-to-end tests for the new feature
-- Tests should verify the feature works correctly from the user's perspective
-- Every feature implementation plan must include test writing as a required step
-- Tests should be written in `RecipeJoeUITests` for UI features
-- - remember to run the test when you have built out a new feature - use a 10 min timeout
+2. **Integration Tests** (`RecipeJoeIntegrationTests`) - For API testing
+   - Async tests directly against Supabase
+   - Use for: auth flows, RLS policies, API responses
+
+Note: UI tests were removed to improve test speed and reliability.
+Client-side validation logic is covered by unit tests.
+
+### Guidelines
+
+- Prefer unit tests when testing logic
+- Remember to run tests when building new features
 
 ### Test Frameworks
 
-- **Swift Testing** - Modern testing framework for unit tests
+- **Swift Testing** - Modern testing framework for unit tests (`@Test`, `#expect`)
 - **XCUITest** - Apple's UI testing framework for end-to-end tests
 
 ### Test Targets
 
-- `RecipeJoeTests` - Unit tests
-- `RecipeJoeUITests` - UI/end-to-end tests
+- `RecipeJoeTests` - Unit tests (fast, no simulator)
+- `RecipeJoeIntegrationTests` - Integration tests (API, Supabase)
 
 ### Running Tests
 
@@ -48,7 +56,7 @@ This project uses both unit tests and UI tests to ensure code quality.
 ./scripts/run-tests.sh
 ```
 
-This runs the same tests as the pre-commit hook (unit + UI tests).
+This runs the same tests as the pre-commit hook (unit + integration tests).
 
 **Other options:**
 

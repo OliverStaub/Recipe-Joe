@@ -119,8 +119,10 @@ final class AuthenticationService: ObservableObject {
             self.currentUser = session.user
             self.isAuthenticated = true
         } catch {
-            self.errorMessage = error.localizedDescription
-            throw error
+            let parsedError = parseSupabaseError(error)
+            self.errorMessage = parsedError.userMessage
+            isLoading = false
+            throw parsedError.error
         }
 
         isLoading = false
@@ -163,9 +165,10 @@ final class AuthenticationService: ObservableObject {
             isLoading = false
             throw error
         } catch {
-            self.errorMessage = error.localizedDescription
+            let parsedError = parseSupabaseError(error)
+            self.errorMessage = parsedError.userMessage
             isLoading = false
-            throw AuthenticationError.signUpFailed(error.localizedDescription)
+            throw parsedError.error
         }
 
         isLoading = false
@@ -192,9 +195,10 @@ final class AuthenticationService: ObservableObject {
             self.currentUser = session.user
             self.isAuthenticated = true
         } catch {
-            self.errorMessage = "Invalid email or password"
+            let parsedError = parseSupabaseError(error)
+            self.errorMessage = parsedError.userMessage
             isLoading = false
-            throw AuthenticationError.invalidCredentials
+            throw parsedError.error
         }
 
         isLoading = false
@@ -227,6 +231,63 @@ final class AuthenticationService: ObservableObject {
         return email.range(of: emailRegex, options: .regularExpression) != nil
     }
 
+    /// Parse Supabase errors into user-friendly messages
+    /// - Parameter error: The error from Supabase
+    /// - Returns: A tuple with user-friendly message and appropriate AuthenticationError
+    private func parseSupabaseError(_ error: Error) -> (userMessage: String, error: AuthenticationError) {
+        let errorString = error.localizedDescription.lowercased()
+
+        // Check for common Supabase auth error patterns
+        if errorString.contains("email not confirmed") {
+            return ("Please check your email to confirm your account", .emailConfirmationRequired)
+        }
+
+        if errorString.contains("invalid login credentials") ||
+           errorString.contains("invalid credentials") {
+            return ("Invalid email or password", .invalidCredentials)
+        }
+
+        if errorString.contains("user not found") {
+            return ("No account found with this email", .invalidCredentials)
+        }
+
+        if errorString.contains("too many requests") ||
+           errorString.contains("rate limit") {
+            return ("Too many attempts. Please try again later", .signInFailed("Rate limited"))
+        }
+
+        if errorString.contains("network") ||
+           errorString.contains("connection") ||
+           errorString.contains("offline") {
+            return ("Network error. Please check your connection", .signInFailed("Network error"))
+        }
+
+        if errorString.contains("user already registered") ||
+           errorString.contains("already exists") {
+            return ("An account with this email already exists", .userAlreadyExists)
+        }
+
+        if errorString.contains("weak password") ||
+           errorString.contains("password") && errorString.contains("short") {
+            return ("Password is too weak. Use at least 6 characters", .weakPassword)
+        }
+
+        if errorString.contains("invalid email") {
+            return ("Please enter a valid email address", .invalidEmail)
+        }
+
+        // Default fallback - show the original error but sanitized
+        let sanitizedMessage = error.localizedDescription
+            .replacingOccurrences(of: "AuthApiError", with: "")
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+
+        if sanitizedMessage.isEmpty {
+            return ("Authentication failed. Please try again", .invalidCredentials)
+        }
+
+        return (sanitizedMessage, .signInFailed(sanitizedMessage))
+    }
+
     // MARK: - Sign Out
 
     /// Sign out the current user
@@ -239,6 +300,8 @@ final class AuthenticationService: ObservableObject {
             self.currentUser = nil
             self.isAuthenticated = false
             await clearUserData()
+            // Sign out from RevenueCat
+            await TokenService.shared.signOut()
         } catch {
             self.errorMessage = error.localizedDescription
             throw error

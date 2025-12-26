@@ -23,6 +23,10 @@ final class RecipeImportViewModel: ObservableObject {
     @Published var startTimestamp: String = ""
     @Published var endTimestamp: String = ""
 
+    // Token-related properties
+    @Published var showInsufficientTokensAlert: Bool = false
+    @Published var requiredTokens: Int = 0
+
     // MARK: - Video URL Detection Patterns
 
     private static let videoPatterns: [(platform: String, pattern: NSRegularExpression)] = {
@@ -85,6 +89,32 @@ final class RecipeImportViewModel: ObservableObject {
         }
     }
 
+    // MARK: - Token Management
+
+    /// Get the token cost for a URL import
+    /// - Parameter urlString: The URL to check
+    /// - Returns: The token cost based on URL type
+    func getTokenCost(for urlString: String) -> ImportTokenCost {
+        if isVideoURL(urlString) {
+            return .video
+        }
+        return .website
+    }
+
+    /// Check if user can afford the import
+    /// - Parameter urlString: The URL to import
+    /// - Returns: true if user has enough tokens
+    func canAffordImport(for urlString: String) -> Bool {
+        let cost = getTokenCost(for: urlString)
+        return TokenService.shared.canAffordImport(type: cost)
+    }
+
+    /// Check if user can afford media import (PDF/images)
+    /// - Returns: true if user has enough tokens for media import
+    func canAffordMediaImport() -> Bool {
+        return TokenService.shared.canAffordImport(type: .media)
+    }
+
     // MARK: - Import Recipe
 
     /// Import a recipe from a URL
@@ -98,6 +128,14 @@ final class RecipeImportViewModel: ObservableObject {
         }
 
         let isVideo = isVideoURL(urlString)
+        let tokenCost = isVideo ? ImportTokenCost.video : ImportTokenCost.website
+
+        // Check token balance before importing
+        guard TokenService.shared.canAffordImport(type: tokenCost) else {
+            requiredTokens = tokenCost.rawValue
+            showInsufficientTokensAlert = true
+            return
+        }
 
         importState = .importing
         currentStep = .fetching
@@ -140,6 +178,17 @@ final class RecipeImportViewModel: ObservableObject {
             try await Task.sleep(for: .milliseconds(300))
 
             if response.success {
+                // Deduct tokens on successful import
+                do {
+                    try await TokenService.shared.spendTokens(
+                        amount: tokenCost.rawValue,
+                        reason: isVideo ? "Video recipe import" : "Website recipe import"
+                    )
+                } catch {
+                    // Import succeeded, log but don't fail
+                    print("Token deduction failed: \(error)")
+                }
+
                 if let recipeIdString = response.recipeId,
                    let recipeId = UUID(uuidString: recipeIdString) {
                     lastImportedRecipeId = recipeId
@@ -181,6 +230,13 @@ final class RecipeImportViewModel: ObservableObject {
     /// Import a recipe from multiple images (combined into one recipe)
     /// - Parameter imagesData: Array of JPEG image data
     func importRecipeFromImages(_ imagesData: [Data]) async {
+        // Check token balance before importing
+        guard TokenService.shared.canAffordImport(type: .media) else {
+            requiredTokens = ImportTokenCost.media.rawValue
+            showInsufficientTokensAlert = true
+            return
+        }
+
         // Validate file sizes
         for (index, imageData) in imagesData.enumerated() {
             let sizeMB = imageData.count / (1024 * 1024)
@@ -228,6 +284,16 @@ final class RecipeImportViewModel: ObservableObject {
             try await Task.sleep(for: .milliseconds(200))
 
             if response.success {
+                // Deduct tokens on successful import
+                do {
+                    try await TokenService.shared.spendTokens(
+                        amount: ImportTokenCost.media.rawValue,
+                        reason: "Image recipe import"
+                    )
+                } catch {
+                    print("Token deduction failed: \(error)")
+                }
+
                 if let recipeIdString = response.recipeId,
                    let recipeId = UUID(uuidString: recipeIdString) {
                     lastImportedRecipeId = recipeId
@@ -247,6 +313,13 @@ final class RecipeImportViewModel: ObservableObject {
     /// Import a recipe from PDF data
     /// - Parameter pdfData: PDF file data
     func importRecipeFromPDF(_ pdfData: Data) async {
+        // Check token balance before importing
+        guard TokenService.shared.canAffordImport(type: .media) else {
+            requiredTokens = ImportTokenCost.media.rawValue
+            showInsufficientTokensAlert = true
+            return
+        }
+
         // Validate file size
         let sizeMB = pdfData.count / (1024 * 1024)
         if sizeMB > Self.maxPDFSizeMB {
@@ -288,6 +361,16 @@ final class RecipeImportViewModel: ObservableObject {
             try await Task.sleep(for: .milliseconds(200))
 
             if response.success {
+                // Deduct tokens on successful import
+                do {
+                    try await TokenService.shared.spendTokens(
+                        amount: ImportTokenCost.media.rawValue,
+                        reason: "PDF recipe import"
+                    )
+                } catch {
+                    print("Token deduction failed: \(error)")
+                }
+
                 if let recipeIdString = response.recipeId,
                    let recipeId = UUID(uuidString: recipeIdString) {
                     lastImportedRecipeId = recipeId

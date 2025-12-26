@@ -27,3 +27,7 @@ supabase/.temp/
 
 # Secrets - NEVER commit these
 **/Secrets.xcconfig
+
+# Logging infrastructure
+logging/data/
+logging/.env

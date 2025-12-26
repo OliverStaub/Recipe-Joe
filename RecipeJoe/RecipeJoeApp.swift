@@ -6,6 +6,7 @@
 //
 
 import Kingfisher
+import RevenueCat
 import SwiftUI
 
 @main
@@ -16,6 +17,11 @@ struct RecipeJoeApp: App {
 
     init() {
         configureImageCache()
+        configureRevenueCat()
+    }
+
+    private func configureRevenueCat() {
+        TokenService.shared.configure()
     }
 
     var body: some Scene {
@@ -27,6 +33,13 @@ struct RecipeJoeApp: App {
                 } else if authService.isAuthenticated {
                     // User is authenticated - show main app
                     MainTabView(deepLinkRecipeId: $deepLinkRecipeId)
+                        .task {
+                            // Configure RevenueCat for authenticated user
+                            if let userId = authService.currentUserId {
+                                await TokenService.shared.configureForUser(userId: userId.uuidString)
+                                await TokenService.shared.grantNewUserBonus()
+                            }
+                        }
                 } else {
                     // User is not authenticated - show sign in
                     AuthenticationView()

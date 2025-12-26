@@ -24,8 +24,6 @@ import {
   getVideoTranscript,
   TranscriptNotAvailableError,
 } from "./utils/supadata-client.ts";
-// Whisper fallback disabled for now - most videos have captions
-// import { transcribeWithWhisper } from "./utils/whisper-client.ts";
 import { getVideoMetadata, getWorkingYouTubeThumbnail } from "./utils/video-thumbnail.ts";
 
 const corsHeaders = {
@@ -144,11 +142,12 @@ serve(async (req) => {
         console.log(`Got transcript: ${transcript.segmentCount} segments, language: ${transcriptLanguage}`);
       } catch (error) {
         if (error instanceof TranscriptNotAvailableError) {
-          // Whisper fallback disabled for now - return user-friendly error
-          console.log('No captions available for this video');
+          // Supadata handles AI transcription automatically for most videos
+          // This error means even AI transcription failed
+          console.log('Transcript extraction failed for this video');
           const response: ImportResponse = {
             success: false,
-            error: 'This video has no captions/subtitles available. Please try a different video with subtitles enabled.',
+            error: 'Could not extract transcript from this video. The video may be private, age-restricted, or unavailable.',
           };
           return new Response(JSON.stringify(response), {
             headers: { ...corsHeaders, 'Content-Type': 'application/json' },

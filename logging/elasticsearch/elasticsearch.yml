@@ -1,0 +1,18 @@
+cluster.name: recipejoe-logs
+node.name: es01
+
+# Network
+network.host: 0.0.0.0
+http.port: 9200
+
+# Single node discovery
+discovery.type: single-node
+
+# Security
+xpack.security.enabled: true
+xpack.security.http.ssl.enabled: false
+xpack.security.transport.ssl.enabled: false
+
+# S3 client for Infomaniak Swiss Backup snapshots
+s3.client.default.endpoint: s3.swiss-backup02.infomaniak.com
+s3.client.default.protocol: https

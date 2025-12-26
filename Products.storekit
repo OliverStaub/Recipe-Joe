@@ -1,0 +1,102 @@
+{
+  "appPolicies" : {
+    "eula" : "",
+    "policies" : [
+      {
+        "locale" : "en_US",
+        "policyText" : "",
+        "policyURL" : ""
+      }
+    ]
+  },
+  "identifier" : "A1BC1B41",
+  "nonRenewingSubscriptions" : [
+
+  ],
+  "products" : [
+    {
+      "displayPrice" : "1.99",
+      "familyShareable" : false,
+      "internalID" : "tokens_10_id",
+      "localizations" : [
+        {
+          "description" : "10 tokens for importing recipes",
+          "displayName" : "10 Tokens",
+          "locale" : "en_US"
+        }
+      ],
+      "productID" : "tokens_10",
+      "referenceName" : "10 Tokens",
+      "type" : "Consumable"
+    },
+    {
+      "displayPrice" : "3.99",
+      "familyShareable" : false,
+      "internalID" : "tokens_25_id",
+      "localizations" : [
+        {
+          "description" : "25 tokens for importing recipes",
+          "displayName" : "25 Tokens",
+          "locale" : "en_US"
+        }
+      ],
+      "productID" : "tokens_25",
+      "referenceName" : "25 Tokens",
+      "type" : "Consumable"
+    },
+    {
+      "displayPrice" : "6.99",
+      "familyShareable" : false,
+      "internalID" : "tokens_50_id",
+      "localizations" : [
+        {
+          "description" : "50 tokens for importing recipes",
+          "displayName" : "50 Tokens",
+          "locale" : "en_US"
+        }
+      ],
+      "productID" : "tokens_50",
+      "referenceName" : "50 Tokens",
+      "type" : "Consumable"
+    },
+    {
+      "displayPrice" : "11.99",
+      "familyShareable" : false,
+      "internalID" : "tokens_120_id",
+      "localizations" : [
+        {
+          "description" : "120 tokens for importing recipes",
+          "displayName" : "120 Tokens",
+          "locale" : "en_US"
+        }
+      ],
+      "productID" : "tokens_120",
+      "referenceName" : "120 Tokens",
+      "type" : "Consumable"
+    }
+  ],
+  "settings" : {
+    "_applicationInternalID" : "6756026297",
+    "_askToBuyEnabled" : false,
+    "_billingGracePeriodEnabled" : false,
+    "_billingIssuesEnabled" : false,
+    "_developerTeamID" : "Z66Q4BXFN7",
+    "_disableDialogs" : false,
+    "_failTransactionsEnabled" : false,
+    "_locale" : "en_US",
+    "_renewalBillingIssuesEnabled" : false,
+    "_shouldSetupSyncOnLoad" : false,
+    "_storefront" : "USA",
+    "_storeKitErrors" : [
+
+    ],
+    "_timeRate" : 0
+  },
+  "subscriptionGroups" : [
+
+  ],
+  "version" : {
+    "major" : 4,
+    "minor" : 0
+  }
+}

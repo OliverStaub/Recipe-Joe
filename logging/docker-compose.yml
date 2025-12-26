@@ -1,0 +1,94 @@
+version: '3.8'
+
+services:
+  elasticsearch:
+    build:
+      context: ./elasticsearch
+      dockerfile: Dockerfile
+    container_name: recipejoe-elasticsearch
+    environment:
+      - node.name=es01
+      - cluster.name=recipejoe-logs
+      - discovery.type=single-node
+      - ELASTIC_PASSWORD=${ELASTIC_PASSWORD}
+      - xpack.security.enabled=true
+      - xpack.security.http.ssl.enabled=false
+      - xpack.security.transport.ssl.enabled=false
+      - bootstrap.memory_lock=true
+      - "ES_JAVA_OPTS=-Xms1g -Xmx1g"
+      # S3 credentials for Infomaniak Swiss Backup snapshots
+      - s3.client.default.access_key=${S3_ACCESS_KEY}
+      - s3.client.default.secret_key=${S3_SECRET_KEY}
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    volumes:
+      - ./data/elasticsearch:/usr/share/elasticsearch/data
+      - ./elasticsearch/elasticsearch.yml:/usr/share/elasticsearch/config/elasticsearch.yml:ro
+    ports:
+      - "9200:9200"
+    networks:
+      - logging-network
+    healthcheck:
+      test: ["CMD-SHELL", "curl -s -u elastic:${ELASTIC_PASSWORD} http://localhost:9200/_cluster/health | grep -q 'green\\|yellow'"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    restart: unless-stopped
+
+  kibana:
+    image: docker.elastic.co/kibana/kibana:8.11.0
+    container_name: recipejoe-kibana
+    environment:
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+      - ELASTICSEARCH_USERNAME=kibana_system
+      - KIBANA_PASSWORD=${KIBANA_PASSWORD}
+      - XPACK_SECURITY_ENABLED=true
+    volumes:
+      - ./kibana/kibana.yml:/usr/share/kibana/config/kibana.yml:ro
+    ports:
+      - "5601:5601"
+    networks:
+      - logging-network
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -s http://localhost:5601/api/status | grep -q 'available'"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    restart: unless-stopped
+
+  log-collector:
+    build:
+      context: ./collector
+      dockerfile: Dockerfile
+    container_name: recipejoe-log-collector
+    environment:
+      - SUPABASE_PROJECT_REF=${SUPABASE_PROJECT_REF}
+      - SUPABASE_ACCESS_TOKEN=${SUPABASE_ACCESS_TOKEN}
+      - ELASTICSEARCH_URL=http://elasticsearch:9200
+      - ELASTICSEARCH_USERNAME=elastic
+      - ELASTICSEARCH_PASSWORD=${ELASTIC_PASSWORD}
+      - POLL_INTERVAL_MINUTES=${POLL_INTERVAL_MINUTES:-15}
+      - LOG_LEVEL=${LOG_LEVEL:-info}
+      # S3 snapshot configuration
+      - ENABLE_S3_SNAPSHOTS=${ENABLE_S3_SNAPSHOTS:-false}
+      - S3_BUCKET=${S3_BUCKET}
+      - S3_ENDPOINT=${S3_ENDPOINT}
+      - SNAPSHOT_SCHEDULE=${SNAPSHOT_SCHEDULE:-0 2 * * *}
+      - SNAPSHOT_RETENTION_DAYS=${SNAPSHOT_RETENTION_DAYS:-30}
+    volumes:
+      - ./data/checkpoints:/app/checkpoints
+    networks:
+      - logging-network
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+    restart: unless-stopped
+
+networks:
+  logging-network:
+    driver: bridge
