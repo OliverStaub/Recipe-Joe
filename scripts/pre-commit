@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# Ensure Homebrew binaries are in PATH (for Deno, etc.)
+export PATH="/opt/homebrew/bin:$PATH"
+
 # Pre-commit hook for RecipeJoe
 # Runs both unit tests and UI tests before allowing commits
 # Only runs on main and develop branches (skips feature branches)
