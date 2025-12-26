@@ -103,13 +103,13 @@ final class ExtensionSupabaseClient {
 
         // Get settings from shared defaults
         let language = SharedUserDefaults.shared.recipeLanguage
-        let reword = !SharedUserDefaults.shared.keepOriginalWording
+        let translate = SharedUserDefaults.shared.enableTranslation
 
         let requestBody: [String: Any] = [
             "storage_paths": storagePaths,
             "media_type": mediaType,
             "language": language,
-            "reword": reword
+            "translate": translate
         ]
 
         var request = URLRequest(url: functionURL)

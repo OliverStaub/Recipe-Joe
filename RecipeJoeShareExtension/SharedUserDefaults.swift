@@ -55,8 +55,8 @@ final class SharedUserDefaults {
         set { defaults?.set(newValue, forKey: AppConstants.Keys.recipeLanguage) }
     }
 
-    var keepOriginalWording: Bool {
-        get { defaults?.bool(forKey: AppConstants.Keys.keepOriginalWording) ?? false }
-        set { defaults?.set(newValue, forKey: AppConstants.Keys.keepOriginalWording) }
+    var enableTranslation: Bool {
+        get { defaults?.bool(forKey: AppConstants.Keys.enableTranslation) ?? true }
+        set { defaults?.set(newValue, forKey: AppConstants.Keys.enableTranslation) }
     }
 }

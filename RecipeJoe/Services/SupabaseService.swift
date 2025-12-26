@@ -44,21 +44,21 @@ final class SupabaseService {
     /// - Parameters:
     ///   - url: The URL of the recipe webpage or video
     ///   - language: Target language for the recipe ("en" or "de")
-    ///   - reword: If true, AI will reword and translate. If false, keeps original text with category prefixes only.
+    ///   - translate: If true, translate recipe to target language when source differs
     ///   - startTimestamp: Optional start time for video (MM:SS or HH:MM:SS format). If nil, starts from beginning.
     ///   - endTimestamp: Optional end time for video (MM:SS or HH:MM:SS format). If nil, goes to end.
     /// - Returns: The import response with recipe details
     func importRecipe(
         from url: String,
         language: String = "en",
-        reword: Bool = true,
+        translate: Bool = true,
         startTimestamp: String? = nil,
         endTimestamp: String? = nil
     ) async throws -> RecipeImportResponse {
         let request = RecipeImportRequest(
             url: url,
             language: language,
-            reword: reword,
+            translate: translate,
             startTimestamp: startTimestamp,
             endTimestamp: endTimestamp
         )
@@ -189,19 +189,19 @@ final class SupabaseService {
     ///   - storagePaths: The storage paths returned from uploadTempImport (for multiple images combined into one recipe)
     ///   - mediaType: The type of media (.image or .pdf)
     ///   - language: Target language for the recipe ("en" or "de")
-    ///   - reword: If true, AI will reword and translate. If false, keeps original text with category prefixes only.
+    ///   - translate: If true, translate recipe to target language when source differs
     /// - Returns: The import response with recipe details
     func importRecipeFromMedia(
         storagePaths: [String],
         mediaType: MediaImportType,
         language: String = "en",
-        reword: Bool = true
+        translate: Bool = true
     ) async throws -> MediaImportResponse {
         let request = MediaImportRequest(
             storagePaths: storagePaths,
             mediaType: mediaType.rawValue,
             language: language,
-            reword: reword
+            translate: translate
         )
 
         let response: MediaImportResponse = try await client.functions.invoke(

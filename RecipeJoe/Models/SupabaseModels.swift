@@ -13,7 +13,7 @@ import Foundation
 struct RecipeImportRequest: Codable, Sendable {
     let url: String
     let language: String
-    let reword: Bool
+    let translate: Bool
     let startTimestamp: String?
     let endTimestamp: String?
 }
@@ -74,13 +74,13 @@ struct MediaImportRequest: Codable, Sendable {
     let storagePaths: [String]
     let mediaType: String
     let language: String
-    let reword: Bool
+    let translate: Bool
 
     enum CodingKeys: String, CodingKey {
         case storagePaths = "storage_paths"
         case mediaType = "media_type"
         case language
-        case reword
+        case translate
     }
 }
 

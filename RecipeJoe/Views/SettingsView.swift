@@ -52,18 +52,17 @@ struct SettingsView: View {
                         Label("Recipe Language".localized(for: locale), systemImage: "doc.text")
                     }
 
-                    Toggle(isOn: $userSettings.keepOriginalWording) {
-                        Label("Keep Original Wording".localized(for: locale), systemImage: "text.quote")
+                    Toggle(isOn: $userSettings.enableTranslation) {
+                        Label("Enable Translation".localized(for: locale), systemImage: "globe")
                     }
                 } header: {
                     Text("Recipe Import".localized(for: locale))
                 } footer: {
-                    if userSettings.keepOriginalWording {
-                        Text("Steps will be imported in their original language without rewording.".localized(for: locale))
-                    } else {
-                        // For interpolated strings, we need a different approach
-                        let template = "Recipes will be imported and translated to %@. This setting applies to future imports only."
+                    if userSettings.enableTranslation {
+                        let template = "Recipes will be translated to %@ when the source language differs."
                         Text(String(format: template.localized(for: locale), userSettings.recipeLanguage.displayName))
+                    } else {
+                        Text("Recipes will be imported in their original language.".localized(for: locale))
                     }
                 }
 

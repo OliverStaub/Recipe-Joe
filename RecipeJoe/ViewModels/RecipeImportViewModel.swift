@@ -153,9 +153,9 @@ final class RecipeImportViewModel: ObservableObject {
 
             currentStep = .parsing
 
-            // Step 2: Parsing - Use language and reword settings
+            // Step 2: Parsing - Use language and translate settings
             let language = UserSettings.shared.recipeLanguage.rawValue
-            let reword = !UserSettings.shared.keepOriginalWording
+            let translate = UserSettings.shared.enableTranslation
 
             // Start the actual import (this takes most of the time)
             try await Task.sleep(for: .milliseconds(800))
@@ -168,7 +168,7 @@ final class RecipeImportViewModel: ObservableObject {
             let response = try await SupabaseService.shared.importRecipe(
                 from: urlString,
                 language: language,
-                reword: reword,
+                translate: translate,
                 startTimestamp: startTs,
                 endTimestamp: endTs
             )
@@ -266,7 +266,7 @@ final class RecipeImportViewModel: ObservableObject {
 
             // Step 2: Call OCR Edge Function with all paths
             let language = UserSettings.shared.recipeLanguage.rawValue
-            let reword = !UserSettings.shared.keepOriginalWording
+            let translate = UserSettings.shared.enableTranslation
 
             currentStep = .parsing
             try await Task.sleep(for: .milliseconds(300))
@@ -277,7 +277,7 @@ final class RecipeImportViewModel: ObservableObject {
                 storagePaths: storagePaths,
                 mediaType: .image,
                 language: language,
-                reword: reword
+                translate: translate
             )
 
             currentStep = .saving
@@ -343,7 +343,7 @@ final class RecipeImportViewModel: ObservableObject {
 
             // Step 2: Call OCR Edge Function
             let language = UserSettings.shared.recipeLanguage.rawValue
-            let reword = !UserSettings.shared.keepOriginalWording
+            let translate = UserSettings.shared.enableTranslation
 
             currentStep = .parsing
             try await Task.sleep(for: .milliseconds(300))
@@ -354,7 +354,7 @@ final class RecipeImportViewModel: ObservableObject {
                 storagePaths: [storagePath],
                 mediaType: .pdf,
                 language: language,
-                reword: reword
+                translate: translate
             )
 
             currentStep = .saving

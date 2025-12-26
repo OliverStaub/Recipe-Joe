@@ -28,7 +28,7 @@ enum AppConstants {
         static let accessToken = "supabase_access_token"
         static let refreshToken = "supabase_refresh_token"
         static let recipeLanguage = "recipeLanguage"
-        static let keepOriginalWording = "keepOriginalWording"
+        static let enableTranslation = "enableTranslation"
         static let tokenBalance = "tokenBalance"
     }
 

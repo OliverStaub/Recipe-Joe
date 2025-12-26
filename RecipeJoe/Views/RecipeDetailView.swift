@@ -21,6 +21,9 @@ struct RecipeDetailView: View {
     @State private var showPhotoPicker = false
     @Environment(\.locale) private var locale
 
+    // Step highlighting for cooking progress
+    @State private var highlightedStepId: UUID?
+
     // Time picker state
     @State private var showPrepTimePicker = false
     @State private var showCookTimePicker = false
@@ -452,16 +455,28 @@ struct RecipeDetailView: View {
         VStack(alignment: .leading, spacing: 12) {
             SectionHeader(title: "Instructions".localized(for: locale), icon: "list.number")
 
-            VStack(alignment: .leading, spacing: 16) {
+            VStack(alignment: .leading, spacing: 8) {
                 ForEach(steps) { step in
-                    StepRow(step: step) { instruction in
-                        Task {
-                            await viewModel.saveStepInstruction(
-                                stepId: step.id,
-                                instruction: instruction
-                            )
+                    StepRow(
+                        step: step,
+                        isHighlighted: highlightedStepId == step.id,
+                        onTap: {
+                            // Toggle highlight - if same step tapped, unhighlight
+                            if highlightedStepId == step.id {
+                                highlightedStepId = nil
+                            } else {
+                                highlightedStepId = step.id
+                            }
+                        },
+                        onSave: { instruction in
+                            Task {
+                                await viewModel.saveStepInstruction(
+                                    stepId: step.id,
+                                    instruction: instruction
+                                )
+                            }
                         }
-                    }
+                    )
                 }
             }
         }

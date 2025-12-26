@@ -84,7 +84,7 @@ final class UserSettings: ObservableObject {
 
     private enum Keys {
         static let recipeLanguage = "recipeLanguage"
-        static let keepOriginalWording = "keepOriginalWording"
+        static let enableTranslation = "enableTranslation"
         static let appLanguage = "appLanguage"
     }
 
@@ -106,12 +106,12 @@ final class UserSettings: ObservableObject {
         }
     }
 
-    /// If true, keep original step text without rewording/translating
-    @Published var keepOriginalWording: Bool {
+    /// If true, translate recipes to target language when source differs
+    @Published var enableTranslation: Bool {
         didSet {
-            UserDefaults.standard.set(keepOriginalWording, forKey: Keys.keepOriginalWording)
+            UserDefaults.standard.set(enableTranslation, forKey: Keys.enableTranslation)
             // Sync to shared storage for share extension
-            SharedUserDefaults.shared.keepOriginalWording = keepOriginalWording
+            SharedUserDefaults.shared.enableTranslation = enableTranslation
         }
     }
 
@@ -136,12 +136,17 @@ final class UserSettings: ObservableObject {
             self.recipeLanguage = deviceLanguage == "de" ? .german : .english
         }
 
-        // Load keepOriginalWording (default: false = reword enabled)
-        self.keepOriginalWording = UserDefaults.standard.bool(forKey: Keys.keepOriginalWording)
+        // Load enableTranslation (default: true = translation enabled)
+        // Check if key exists for proper default handling
+        if UserDefaults.standard.object(forKey: Keys.enableTranslation) != nil {
+            self.enableTranslation = UserDefaults.standard.bool(forKey: Keys.enableTranslation)
+        } else {
+            self.enableTranslation = true
+        }
 
         // Sync to shared storage for share extension
         SharedUserDefaults.shared.recipeLanguage = self.recipeLanguage.rawValue
-        SharedUserDefaults.shared.keepOriginalWording = self.keepOriginalWording
+        SharedUserDefaults.shared.enableTranslation = self.enableTranslation
     }
 
     // MARK: - Computed Properties
