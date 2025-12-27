@@ -7,6 +7,34 @@
 
 import Foundation
 
+// MARK: - Codable wrapper for SupabaseRecipeDetail (outside actor for Sendable conformance)
+
+private struct CachedRecipeDetail: Sendable {
+    let recipe: SupabaseRecipe
+    let steps: [SupabaseRecipeStep]
+    let ingredients: [SupabaseRecipeIngredient]
+}
+
+extension CachedRecipeDetail: Codable {
+    nonisolated init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        recipe = try container.decode(SupabaseRecipe.self, forKey: .recipe)
+        steps = try container.decode([SupabaseRecipeStep].self, forKey: .steps)
+        ingredients = try container.decode([SupabaseRecipeIngredient].self, forKey: .ingredients)
+    }
+
+    nonisolated func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(recipe, forKey: .recipe)
+        try container.encode(steps, forKey: .steps)
+        try container.encode(ingredients, forKey: .ingredients)
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case recipe, steps, ingredients
+    }
+}
+
 actor RecipeCacheService {
     static let shared = RecipeCacheService()
 
@@ -123,7 +151,8 @@ actor RecipeCacheService {
 
         var totalSize: Int64 = 0
         if let enumerator = fileManager.enumerator(at: cacheDirectory, includingPropertiesForKeys: [.fileSizeKey]) {
-            for case let fileURL as URL in enumerator {
+            // Use while-let instead of for-in to avoid makeIterator in async context
+            while let fileURL = enumerator.nextObject() as? URL {
                 if let size = try? fileURL.resourceValues(forKeys: [.fileSizeKey]).fileSize {
                     totalSize += Int64(size)
                 }
@@ -139,12 +168,4 @@ actor RecipeCacheService {
             .appendingPathComponent(recipeDetailsDirectory)
             .appendingPathComponent("\(id.uuidString).json")
     }
-}
-
-// MARK: - Codable wrapper for SupabaseRecipeDetail
-
-private struct CachedRecipeDetail: Codable {
-    let recipe: SupabaseRecipe
-    let steps: [SupabaseRecipeStep]
-    let ingredients: [SupabaseRecipeIngredient]
 }

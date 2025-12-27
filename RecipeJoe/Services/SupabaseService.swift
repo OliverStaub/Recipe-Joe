@@ -9,8 +9,7 @@ import Foundation
 import Supabase
 
 /// Service to interact with Supabase Edge Functions
-@MainActor
-final class SupabaseService {
+final class SupabaseService: Sendable {
     // MARK: - Singleton
 
     static let shared = SupabaseService()
@@ -375,7 +374,9 @@ final class SupabaseService {
 
         // Update token balance if returned
         if let newBalance = response.balance {
-            await TokenService.shared.updateBalance(newBalance)
+            Task { @MainActor in
+                TokenService.shared.updateBalance(newBalance)
+            }
         }
     }
 }

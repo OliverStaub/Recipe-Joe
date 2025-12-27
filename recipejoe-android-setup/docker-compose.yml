@@ -1,0 +1,37 @@
+version: '3.8'
+
+services:
+  claude-android:
+    build:
+      context: .
+      dockerfile: Dockerfile.claude-android
+    container_name: recipejoe-claude
+    volumes:
+      # Mount entire RecipeJoe project (WRITABLE)
+      - ./recipejoe:/workspace/recipejoe
+      # Mount Claude settings
+      - ./claude-settings.json:/home/claude/.claude/settings.json:ro
+      # Mount initial prompt
+      - ./android-task.md:/workspace/android-task.md:ro
+      # Persist Claude conversation history
+      - claude-history:/home/claude/.claude/history
+    environment:
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
+      - ANDROID_HOME=/opt/android-sdk
+      - GRADLE_USER_HOME=/workspace/recipejoe/.gradle
+    working_dir: /workspace/recipejoe
+    stdin_open: true
+    tty: true
+    # Keep container running
+    command: ["tail", "-f", "/dev/null"]
+    # Resource limits to prevent runaway costs
+    deploy:
+      resources:
+        limits:
+          cpus: '4.0'
+          memory: 8G
+
+volumes:
+  claude-history:
+    driver: local
