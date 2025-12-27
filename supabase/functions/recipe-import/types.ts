@@ -45,6 +45,14 @@ export interface ImportResponse {
   recipe_id?: string;
   recipe_name?: string;
   error?: string;
+  // Token balance info
+  tokens_deducted?: number;
+  tokens_remaining?: number;
+  tokens_required?: number;
+  tokens_available?: number;
+  // Rate limiting info
+  rate_limit_remaining?: number;
+  rate_limit_reset?: string;
   stats?: {
     steps_count: number;
     ingredients_count: number;

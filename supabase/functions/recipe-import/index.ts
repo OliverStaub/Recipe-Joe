@@ -25,6 +25,7 @@ import {
   TranscriptNotAvailableError,
 } from "./utils/supadata-client.ts";
 import { getVideoMetadata, getWorkingYouTubeThumbnail } from "./utils/video-thumbnail.ts";
+import { getTokenBalance, deductTokens, checkRateLimit, TOKEN_COSTS } from "../_shared/token-client.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -67,6 +68,61 @@ serve(async (req) => {
       throw new Error('Authentication required');
     }
 
+    // Initialize Supabase client (needed for token operations)
+    const supabase = getSupabaseClient();
+
+    // Check if this is a video URL to determine token cost
+    const isVideo = isVideoUrl(url);
+    const tokenCost = isVideo ? TOKEN_COSTS.video : TOKEN_COSTS.website;
+
+    // Check rate limit before processing (150 recipes per 24 hours)
+    console.log(`Checking rate limit for user ${userId}...`);
+    const rateLimit = await checkRateLimit(supabase, userId);
+    if (!rateLimit.allowed) {
+      console.log(`Rate limit exceeded: ${rateLimit.remaining} remaining`);
+      const response: ImportResponse = {
+        success: false,
+        error: 'Rate limit exceeded. Maximum 150 recipes per 24 hours.',
+        rate_limit_remaining: rateLimit.remaining,
+        rate_limit_reset: rateLimit.resetAt.toISOString(),
+      };
+      return new Response(JSON.stringify(response), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 200,
+      });
+    }
+
+    // Check token balance before processing
+    console.log(`Checking token balance for user ${userId}...`);
+    let currentBalance: number;
+    try {
+      currentBalance = await getTokenBalance(supabase, userId);
+      console.log(`User has ${currentBalance} tokens, needs ${tokenCost}`);
+    } catch (error) {
+      console.error('Failed to check token balance:', error);
+      const response: ImportResponse = {
+        success: false,
+        error: 'Could not verify token balance. Please try again.',
+      };
+      return new Response(JSON.stringify(response), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 200,
+      });
+    }
+
+    if (currentBalance < tokenCost) {
+      const response: ImportResponse = {
+        success: false,
+        error: 'Insufficient tokens',
+        tokens_required: tokenCost,
+        tokens_available: currentBalance,
+      };
+      return new Response(JSON.stringify(response), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 200,
+      });
+    }
+
     // Validate URL format
     let parsedUrl: URL;
     try {
@@ -80,9 +136,6 @@ serve(async (req) => {
 
     console.log(`Importing recipe from: ${url}`);
 
-    // Initialize Supabase client
-    const supabase = getSupabaseClient();
-
     // Step 1: Fetch existing data for Claude context
     const [existingIngredients, measurementTypes] = await Promise.all([
       fetchExistingIngredients(supabase),
@@ -92,8 +145,7 @@ serve(async (req) => {
     console.log(`Found ${existingIngredients.length} existing ingredients`);
     console.log(`Found ${measurementTypes.length} measurement types`);
 
-    // Check if this is a video URL
-    const isVideo = isVideoUrl(url);
+    // isVideo already checked above for token cost
     let claudeResponse;
     let videoThumbnailUrl: string | null = null;
 
@@ -246,10 +298,25 @@ serve(async (req) => {
 
     console.log(`Created recipe ${recipeId} with ${newIngredientsCount} new ingredients`);
 
+    // Step 8: Deduct tokens after successful import
+    const importReason = isVideo ? 'import_video' : 'import_website';
+    console.log(`Deducting ${tokenCost} tokens for ${importReason}...`);
+    const deductResult = await deductTokens(supabase, userId, tokenCost, importReason, recipeId);
+
+    if (!deductResult.success) {
+      // Import succeeded but token deduction failed - log for manual review
+      // We don't fail the request since the recipe was already created
+      console.error('Token deduction failed:', deductResult.error);
+    } else {
+      console.log(`Tokens deducted. New balance: ${deductResult.balance}`);
+    }
+
     const response: ImportResponse = {
       success: true,
       recipe_id: recipeId,
       recipe_name: claudeResponse.data.recipe?.name,
+      tokens_deducted: tokenCost,
+      tokens_remaining: deductResult.balance,
       stats: {
         steps_count: claudeResponse.data.steps?.length || 0,
         ingredients_count: claudeResponse.data.ingredients?.length || 0,

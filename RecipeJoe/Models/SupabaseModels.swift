@@ -24,6 +24,11 @@ struct RecipeImportResponse: Codable, Sendable {
     let recipeId: String?
     let recipeName: String?
     let error: String?
+    // Token balance info (from server-side deduction)
+    let tokensDeducted: Int?
+    let tokensRemaining: Int?
+    let tokensRequired: Int?
+    let tokensAvailable: Int?
     let stats: ImportStats?
 
     enum CodingKeys: String, CodingKey {
@@ -31,6 +36,10 @@ struct RecipeImportResponse: Codable, Sendable {
         case recipeId = "recipe_id"
         case recipeName = "recipe_name"
         case error
+        case tokensDeducted = "tokens_deducted"
+        case tokensRemaining = "tokens_remaining"
+        case tokensRequired = "tokens_required"
+        case tokensAvailable = "tokens_available"
         case stats
     }
 }

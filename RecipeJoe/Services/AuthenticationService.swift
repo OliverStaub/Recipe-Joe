@@ -300,8 +300,6 @@ final class AuthenticationService: ObservableObject {
             self.currentUser = nil
             self.isAuthenticated = false
             await clearUserData()
-            // Sign out from RevenueCat
-            await TokenService.shared.signOut()
         } catch {
             self.errorMessage = error.localizedDescription
             throw error

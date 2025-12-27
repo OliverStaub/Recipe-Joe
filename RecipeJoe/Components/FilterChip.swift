@@ -74,6 +74,8 @@ struct FilterBar: View {
             .padding(.vertical, 8)
         }
         .frame(minHeight: 44)
+        .fixedSize(horizontal: false, vertical: true)
+        .background(Color(.systemBackground))
         .accessibilityIdentifier("filterBar")
     }
 

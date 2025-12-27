@@ -6,7 +6,6 @@
 //
 
 import Foundation
-import RevenueCat
 import Testing
 @testable import RecipeJoe
 
@@ -148,47 +147,35 @@ struct TokenServiceTests {
         #expect(await service.tokenCountForProduct("ios_tokens_120") == 120)
     }
 
-    // MARK: - RevenueCat Integration Tests
+    // MARK: - Balance Check Tests
 
-    /// Integration test for RevenueCat offerings - disabled by default as it requires network
-    /// Run manually with: -only-testing:RecipeJoeTests/TokenServiceTests/testRevenueCatOfferingsAvailable
-    @Test(.disabled("Integration test - run manually to verify RevenueCat setup"))
-    func testRevenueCatOfferingsAvailable() async throws {
-        // Configure RevenueCat if not already configured
-        Purchases.logLevel = .debug
-        if Purchases.isConfigured == false {
-            Purchases.configure(withAPIKey: AppConstants.revenueCatAPIKey)
+    @Test func testCanAffordImport_withZeroBalance() async throws {
+        let service = await TokenService.shared
+        let currentBalance = await service.tokenBalance
+
+        // If balance is 0, should not afford any import
+        if currentBalance == 0 {
+            #expect(await service.canAffordImport(type: .website) == false)
+            #expect(await service.canAffordImport(type: .video) == false)
+            #expect(await service.canAffordImport(type: .media) == false)
         }
-
-        // Fetch offerings
-        let offerings = try await Purchases.shared.offerings()
-
-        // Log what we found
-        print("=== RevenueCat Offerings Debug ===")
-        print("Current offering: \(offerings.current?.identifier ?? "NONE")")
-        print("All offerings: \(offerings.all.keys.joined(separator: ", "))")
-
-        // Check for "default" offering specifically
-        let defaultOffering = offerings.offering(identifier: "default")
-        print("Default offering found: \(defaultOffering != nil)")
-
-        if let offering = defaultOffering ?? offerings.current {
-            print("Packages in offering:")
-            for package in offering.availablePackages {
-                print("  - \(package.identifier): \(package.storeProduct.productIdentifier) @ \(package.storeProduct.localizedPriceString)")
-            }
-        }
-
-        // Test that we have the "default" offering or a current offering
-        let activeOffering = defaultOffering ?? offerings.current
-        #expect(activeOffering != nil, "No 'default' or current offering found - check RevenueCat dashboard")
-
-        // Test that we have the expected packages
-        if let offering = activeOffering {
-            #expect(offering.availablePackages.count >= 1, "No packages in offering")
-            print("✅ Found \(offering.availablePackages.count) packages")
-        }
-
-        print("=================================")
     }
+
+    @Test func testCanAfford_checksBalance() async throws {
+        let service = await TokenService.shared
+        let currentBalance = await service.tokenBalance
+
+        // Should be able to afford amounts <= balance
+        #expect(await service.canAfford(amount: 0) == true)
+        if currentBalance > 0 {
+            #expect(await service.canAfford(amount: currentBalance) == true)
+        }
+        // Should not afford more than balance
+        #expect(await service.canAfford(amount: currentBalance + 1) == false)
+        #expect(await service.canAfford(amount: currentBalance + 100) == false)
+    }
+
+    // Note: Token spending is now done server-side in Edge Functions.
+    // The TokenService no longer has a spendTokens method.
+    // Token balance is deducted by the Edge Function and returned in the response.
 }

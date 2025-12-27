@@ -19,15 +19,8 @@ struct HomeView: View {
 
     @ViewBuilder
     private var contentView: some View {
-        VStack(spacing: 0) {
-            // Always show filter bar
-            FilterBar(
-                filters: $viewModel.filters,
-                availableCategories: viewModel.availableCategories,
-                availableCuisines: viewModel.availableCuisines
-            )
-
-            // Content based on state
+        // Content based on state
+        Group {
             if viewModel.isLoading && viewModel.recipes.isEmpty {
                 loadingView
             } else if viewModel.recipes.isEmpty && !viewModel.filters.hasActiveFilters {
@@ -39,6 +32,13 @@ struct HomeView: View {
             } else {
                 recipeListView
             }
+        }
+        .safeAreaInset(edge: .top, spacing: 0) {
+            FilterBar(
+                filters: $viewModel.filters,
+                availableCategories: viewModel.availableCategories,
+                availableCuisines: viewModel.availableCuisines
+            )
         }
     }
 

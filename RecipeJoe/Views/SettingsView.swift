@@ -81,15 +81,6 @@ struct SettingsView: View {
                         Label("Get More Tokens".localized(for: locale), systemImage: "plus.circle")
                     }
                     .accessibilityIdentifier("getMoreTokensButton")
-
-                    Button {
-                        Task {
-                            try? await tokenService.restorePurchases()
-                        }
-                    } label: {
-                        Label("Restore Purchases".localized(for: locale), systemImage: "arrow.clockwise")
-                    }
-                    .accessibilityIdentifier("restorePurchasesButton")
                 } header: {
                     Text("Tokens".localized(for: locale))
                 } footer: {

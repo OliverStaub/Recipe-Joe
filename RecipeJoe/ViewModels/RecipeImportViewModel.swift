@@ -178,15 +178,12 @@ final class RecipeImportViewModel: ObservableObject {
             try await Task.sleep(for: .milliseconds(300))
 
             if response.success {
-                // Deduct tokens on successful import
-                do {
-                    try await TokenService.shared.spendTokens(
-                        amount: tokenCost.rawValue,
-                        reason: isVideo ? "Video recipe import" : "Website recipe import"
-                    )
-                } catch {
-                    // Import succeeded, log but don't fail
-                    print("Token deduction failed: \(error)")
+                // Update token balance from server response
+                if let newBalance = response.tokensRemaining {
+                    TokenService.shared.updateBalance( newBalance)
+                } else {
+                    // Fallback: refresh balance from server
+                    try? await TokenService.shared.refreshBalance()
                 }
 
                 if let recipeIdString = response.recipeId,
@@ -197,6 +194,14 @@ final class RecipeImportViewModel: ObservableObject {
                 lastImportStats = response.stats
                 importState = .success
             } else {
+                // Check if this was an insufficient tokens error from server
+                if let required = response.tokensRequired,
+                   let available = response.tokensAvailable {
+                    requiredTokens = required
+                    showInsufficientTokensAlert = true
+                    // Update local balance to match server
+                    TokenService.shared.updateBalance( available)
+                }
                 importState = .error(response.error ?? "Failed to import recipe")
             }
 
@@ -284,14 +289,11 @@ final class RecipeImportViewModel: ObservableObject {
             try await Task.sleep(for: .milliseconds(200))
 
             if response.success {
-                // Deduct tokens on successful import
-                do {
-                    try await TokenService.shared.spendTokens(
-                        amount: ImportTokenCost.media.rawValue,
-                        reason: "Image recipe import"
-                    )
-                } catch {
-                    print("Token deduction failed: \(error)")
+                // Update token balance from server response
+                if let newBalance = response.tokensRemaining {
+                    TokenService.shared.updateBalance( newBalance)
+                } else {
+                    try? await TokenService.shared.refreshBalance()
                 }
 
                 if let recipeIdString = response.recipeId,
@@ -302,6 +304,12 @@ final class RecipeImportViewModel: ObservableObject {
                 lastImportStats = response.stats
                 importState = .success
             } else {
+                if let required = response.tokensRequired,
+                   let available = response.tokensAvailable {
+                    requiredTokens = required
+                    showInsufficientTokensAlert = true
+                    TokenService.shared.updateBalance( available)
+                }
                 importState = .error(response.error ?? "Failed to import recipe from images")
             }
 
@@ -361,14 +369,11 @@ final class RecipeImportViewModel: ObservableObject {
             try await Task.sleep(for: .milliseconds(200))
 
             if response.success {
-                // Deduct tokens on successful import
-                do {
-                    try await TokenService.shared.spendTokens(
-                        amount: ImportTokenCost.media.rawValue,
-                        reason: "PDF recipe import"
-                    )
-                } catch {
-                    print("Token deduction failed: \(error)")
+                // Update token balance from server response
+                if let newBalance = response.tokensRemaining {
+                    TokenService.shared.updateBalance( newBalance)
+                } else {
+                    try? await TokenService.shared.refreshBalance()
                 }
 
                 if let recipeIdString = response.recipeId,
@@ -379,6 +384,12 @@ final class RecipeImportViewModel: ObservableObject {
                 lastImportStats = response.stats
                 importState = .success
             } else {
+                if let required = response.tokensRequired,
+                   let available = response.tokensAvailable {
+                    requiredTokens = required
+                    showInsufficientTokensAlert = true
+                    TokenService.shared.updateBalance( available)
+                }
                 importState = .error(response.error ?? "Failed to import recipe from PDF")
             }
 

@@ -314,6 +314,70 @@ final class SupabaseService {
             .eq("id", value: id.uuidString)
             .execute()
     }
+
+    // MARK: - Token Management
+
+    /// Fetch the current user's token balance from Supabase
+    /// - Returns: The current token balance
+    func fetchTokenBalance() async throws -> Int {
+        struct TokenBalance: Decodable {
+            let balance: Int
+        }
+
+        let response: TokenBalance = try await client
+            .from("user_tokens")
+            .select("balance")
+            .single()
+            .execute()
+            .value
+
+        return response.balance
+    }
+
+    /// Validate a StoreKit purchase with the server and credit tokens
+    /// - Parameters:
+    ///   - transactionId: The StoreKit transaction ID
+    ///   - productId: The product identifier (e.g., "tokens_10")
+    ///   - originalTransactionId: The original transaction ID (for subscription/refund tracking)
+    func validatePurchase(
+        transactionId: String,
+        productId: String,
+        originalTransactionId: String?
+    ) async throws {
+        struct ValidateRequest: Encodable {
+            let transactionId: String
+            let productId: String
+            let originalTransactionId: String?
+        }
+
+        struct ValidateResponse: Decodable {
+            let success: Bool
+            let balance: Int?
+            let tokensAdded: Int?
+            let alreadyProcessed: Bool?
+            let error: String?
+        }
+
+        let request = ValidateRequest(
+            transactionId: transactionId,
+            productId: productId,
+            originalTransactionId: originalTransactionId
+        )
+
+        let response: ValidateResponse = try await client.functions.invoke(
+            "validate-purchase",
+            options: FunctionInvokeOptions(body: request)
+        )
+
+        if !response.success {
+            throw SupabaseError.functionError(response.error ?? "Purchase validation failed")
+        }
+
+        // Update token balance if returned
+        if let newBalance = response.balance {
+            await TokenService.shared.updateBalance(newBalance)
+        }
+    }
 }
 
 // MARK: - Errors

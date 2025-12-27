@@ -5,15 +5,16 @@
 //  View for purchasing token packages
 //
 
-import RevenueCat
+import StoreKit
 import SwiftUI
 
 struct TokenPurchaseView: View {
     @ObservedObject private var tokenService = TokenService.shared
+    @ObservedObject private var storeKit = StoreKitManager.shared
     @Environment(\.dismiss) private var dismiss
     @Environment(\.locale) private var locale
 
-    @State private var selectedPackage: Package?
+    @State private var selectedProduct: Product?
     @State private var isPurchasing = false
     @State private var errorMessage: String?
     @State private var showError = false
@@ -30,9 +31,6 @@ struct TokenPurchaseView: View {
 
                     // Token pricing info
                     pricingInfo
-
-                    // Restore purchases button
-                    restoreButton
                 }
                 .padding()
             }
@@ -47,7 +45,7 @@ struct TokenPurchaseView: View {
                 }
             }
             .task {
-                await fetchPackages()
+                await loadProducts()
             }
             .alert("Purchase Error".localized(for: locale), isPresented: $showError) {
                 Button("OK".localized(for: locale), role: .cancel) {}
@@ -81,44 +79,46 @@ struct TokenPurchaseView: View {
                 .font(.headline)
                 .padding(.horizontal, 4)
 
-            if tokenService.isLoading && tokenService.availablePackages.isEmpty {
-                ProgressView()
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 40)
-            } else if tokenService.availablePackages.isEmpty {
-                // Show message when packages aren't available
-                VStack(spacing: 12) {
-                    Image(systemName: "exclamationmark.triangle")
-                        .font(.largeTitle)
-                        .foregroundStyle(.secondary)
+            if storeKit.products.isEmpty {
+                if storeKit.purchaseInProgress {
+                    ProgressView()
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 40)
+                } else {
+                    // Show message when products aren't available
+                    VStack(spacing: 12) {
+                        Image(systemName: "exclamationmark.triangle")
+                            .font(.largeTitle)
+                            .foregroundStyle(.secondary)
 
-                    Text("Packages not available".localized(for: locale))
-                        .font(.headline)
+                        Text("Packages not available".localized(for: locale))
+                            .font(.headline)
 
-                    Text("Token packages are being configured. Please try again later.".localized(for: locale))
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-                        .multilineTextAlignment(.center)
+                        Text("Token packages are being configured. Please try again later.".localized(for: locale))
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                            .multilineTextAlignment(.center)
 
-                    Button("Retry".localized(for: locale)) {
-                        Task {
-                            await fetchPackages()
+                        Button("Retry".localized(for: locale)) {
+                            Task {
+                                await loadProducts()
+                            }
                         }
+                        .buttonStyle(.bordered)
+                        .tint(Color.terracotta)
+                        .padding(.top, 8)
                     }
-                    .buttonStyle(.bordered)
-                    .tint(Color.terracotta)
-                    .padding(.top, 8)
+                    .padding(.vertical, 40)
+                    .frame(maxWidth: .infinity)
                 }
-                .padding(.vertical, 40)
-                .frame(maxWidth: .infinity)
             } else {
-                ForEach(tokenService.availablePackages, id: \.identifier) { package in
-                    PackageRow(
-                        package: package,
-                        isSelected: selectedPackage?.identifier == package.identifier,
+                ForEach(storeKit.products, id: \.id) { product in
+                    ProductRow(
+                        product: product,
+                        isSelected: selectedProduct?.id == product.id,
                         isPurchasing: isPurchasing
                     ) {
-                        selectedPackage = package
+                        selectedProduct = product
                         await purchaseSelected()
                     }
                 }
@@ -145,52 +145,25 @@ struct TokenPurchaseView: View {
         }
     }
 
-    private var restoreButton: some View {
-        Button {
-            Task {
-                await restorePurchases()
-            }
-        } label: {
-            Text("Restore Purchases".localized(for: locale))
-                .font(.subheadline)
-                .foregroundStyle(Color.terracotta)
-        }
-        .disabled(isPurchasing)
-        .padding(.top, 8)
-    }
-
     // MARK: - Actions
 
-    private func fetchPackages() async {
-        do {
-            try await tokenService.fetchPackages()
-        } catch {
-            // Don't show error for package fetch - fallback UI is shown
-            print("Failed to fetch packages: \(error)")
-        }
+    private func loadProducts() async {
+        await storeKit.loadProducts()
     }
 
     private func purchaseSelected() async {
-        guard let package = selectedPackage else { return }
+        guard let product = selectedProduct else { return }
 
         isPurchasing = true
         defer { isPurchasing = false }
 
         do {
-            try await tokenService.purchasePackage(package)
-            dismiss()
-        } catch {
-            errorMessage = error.localizedDescription
-            showError = true
-        }
-    }
-
-    private func restorePurchases() async {
-        isPurchasing = true
-        defer { isPurchasing = false }
-
-        do {
-            try await tokenService.restorePurchases()
+            let success = try await storeKit.purchase(product)
+            if success {
+                // Refresh balance to get updated token count
+                try? await tokenService.refreshBalance()
+                dismiss()
+            }
         } catch {
             errorMessage = error.localizedDescription
             showError = true
@@ -200,8 +173,8 @@ struct TokenPurchaseView: View {
 
 // MARK: - Supporting Views
 
-private struct PackageRow: View {
-    let package: Package
+private struct ProductRow: View {
+    let product: Product
     let isSelected: Bool
     let isPurchasing: Bool
     let onPurchase: () async -> Void
@@ -218,7 +191,7 @@ private struct PackageRow: View {
                         .font(.headline)
                         .foregroundStyle(.primary)
 
-                    Text(package.storeProduct.localizedPriceString)
+                    Text(product.displayPrice)
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
                 }
@@ -242,12 +215,12 @@ private struct PackageRow: View {
     }
 
     private var tokenCountText: String {
-        let id = package.storeProduct.productIdentifier
+        let id = product.id
         if id.contains("120") { return "120 Tokens" }
         if id.contains("50") { return "50 Tokens" }
         if id.contains("25") { return "25 Tokens" }
         if id.contains("10") { return "10 Tokens" }
-        return package.storeProduct.localizedTitle
+        return product.displayName
     }
 }
 

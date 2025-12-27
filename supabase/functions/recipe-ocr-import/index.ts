@@ -14,6 +14,7 @@ import {
   fetchMeasurementTypes,
   insertRecipe,
 } from "../recipe-import/utils/db-operations.ts";
+import { getTokenBalance, deductTokens, checkRateLimit, TOKEN_COSTS } from "../_shared/token-client.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -64,6 +65,55 @@ serve(async (req) => {
 
     if (!userId) {
       throw new Error('Authentication required');
+    }
+
+    // Check rate limit before processing (150 recipes per 24 hours)
+    console.log(`Checking rate limit for user ${userId}...`);
+    const rateLimit = await checkRateLimit(supabase, userId);
+    if (!rateLimit.allowed) {
+      console.log(`Rate limit exceeded: ${rateLimit.remaining} remaining`);
+      const response: MediaImportResponse = {
+        success: false,
+        error: 'Rate limit exceeded. Maximum 150 recipes per 24 hours.',
+        rate_limit_remaining: rateLimit.remaining,
+        rate_limit_reset: rateLimit.resetAt.toISOString(),
+      };
+      return new Response(JSON.stringify(response), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 200,
+      });
+    }
+
+    // Check token balance before processing (media imports cost 3 tokens)
+    const tokenCost = TOKEN_COSTS.media;
+    console.log(`Checking token balance for user ${userId}...`);
+    let currentBalance: number;
+    try {
+      currentBalance = await getTokenBalance(supabase, userId);
+      console.log(`User has ${currentBalance} tokens, needs ${tokenCost}`);
+    } catch (error) {
+      console.error('Failed to check token balance:', error);
+      const response: MediaImportResponse = {
+        success: false,
+        error: 'Could not verify token balance. Please try again.',
+      };
+      return new Response(JSON.stringify(response), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 200,
+      });
+    }
+
+    if (currentBalance < tokenCost) {
+      const response: MediaImportResponse = {
+        success: false,
+        error: 'Insufficient tokens',
+        tokens_required: tokenCost,
+        tokens_available: currentBalance,
+      };
+      return new Response(JSON.stringify(response), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 200,
+      });
     }
 
     // Step 1: Download all files from storage
@@ -206,6 +256,18 @@ serve(async (req) => {
       // Don't fail the request, just log the error
     }
 
+    // Step 8: Deduct tokens after successful import
+    console.log(`Deducting ${tokenCost} tokens for import_media...`);
+    const deductResult = await deductTokens(supabase, userId, tokenCost, 'import_media', recipeId);
+
+    if (!deductResult.success) {
+      // Import succeeded but token deduction failed - log for manual review
+      // We don't fail the request since the recipe was already created
+      console.error('Token deduction failed:', deductResult.error);
+    } else {
+      console.log(`Tokens deducted. New balance: ${deductResult.balance}`);
+    }
+
     // Calculate total tokens used
     const totalTokens = {
       input_tokens: ocrResult.usage.input_tokens + claudeResponse.usage.input_tokens,
@@ -216,6 +278,8 @@ serve(async (req) => {
       success: true,
       recipe_id: recipeId,
       recipe_name: claudeResponse.data.recipe?.name,
+      tokens_deducted: tokenCost,
+      tokens_remaining: deductResult.balance,
       stats: {
         steps_count: claudeResponse.data.steps?.length || 0,
         ingredients_count: claudeResponse.data.ingredients?.length || 0,

@@ -6,7 +6,6 @@
 //
 
 import Kingfisher
-import RevenueCat
 import SwiftUI
 
 @main
@@ -17,11 +16,6 @@ struct RecipeJoeApp: App {
 
     init() {
         configureImageCache()
-        configureRevenueCat()
-    }
-
-    private func configureRevenueCat() {
-        TokenService.shared.configure()
     }
 
     var body: some Scene {
@@ -34,11 +28,8 @@ struct RecipeJoeApp: App {
                     // User is authenticated - show main app
                     MainTabView(deepLinkRecipeId: $deepLinkRecipeId)
                         .task {
-                            // Configure RevenueCat for authenticated user
-                            if let userId = authService.currentUserId {
-                                await TokenService.shared.configureForUser(userId: userId.uuidString)
-                                await TokenService.shared.grantNewUserBonus()
-                            }
+                            // Refresh token balance from Supabase
+                            try? await TokenService.shared.refreshBalance()
                         }
                 } else {
                     // User is not authenticated - show sign in

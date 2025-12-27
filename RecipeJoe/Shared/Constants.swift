@@ -20,10 +20,6 @@ enum AppConstants {
     /// Supabase publishable key (safe to include in client apps)
     static let supabaseAnonKey = "sb_publishable_bjC-0a3jReGsoS5pprLevA_dDXqwrxn"
 
-    /// RevenueCat publishable API key (safe to include in client apps)
-    /// Get this from: https://app.revenuecat.com → Project Settings → API Keys
-    static let revenueCatAPIKey = "appl_WCgwdlbyESXHZoEWBLZxlPxrbhj"
-
     /// Keys for shared UserDefaults
     enum Keys {
         static let accessToken = "supabase_access_token"
