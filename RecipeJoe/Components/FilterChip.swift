@@ -28,6 +28,8 @@ struct FilterChip: View {
                         .font(.caption)
                 }
                 Text(title)
+                    .lineLimit(1)
+                    .fixedSize(horizontal: true, vertical: false)
             }
             .font(.subheadline)
             .fontWeight(isSelected ? .semibold : .regular)
@@ -50,45 +52,42 @@ struct FilterBar: View {
     let availableCuisines: [String]
 
     var body: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 8) {
-                // Time filters
-                timeFilterSection
-
-                // Divider if there are more filters
-                if !availableCategories.isEmpty || !availableCuisines.isEmpty {
-                    Divider()
-                        .frame(height: 20)
-                }
-
-                // Category filters
-                categoryFilterSection
-
-                // Cuisine filters
-                cuisineFilterSection
-
-                // Favorites filter
-                favoritesFilterSection
+        HStack(spacing: 8) {
+            FilterChip(title: "All", isSelected: filters.timeFilter == .all) {
+                filters.timeFilter = .all
             }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 8)
+            FilterChip(title: "Quick", icon: "clock", isSelected: filters.timeFilter == .quick) {
+                filters.timeFilter = .quick
+            }
+            FilterChip(title: "Medium", icon: "clock", isSelected: filters.timeFilter == .medium) {
+                filters.timeFilter = .medium
+            }
+            FilterChip(title: "Long", icon: "clock", isSelected: filters.timeFilter == .long) {
+                filters.timeFilter = .long
+            }
+            FilterChip(title: "Favorites", icon: "heart.fill", isSelected: filters.showFavoritesOnly) {
+                filters.showFavoritesOnly.toggle()
+            }
         }
-        .frame(minHeight: 44)
-        .fixedSize(horizontal: false, vertical: true)
-        .background(Color(.systemBackground))
+        .padding(.horizontal, 12)
+        .padding(.vertical, 8)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color(.secondarySystemBackground))
         .accessibilityIdentifier("filterBar")
     }
 
     // MARK: - Time Filter Section
 
     private var timeFilterSection: some View {
-        ForEach(TimeFilter.allCases) { timeFilter in
-            FilterChip(
-                title: timeFilter.displayName(for: locale),
-                icon: timeFilter.icon,
-                isSelected: filters.timeFilter == timeFilter
-            ) {
-                filters.timeFilter = timeFilter
+        Group {
+            ForEach(TimeFilter.allCases) { timeFilter in
+                FilterChip(
+                    title: timeFilter.displayName(for: locale),
+                    icon: timeFilter.icon,
+                    isSelected: filters.timeFilter == timeFilter
+                ) {
+                    filters.timeFilter = timeFilter
+                }
             }
         }
     }
