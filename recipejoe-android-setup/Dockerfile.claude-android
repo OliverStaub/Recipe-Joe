@@ -5,21 +5,29 @@ ENV DEBIAN_FRONTEND=noninteractive
 ENV ANDROID_HOME=/opt/android-sdk
 ENV PATH="${PATH}:${ANDROID_HOME}/cmdline-tools/latest/bin:${ANDROID_HOME}/platform-tools"
 
-# Install base dependencies
+# Install base dependencies (without nodejs - we'll install newer version)
 RUN apt-get update && apt-get install -y \
     curl \
     git \
     wget \
     unzip \
     openjdk-17-jdk \
-    nodejs \
-    npm \
     python3 \
     python3-pip \
     build-essential \
     vim \
     nano \
+    ca-certificates \
+    gnupg \
     && rm -rf /var/lib/apt/lists/*
+
+# Install Node.js 20 LTS
+RUN mkdir -p /etc/apt/keyrings && \
+    curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg && \
+    echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_20.x nodistro main" | tee /etc/apt/sources.list.d/nodesource.list && \
+    apt-get update && \
+    apt-get install -y nodejs && \
+    rm -rf /var/lib/apt/lists/*
 
 # Install Android SDK Command Line Tools
 RUN mkdir -p ${ANDROID_HOME}/cmdline-tools && \
@@ -48,7 +56,7 @@ RUN npm install -g @anthropic-ai/claude-code
 
 # Install additional useful tools for Android development
 RUN npm install -g typescript @types/node
-RUN pip3 install --break-system-packages \
+RUN pip3 install \
     requests \
     beautifulsoup4 \
     lxml

@@ -1,114 +1,100 @@
 #!/bin/bash
 set -e
 
-echo "🤖 RecipeJoe Android - Autonomous Claude Code Builder"
-echo "=================================================="
+echo "RecipeJoe Android - Claude Code Builder"
+echo "========================================"
 echo ""
 
-# Check if ANTHROPIC_API_KEY is set
-if [ -z "$ANTHROPIC_API_KEY" ]; then
-    echo "❌ Error: ANTHROPIC_API_KEY environment variable not set"
-    echo ""
-    echo "Please set your API key:"
-    echo "  export ANTHROPIC_API_KEY='your-api-key-here'"
-    echo ""
+# Get the directory where this script is located
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
+
+echo "Project root: $PROJECT_ROOT"
+echo ""
+
+# Check if docker compose is available
+if ! docker compose version &> /dev/null; then
+    echo "Error: docker compose not found"
+    echo "Please install Docker Desktop"
     exit 1
 fi
 
-# Check if docker-compose is available
-if ! command -v docker-compose &> /dev/null && ! docker compose version &> /dev/null; then
-    echo "❌ Error: docker-compose not found"
-    echo "Please install Docker Compose"
+# Verify we're in the right place
+if [ ! -f "$PROJECT_ROOT/CLAUDE.md" ]; then
+    echo "Error: CLAUDE.md not found in project root"
+    echo "Make sure this folder is inside the RecipeJoe project"
     exit 1
-fi
-
-# Check if recipejoe folder exists
-if [ ! -d "./recipejoe" ]; then
-    echo "⚠️  Warning: ./recipejoe folder not found"
-    echo ""
-    read -p "Enter path to your RecipeJoe project: " PROJECT_PATH
-    if [ ! -d "$PROJECT_PATH" ]; then
-        echo "❌ Error: Directory $PROJECT_PATH does not exist"
-        exit 1
-    fi
-    # Create symlink
-    ln -s "$PROJECT_PATH" ./recipejoe
-    echo "✅ Linked $PROJECT_PATH to ./recipejoe"
 fi
 
 # Build Docker image
 echo ""
-echo "🐳 Building Docker image..."
-docker-compose build
+echo "Building Docker image (this may take a few minutes first time)..."
+cd "$SCRIPT_DIR"
+docker compose build
 
 # Start container
 echo ""
-echo "🚀 Starting container..."
-docker-compose up -d
+echo "Starting container..."
+docker compose up -d
 
 # Wait for container to be ready
-echo "⏳ Waiting for container to be ready..."
+echo "Waiting for container to be ready..."
 sleep 3
 
 # Show instructions
 echo ""
-echo "✅ Container is running!"
+echo "Container is running!"
 echo ""
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "📋 NEXT STEPS:"
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo "============================================================"
+echo "STEP 1: LOGIN TO CLAUDE (First time only)"
+echo "============================================================"
 echo ""
-echo "Option 1: 🤖 Voll Autonom (YOLO Mode)"
-echo "  docker exec -it recipejoe-claude bash -c 'cd /workspace/recipejoe && claude --dangerously-skip-permissions --max-turns 200 \"\$(cat /workspace/android-task.md)\" 2>&1 | tee android-build.log'"
+echo "Run these commands:"
 echo ""
-echo "Option 2: 🤝 Semi-Autonom (Auto-Accept Mode)"
+echo "  docker exec -it recipejoe-claude claude login"
+echo ""
+echo "This will give you a URL and code to authorize in your browser."
+echo "Your Max subscription login will be saved for future sessions."
+echo ""
+echo "============================================================"
+echo "STEP 2: START WORKING"
+echo "============================================================"
+echo ""
+echo "Interactive mode (recommended):"
 echo "  docker exec -it recipejoe-claude bash"
-echo "  Dann: cd /workspace/recipejoe && claude"
-echo "  Shift+Tab drücken bis 'auto-accept edit on'"
-echo "  Initial task kopieren: cat /workspace/android-task.md"
+echo "  cd /workspace/RecipeJoe"
+echo "  claude"
 echo ""
-echo "Option 3: 🎮 Interaktiv (Volle Kontrolle)"
-echo "  docker exec -it recipejoe-claude bash"
-echo "  Dann: cd /workspace/recipejoe && claude"
+echo "Then paste the task:"
+echo "  cat /workspace/android-task.md"
 echo ""
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "📊 MONITORING:"
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo "============================================================"
+echo "MONITORING"
+echo "============================================================"
 echo ""
-echo "Logs:             docker-compose logs -f"
-echo "Build log:        tail -f recipejoe/android-build.log"
-echo "Git commits:      watch -n 5 'cd recipejoe && git log --oneline -10'"
 echo "Enter container:  docker exec -it recipejoe-claude bash"
+echo "Git commits:      watch -n 5 'git -C $PROJECT_ROOT log --oneline -10'"
 echo "Stop:             docker-compose down"
 echo ""
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo "============================================================"
 echo ""
 
-# Ask if user wants to start autonomous mode now
-read -p "Start autonomous mode now? (y/N): " -n 1 -r
+# Ask if user wants to login now
+read -p "Login to Claude now? (Y/n): " -n 1 -r
 echo
-if [[ $REPLY =~ ^[Yy]$ ]]; then
+if [[ ! $REPLY =~ ^[Nn]$ ]]; then
     echo ""
-    echo "🚀 Starting autonomous build..."
-    echo "📝 Output will be logged to recipejoe/android-build.log"
+    echo "Starting Claude login..."
+    echo "Follow the instructions to authorize with your Max subscription."
     echo ""
-    echo "⚠️  This will run for up to 200 turns"
-    echo "💰 Estimated cost: $50-150 depending on complexity"
-    echo "🛑 Stop anytime: Ctrl+C or 'docker-compose down'"
+    docker exec -it recipejoe-claude claude login
+
     echo ""
-    read -p "Are you sure? (y/N): " -n 1 -r
-    echo
-    if [[ $REPLY =~ ^[Yy]$ ]]; then
-        echo ""
-        echo "🎯 Launching autonomous mode..."
-        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-        echo ""
-        
-        # Start autonomous mode
-        docker exec -it recipejoe-claude bash -c "cd /workspace/recipejoe && claude --dangerously-skip-permissions --max-turns 200 \"\$(cat /workspace/android-task.md)\" 2>&1 | tee android-build.log"
-    else
-        echo "Cancelled."
-    fi
+    echo "Login complete! You can now start Claude:"
+    echo ""
+    echo "  docker exec -it recipejoe-claude bash"
+    echo "  cd /workspace/RecipeJoe && claude"
+    echo ""
 else
-    echo "Container is ready. Use one of the options above to start."
+    echo "Container is ready. Run 'docker exec -it recipejoe-claude claude login' when ready."
 fi

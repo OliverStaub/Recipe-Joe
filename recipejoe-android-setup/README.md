@@ -1,265 +1,182 @@
-# RecipeJoe Android - Autonomous Build Setup
+# RecipeJoe Android - Claude Code Builder
 
-Dieses Setup erlaubt Claude Code, deine RecipeJoe iOS App **vollständig autonom** um eine native Android App zu erweitern.
+This setup runs Claude Code in an isolated Docker container to add a native Android app to your RecipeJoe iOS project.
 
-## 🎯 Was passiert hier?
+## Why Docker?
 
-Claude Code läuft in einem isolierten Docker Container und:
-- ✅ Liest dein **bestehendes CLAUDE.md**
-- ✅ Erweitert das CLAUDE.md mit Android-Infos  
-- ✅ Fügt Android App zum Projekt hinzu
-- ✅ Nutzt dein **bestehendes Supabase Backend**
-- ✅ Kann Subagents spawnen für parallele Arbeit
-- ✅ Installiert alle Dependencies selbstständig
-- ✅ Committed seine Arbeit zu Git
-- ✅ Erstellt Dokumentation für manuelle Setup-Schritte
-- ✅ **Hat volle Rechte** auf dein Projekt (alles in Git!)
+- **Security**: Claude runs in an isolated container, can't affect your system
+- **Android SDK**: Container includes Android SDK, Gradle, and all build tools
+- **Persistence**: Your login and work are saved between sessions
+- **Easy cleanup**: Just `docker-compose down` to stop everything
 
-## 📋 Voraussetzungen
+## Prerequisites
 
 - Docker & Docker Compose
-- Anthropic API Key (Claude Code)
-- Dein RecipeJoe Projekt
+- Claude Max subscription (for login)
 
-## 🚀 Quick Start
-
-### 1. Setup
+## Quick Start
 
 ```bash
-# In diesem Ordner
-cd /pfad/zu/diesem/setup
+# Navigate to this folder
+cd recipejoe-android-setup
 
-# API Key setzen
-export ANTHROPIC_API_KEY='sk-ant-...'
-
-# Start Script ausführbar machen
+# Make start script executable
 chmod +x start.sh
 
-# Start!
+# Start (builds container, prompts for login)
 ./start.sh
 ```
 
-Das Script wird dich durch den Setup führen.
+## Step-by-Step
 
-### 2. Optionen
-
-#### 🤖 Option A: Voll Autonom (YOLO Mode)
+### 1. Build and Start Container
 
 ```bash
-docker exec -it recipejoe-claude bash -c 'cd /workspace/recipejoe && claude --dangerously-skip-permissions --max-turns 200 "$(cat /workspace/android-task.md)" 2>&1 | tee android-build.log'
+cd recipejoe-android-setup
+docker-compose build
+docker-compose up -d
 ```
 
-- Läuft komplett ohne Inputs
-- ~200 turns ($50-150)
-- Log: `recipejoe/android-build.log`
-
-#### 🤝 Option B: Semi-Autonom
+### 2. Login to Claude (First Time Only)
 
 ```bash
+docker exec -it recipejoe-claude claude login
+```
+
+This shows a URL and code. Open the URL in your browser and enter the code to authorize with your Max subscription. Your login is saved for future sessions.
+
+### 3. Start Working
+
+```bash
+# Enter the container
 docker exec -it recipejoe-claude bash
-cd /workspace/recipejoe
+
+# Navigate to project
+cd /workspace/RecipeJoe
+
+# Start Claude
 claude
-# Shift+Tab drücken → "auto-accept edit on"
-# Dann: cat /workspace/android-task.md (Task anzeigen)
 ```
 
-#### 🎮 Option C: Interaktiv
+Then paste the task from `/workspace/android-task.md` or describe what you want to build.
+
+## Using the Task File
+
+The `android-task.md` file contains instructions for building the Android app. You can:
 
 ```bash
-docker exec -it recipejoe-claude bash
-cd /workspace/recipejoe
-claude
-# Du kontrollierst alles
+# View the task
+cat /workspace/android-task.md
+
+# Or copy-paste it into Claude
 ```
 
-## 📊 Monitoring
+## Monitoring
 
 ```bash
-# Container logs
-docker-compose logs -f
-
-# Build log (autonomous mode)
-tail -f recipejoe/android-build.log
-
-# Git commits verfolgen
-watch -n 5 'cd recipejoe && git log --oneline -10'
-
-# Container betreten
+# Enter container
 docker exec -it recipejoe-claude bash
 
-# Stoppen
+# View git commits (from your Mac)
+watch -n 5 'git log --oneline -10'
+
+# Stop container
 docker-compose down
+
+# Remove container and start fresh
+docker-compose down -v
+docker-compose up -d
 ```
 
-## 🏗️ Was Claude macht
+## Project Structure After Build
 
-### 1. Analyse
-- Liest CLAUDE.md
-- Checkt iOS App Struktur  
-- Versteht Supabase Backend
-- Identifiziert Features
-
-### 2. CLAUDE.md erweitern
-Fügt Android-Sektion hinzu mit:
-- Development Philosophy (iOS-first!)
-- Tech Stack (Kotlin, Compose, etc.)
-- Platform Adaptations (Google Sign-In, Billing, FCM)
-- Manual Setup Steps
-
-### 3. Projekt Struktur
-
-Claude wird wahrscheinlich so strukturieren:
 ```
 RecipeJoe/
-├── ios/                    # Deine iOS App
-├── android/                # Neue Android App (von Claude)
+├── RecipeJoe/              # iOS app (existing)
+├── android/                # Android app (NEW)
 │   ├── app/
 │   │   └── src/main/java/com/recipejoe/
 │   ├── build.gradle.kts
-│   └── gradle.properties
+│   └── gradlew
 ├── docs/
-│   └── android/           # Setup Guides
+│   └── android/            # Setup guides (NEW)
 │       ├── GOOGLE_SIGNIN_SETUP.md
 │       ├── BILLING_SETUP.md
 │       └── FCM_SETUP.md
-├── CLAUDE.md              # Updated!
-└── README.md
+├── supabase/               # Backend (shared)
+└── CLAUDE.md               # Updated with Android section
 ```
 
-**Oder**: Claude strukturiert um wenn es Sinn macht!
+## Manual Steps After Build
 
-### 4. Features implementieren
+Claude will create documentation for these manual steps:
 
-- ✅ AI Recipe Import (YouTube, TikTok, Web, OCR)
-- ✅ Recipe CRUD
-- ✅ Google Sign-In (statt Apple)
-- ✅ Google Play Billing (statt StoreKit)
-- ✅ FCM (statt APNs)
-- ✅ Supabase Integration (gleiche Tables!)
+**1. Google Sign-In Setup**
+- Google Cloud Console: Create OAuth credentials
+- Firebase project setup
+- SHA-1 fingerprint configuration
+- See: `docs/android/GOOGLE_SIGNIN_SETUP.md`
 
-### 5. Documentation
+**2. Google Play Billing**
+- Play Console: Create products matching iOS
+- Configure subscriptions
+- See: `docs/android/BILLING_SETUP.md`
 
-Claude erstellt diese Docs für manuelle Steps:
-- `docs/android/GOOGLE_SIGNIN_SETUP.md`
-- `docs/android/BILLING_SETUP.md`
-- `docs/android/FCM_SETUP.md`
+**3. Firebase Cloud Messaging**
+- Enable FCM
+- Configure server key in backend
+- See: `docs/android/FCM_SETUP.md`
 
-## 🔒 Sicherheit
+## Security
 
-### Was Claude KANN:
-- ✅ Alles in deinem RecipeJoe Projekt lesen/schreiben
-- ✅ Android SDK, Gradle, npm, Git nutzen
-- ✅ Subagents spawnen
-- ✅ Developer Docs fetchen
+**Claude CAN (inside container):**
+- Read/write everything in RecipeJoe project
+- Use Android SDK, Gradle, npm, Git
+- Fetch developer documentation
 
-### Was Claude NICHT KANN:
-- ❌ System Files ändern
-- ❌ SSH Keys lesen
-- ❌ `rm -rf /` oder ähnliches
-- ❌ Sudo
+**Claude CANNOT:**
+- Access files outside the project
+- Modify your system
+- Read SSH keys or credentials
+- Run `sudo`
 
-**Container läuft als `claude` user (non-root)**
+Container runs as non-root `claude` user.
 
-## 💰 Kosten
+## Troubleshooting
 
-**Autonomous Mode (200 turns)**:
-- Conservative: ~$50
-- Average: ~$100
-- Worst case: ~$150
-
-**Test mit `--max-turns 50` zuerst!**
-
-## 🛠️ Troubleshooting
-
-### Container startet nicht
+### Container won't start
 ```bash
 docker-compose logs
 docker-compose build --no-cache
 ```
 
-### Claude hängt
+### Need to re-login
 ```bash
-docker-compose restart
+docker exec -it recipejoe-claude claude login
 ```
 
-### Zu viele Kosten
+### Start fresh (removes login)
 ```bash
-docker-compose down
-# Editiere claude-settings.json: "maxTurns": 50
+docker-compose down -v
+docker-compose up -d
 ```
 
-## 🎓 Nach dem Build
-
-### Manuelle Steps
-
-Claude wird dir genau erklären was du machen musst:
-
-**1. Google Sign-In Setup**
-- Google Cloud Console → OAuth
-- Firebase Projekt
-- SHA-1 Fingerprint
-- Details in `docs/android/GOOGLE_SIGNIN_SETUP.md`
-
-**2. Google Play Billing**
-- Play Console → Produkte anlegen  
-- Subscriptions konfigurieren
-- Details in `docs/android/BILLING_SETUP.md`
-
-**3. Firebase Cloud Messaging**
-- FCM aktivieren
-- Server Key ins Backend
-- Details in `docs/android/FCM_SETUP.md`
-
-### Testing
+## After the Build
 
 ```bash
-cd recipejoe/android
-./gradlew build
-./gradlew test
+# Review changes (from your Mac)
+git log --oneline -20
+
+# Test Android build (inside container)
+cd /workspace/RecipeJoe/android && ./gradlew build
+
+# Run tests
+cd /workspace/RecipeJoe/android && ./gradlew test
 ```
 
-### Deployment
+## Tips
 
-Claude wird eine README im android/ Ordner erstellen mit Deployment-Infos.
-
-## 🚀 Next Steps nach dem Build
-
-1. **Review Code**: `cd recipejoe && git log`
-2. **Lies Docs**: Check `docs/android/`
-3. **Test Build**: `cd android && ./gradlew build`
-4. **Setup Google**: Follow die Setup Guides
-5. **Iterate**: Starte Claude nochmal für Fixes
-
-## 📚 Ressourcen
-
-- [Claude Code Docs](https://code.claude.com/docs)
-- [Android Development](https://developer.android.com)
-- [Jetpack Compose](https://developer.android.com/jetpack/compose)
-- [Supabase Kotlin](https://github.com/supabase-community/supabase-kt)
-
-## 💡 Pro-Tipps
-
-1. **Start small**: Teste erstmal mit `--max-turns 50`
-2. **Watch commits**: `watch -n 5 'git log --oneline -10'`
-3. **Monitor logs**: Öffne `tail -f android-build.log` in separatem Terminal
-4. **Checkpoint**: Claude macht auto-commits - easy zu reverten!
-5. **Iterate**: Erster Run liefert Basis, dann iterativ verbessern
-
-## 🤔 FAQ
-
-**Q: Kann Claude meine iOS App kaputt machen?**  
-A: Nein! Alles ist in Git. Einfach `git reset --hard` wenn was schief geht.
-
-**Q: Nutzt Claude mein bestehendes Backend?**  
-A: Ja! Claude wird Supabase-Client nutzen mit deinen existierenden Tables.
-
-**Q: Kann ich die Projekt-Struktur selbst bestimmen?**  
-A: Ja! Editiere `android-task.md` und gib Claude Vorgaben.
-
-**Q: Was wenn Claude sich verheddert?**  
-A: `docker-compose down`, dann `docker exec -it recipejoe-claude bash` und interaktiv debuggen.
-
-**Q: Wie kann ich Claude eine bessere Architektur beibringen?**  
-A: Ergänze Details in `android-task.md` vor dem Start!
-
-Viel Erfolg! 🎉
+1. **Interactive mode**: Work with Claude step by step for better control
+2. **Monitor commits**: Everything is in Git, easy to revert
+3. **Iterate**: First session creates foundation, then improve incrementally
+4. **Your login persists**: You only need to login once, it's saved in Docker volume
