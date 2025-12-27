@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">RecipeJoe</string>
+
+    <!-- Auth -->
+    <string name="sign_in">Sign In</string>
+    <string name="sign_out">Sign Out</string>
+    <string name="sign_in_with_google">Sign in with Google</string>
+    <string name="sign_in_with_email">Sign in with Email</string>
+    <string name="create_account">Create Account</string>
+    <string name="email">Email</string>
+    <string name="password">Password</string>
+    <string name="forgot_password">Forgot Password?</string>
+    <string name="reset_password">Reset Password</string>
+    <string name="check_email">Check your email</string>
+
+    <!-- Navigation -->
+    <string name="home">Home</string>
+    <string name="search">Search</string>
+    <string name="add_recipe">Add Recipe</string>
+    <string name="settings">Settings</string>
+
+    <!-- Recipes -->
+    <string name="recipes">Recipes</string>
+    <string name="my_recipes">My Recipes</string>
+    <string name="no_recipes">No recipes yet</string>
+    <string name="add_your_first_recipe">Add your first recipe to get started</string>
+    <string name="import_recipe">Import Recipe</string>
+    <string name="enter_url">Enter URL</string>
+    <string name="importing">Importing…</string>
+    <string name="import_success">Recipe imported successfully!</string>
+    <string name="import_failed">Failed to import recipe</string>
+    <string name="delete_recipe">Delete Recipe</string>
+    <string name="delete_recipe_confirm">Are you sure you want to delete this recipe?</string>
+    <string name="edit_recipe">Edit Recipe</string>
+    <string name="save">Save</string>
+    <string name="cancel">Cancel</string>
+    <string name="delete">Delete</string>
+
+    <!-- Recipe Details -->
+    <string name="ingredients">Ingredients</string>
+    <string name="instructions">Instructions</string>
+    <string name="prep_time">Prep Time</string>
+    <string name="cook_time">Cook Time</string>
+    <string name="total_time">Total Time</string>
+    <string name="servings">Servings</string>
+    <string name="category">Category</string>
+    <string name="cuisine">Cuisine</string>
+    <string name="minutes">%d min</string>
+
+    <!-- Tokens -->
+    <string name="tokens">Tokens</string>
+    <string name="token_balance">Token Balance</string>
+    <string name="tokens_remaining">%d tokens remaining</string>
+    <string name="buy_tokens">Buy Tokens</string>
+    <string name="purchase_success">Purchase successful!</string>
+    <string name="purchase_failed">Purchase failed</string>
+
+    <!-- Settings -->
+    <string name="account">Account</string>
+    <string name="language">Language</string>
+    <string name="english">English</string>
+    <string name="german">German</string>
+    <string name="about">About</string>
+    <string name="version">Version %s</string>
+    <string name="privacy_policy">Privacy Policy</string>
+    <string name="terms_of_service">Terms of Service</string>
+    <string name="delete_account">Delete Account</string>
+    <string name="delete_account_confirm">Are you sure you want to delete your account? This action cannot be undone.</string>
+
+    <!-- Errors -->
+    <string name="error_generic">Something went wrong. Please try again.</string>
+    <string name="error_network">Network error. Please check your connection.</string>
+    <string name="error_auth">Authentication failed. Please sign in again.</string>
+    <string name="error_invalid_email">Please enter a valid email address</string>
+    <string name="error_weak_password">Password must be at least 6 characters</string>
+    <string name="error_invalid_credentials">Invalid email or password</string>
+
+    <!-- OCR Import -->
+    <string name="scan_recipe">Scan Recipe</string>
+    <string name="take_photo">Take Photo</string>
+    <string name="choose_from_gallery">Choose from Gallery</string>
+    <string name="import_from_document">Import from Document</string>
+</resources>

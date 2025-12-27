@@ -101,3 +101,145 @@ See **[DESIGN_GUIDELINES.md](RecipeJoe/DESIGN_GUIDELINES.md)** for detailed spac
 - Sizes: 34pt (titles), 22pt (headers), 17pt (body), 12pt (captions)
 
 **Principle**: Native iOS feel with minimal custom colors - only terracotta accent
+
+## Android App
+
+### Development Philosophy
+- iOS is the primary development platform
+- Android is a downstream project
+- New features are developed and tested in iOS first
+- Android receives features after they're stable in iOS
+
+### Location
+`android/` folder at project root
+
+### Tech Stack
+- Language: Kotlin
+- UI: Jetpack Compose
+- Architecture: MVVM + Clean Architecture
+- Database: Room (local cache)
+- DI: Hilt
+- Async: Coroutines + Flow
+- HTTP: Ktor Client
+- Image Loading: Coil
+- Auth: Supabase Kotlin Client + Google Sign-In
+
+### Project Structure
+```
+android/
+├── app/src/main/java/com/recipejoe/
+│   ├── data/           # Repositories, data sources, Room
+│   ├── domain/         # Use cases, business logic
+│   ├── presentation/   # UI (Compose), ViewModels
+│   └── di/             # Hilt modules
+```
+
+### Platform Adaptations
+
+#### Authentication
+- iOS: Sign in with Apple
+- Android: Google Sign-In (Firebase Auth)
+- Backend: Both use Supabase Auth
+
+**Manual Setup Required:**
+1. Google Cloud Console: Create OAuth 2.0 credentials
+2. Firebase project setup
+3. Configure SHA-1 fingerprint
+4. Details: see `docs/android/GOOGLE_SIGNIN_SETUP.md`
+
+#### In-App Purchases
+- iOS: StoreKit 2
+- Android: Google Play Billing Library v7
+- Backend: Both use Supabase for subscription management
+
+Products (same as iOS):
+- `tokens_10` - 10 tokens
+- `tokens_25` - 25 tokens
+- `tokens_50` - 50 tokens
+- `tokens_120` - 120 tokens
+
+**Manual Setup Required:**
+1. Google Play Console: Create products
+2. Testing with License Testers
+3. Details: see `docs/android/BILLING_SETUP.md`
+
+#### Push Notifications
+- iOS: APNs
+- Android: FCM
+- Backend: Supabase Edge Functions for both
+
+**Manual Setup Required:**
+1. Firebase Cloud Messaging setup
+2. Configure server key
+3. Details: see `docs/android/FCM_SETUP.md`
+
+### Running Tests
+```bash
+cd android
+./gradlew test                 # Unit tests
+./gradlew connectedAndroidTest # Instrumented tests
+```
+
+### Building
+```bash
+cd android
+./gradlew assembleDebug   # Debug APK
+./gradlew assembleRelease # Release APK (requires signing)
+```
+
+### Android Development Guidelines
+
+**UI Framework:**
+- ALWAYS use Jetpack Compose for all UI
+- NEVER use XML layouts or Views
+- Use Material 3 components from `androidx.compose.material3`
+- Follow Material Design 3 guidelines with RecipeJoe branding
+
+**Compose Best Practices:**
+- Use `@Composable` functions for all UI components
+- Use `ViewModel` with `StateFlow` for state management
+- Use `hiltViewModel()` for ViewModel injection in Composables
+- Prefer `remember` and `rememberSaveable` for local state
+- Use `LaunchedEffect` and `DisposableEffect` for side effects
+
+**Code Style:**
+- Use Kotlin idioms (scope functions, extension functions, etc.)
+- Prefer `sealed class`/`sealed interface` for UI states
+- Use `data class` for immutable state objects
+- Use `Flow` for reactive data streams
+
+**Architecture:**
+- Follow MVVM + Clean Architecture
+- ViewModels handle business logic, not Composables
+- Repositories abstract data sources
+- Use Hilt for dependency injection
+
+**Android Design System (Material 3 adaptation of iOS guidelines):**
+
+| iOS | Android |
+|-----|---------|
+| SF Pro | Roboto (default) |
+| systemBackground | MaterialTheme.colorScheme.background |
+| secondarySystemBackground | MaterialTheme.colorScheme.surfaceVariant |
+| label | MaterialTheme.colorScheme.onSurface |
+| secondaryLabel | MaterialTheme.colorScheme.onSurfaceVariant |
+| Terracotta #C65D00 | MaterialTheme.colorScheme.primary |
+
+**Spacing (same as iOS):**
+- xs = 4.dp, sm = 8.dp, md = 12.dp, lg = 16.dp, xl = 24.dp, xxl = 40.dp
+
+**Example Screen Pattern:**
+```kotlin
+@Composable
+fun ExampleScreen(
+    viewModel: ExampleViewModel = hiltViewModel()
+) {
+    val uiState by viewModel.uiState.collectAsState()
+
+    Scaffold(
+        topBar = { TopAppBar(title = { Text("Title") }) }
+    ) { padding ->
+        // Content
+    }
+}
+```
