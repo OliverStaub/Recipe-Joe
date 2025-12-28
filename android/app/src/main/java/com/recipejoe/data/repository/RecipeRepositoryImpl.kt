@@ -54,6 +54,8 @@ interface RecipeRepository {
     suspend fun updateRecipeDescription(id: UUID, description: String?)
     suspend fun deleteRecipe(id: UUID)
     suspend fun uploadRecipeImage(imageData: ByteArray, recipeId: UUID): String
+    suspend fun updateStepInstruction(stepId: UUID, instruction: String)
+    suspend fun updateIngredient(ingredientId: UUID, quantity: Double?, notes: String?)
     suspend fun clearCache()
 }
 
@@ -280,6 +282,30 @@ class RecipeRepositoryImpl @Inject constructor(
             }
 
         return publicUrl
+    }
+
+    override suspend fun updateStepInstruction(stepId: UUID, instruction: String) {
+        client.postgrest
+            .from("recipe_steps")
+            .update(mapOf("instruction" to instruction)) {
+                filter {
+                    eq("id", stepId.toString())
+                }
+            }
+    }
+
+    override suspend fun updateIngredient(ingredientId: UUID, quantity: Double?, notes: String?) {
+        val updates = mutableMapOf<String, Any?>()
+        updates["quantity"] = quantity
+        updates["notes"] = notes
+
+        client.postgrest
+            .from("recipe_ingredients")
+            .update(updates) {
+                filter {
+                    eq("id", ingredientId.toString())
+                }
+            }
     }
 
     override suspend fun clearCache() {

@@ -58,12 +58,26 @@ struct HomeView: View {
                         NavigationLink(value: recipe.id) {
                             RecipeRowView(recipe: recipe)
                         }
-                    }
-                    .onDelete { indexSet in
-                        let recipesToDelete = indexSet.map { viewModel.filteredRecipes[$0] }
-                        Task {
-                            for recipe in recipesToDelete {
-                                _ = await viewModel.deleteRecipe(id: recipe.id)
+                        .swipeActions(edge: .leading, allowsFullSwipe: true) {
+                            Button {
+                                Task {
+                                    await viewModel.toggleFavorite(for: recipe)
+                                }
+                            } label: {
+                                Label(
+                                    recipe.isFavorite ? "Unfavorite" : "Favorite",
+                                    systemImage: recipe.isFavorite ? "heart.slash" : "heart"
+                                )
+                            }
+                            .tint(recipe.isFavorite ? .gray : .red)
+                        }
+                        .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                            Button(role: .destructive) {
+                                Task {
+                                    _ = await viewModel.deleteRecipe(id: recipe.id)
+                                }
+                            } label: {
+                                Label("Delete", systemImage: "trash")
                             }
                         }
                     }

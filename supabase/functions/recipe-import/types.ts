@@ -34,6 +34,7 @@ export interface TranscriptSegment {
 export interface VideoMetadata {
   title: string;
   author: string;
+  description: string | null; // Video description (may contain recipe details)
   thumbnailUrl: string | null;
   duration: number; // Duration in seconds
   platform: VideoPlatform;

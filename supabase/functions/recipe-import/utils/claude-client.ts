@@ -381,12 +381,20 @@ function buildTranscriptSystemPrompt(options: TranscriptCallOptions): string {
 - Ingredient notes: Keep in ORIGINAL language
 - Category prefixes (prep, cook, etc.): Always in English (they are keywords)`;
 
+  // Build description section if available
+  const descriptionSection = videoMetadata.description
+    ? `
+## Video Description (may contain recipe details):
+${videoMetadata.description.substring(0, 3000)}${videoMetadata.description.length > 3000 ? '...(truncated)' : ''}
+`
+    : '';
+
   return `You are a recipe extraction assistant specialized in extracting recipes from VIDEO TRANSCRIPTS.
 
 ## Source: ${platformName} Video
 - Title: ${videoMetadata.title}
 - Creator: ${videoMetadata.author}
-
+${descriptionSection}
 ## Important Context: This is SPOKEN content from a cooking video
 - The text is a transcript of someone speaking while cooking
 - Measurements may be imprecise (e.g., "a handful", "some", "a bit of", "about")
@@ -405,14 +413,15 @@ ${languageInstructions}
 1. Validate the transcript contains recipe content. Set is_valid_recipe=false if no recipe found.
 2. Extract the recipe name from context (what they're making). If unclear, use the video title.
 3. ${reword ? `Extract and translate all details to ${langName}.` : 'Extract all details, keeping original language.'}
-4. CRITICAL: For EVERY ingredient, you MUST provide BOTH:
+4. If a video description is provided above, use it to fill in missing details (ingredients, quantities, steps) that may not be clear in the spoken transcript.
+5. CRITICAL: For EVERY ingredient, you MUST provide BOTH:
    - name_en: The ingredient name in ENGLISH
    - name_de: The ingredient name in GERMAN
    These MUST be actual translations!
-5. Infer reasonable quantities when not explicitly stated based on typical recipes.
-6. Structure the spoken instructions into clear, sequential cooking steps.
-7. Match ingredients to existing ones when possible.
-8. Use ONLY the measurement types listed below.
+6. Infer reasonable quantities when not explicitly stated based on typical recipes.
+7. Structure the spoken instructions into clear, sequential cooking steps.
+8. Match ingredients to existing ones when possible.
+9. Use ONLY the measurement types listed below.
 
 ## Existing Ingredients (id: name_en / name_de):
 ${ingredientsList}

@@ -94,11 +94,11 @@ struct AddRecipeView: View {
             .onTapGesture {
                 isTextFieldFocused = false
             }
-            // Photo picker (single image only)
+            // Photo picker (up to 3 images)
             .photosPicker(
                 isPresented: $showPhotoPicker,
                 selection: $selectedPhotoItems,
-                maxSelectionCount: 1,
+                maxSelectionCount: 3,
                 matching: .images
             )
             .onChange(of: selectedPhotoItems) { _, newItems in
@@ -149,13 +149,21 @@ struct AddRecipeView: View {
     // MARK: - Photo Import
 
     private func handlePhotoSelection(_ items: [PhotosPickerItem]) {
-        guard let item = items.first else { return }
+        guard !items.isEmpty else { return }
 
         Task {
-            if let data = try? await item.loadTransferable(type: Data.self),
-               let image = UIImage(data: data),
-               let compressedData = compressImage(image) {
-                await importViewModel.importRecipeFromImage(compressedData)
+            var compressedImages: [Data] = []
+
+            for item in items {
+                if let data = try? await item.loadTransferable(type: Data.self),
+                   let image = UIImage(data: data),
+                   let compressedData = compressImage(image) {
+                    compressedImages.append(compressedData)
+                }
+            }
+
+            if !compressedImages.isEmpty {
+                await importViewModel.importRecipeFromImages(compressedImages)
             }
 
             // Reset selection
@@ -175,7 +183,7 @@ struct AddRecipeView: View {
         }
     }
 
-    private func compressImage(_ image: UIImage, maxSizeMB: Int = 5) -> Data? {
+    private func compressImage(_ image: UIImage, maxSizeMB: Int = 4) -> Data? {
         let maxBytes = maxSizeMB * 1024 * 1024
         var quality: CGFloat = 0.8
 

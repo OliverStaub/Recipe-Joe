@@ -5,6 +5,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import type { MediaImportRequest, MediaImportResponse } from "./types.ts";
 import {
   extractTextFromImage,
+  extractTextFromImages,
   extractTextFromPDF,
   extractRecipeFromText,
 } from "./utils/vision-client.ts";
@@ -29,15 +30,22 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Claude Vision API limit per image (5MB)
+const CLAUDE_MAX_IMAGE_BYTES = 5 * 1024 * 1024; // 5MB
+
 serve(async (req) => {
   // Handle CORS preflight
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
   }
 
+  // Store request body for error logging (can't clone after reading)
+  let requestBody: MediaImportRequest | null = null;
+
   try {
     // Parse request
     const body = await req.json();
+    requestBody = body; // Save for error logging
     const {
       storage_paths,
       media_type,
@@ -53,9 +61,13 @@ serve(async (req) => {
       throw new Error('media_type must be "image" or "pdf"');
     }
 
-    // Only allow single file uploads (simplifies Claude Vision processing)
-    if (storage_paths.length > 1) {
-      throw new Error('Only single file uploads are supported. Please upload one image or PDF at a time.');
+    // Limit to max 3 images (PDFs must be single file)
+    if (media_type === 'image' && storage_paths.length > 3) {
+      throw new Error('Maximum 3 images allowed per import.');
+    }
+
+    if (media_type === 'pdf' && storage_paths.length > 1) {
+      throw new Error('Only single PDF uploads are supported.');
     }
 
     // Start import timer and logging
@@ -136,31 +148,66 @@ serve(async (req) => {
       });
     }
 
-    // Step 1: Download file from storage
-    const storage_path = storage_paths[0];
-    console.log(`Downloading file from storage: ${storage_path}`);
-
-    const { data: fileData, error: downloadError } = await supabase.storage
-      .from('recipe-imports')
-      .download(storage_path);
-
-    if (downloadError || !fileData) {
-      throw new Error(`Failed to download file ${storage_path}: ${downloadError?.message || 'Unknown error'}`);
+    // Step 1: Download all files from storage
+    interface ImageFile {
+      path: string;
+      base64: string;
+      mediaType: string;
+      sizeBytes: number;
     }
 
-    // Convert to base64
-    const arrayBuffer = await fileData.arrayBuffer();
-    const base64Data = btoa(
-      new Uint8Array(arrayBuffer).reduce((data, byte) => data + String.fromCharCode(byte), '')
-    );
+    const imageFiles: ImageFile[] = [];
 
-    // Determine image media type from file extension
-    const extension = storage_path.split('.').pop()?.toLowerCase() || 'jpeg';
-    const imageMediaType = extension === 'png' ? 'image/png' :
-                          extension === 'gif' ? 'image/gif' :
-                          extension === 'webp' ? 'image/webp' : 'image/jpeg';
+    for (const storage_path of storage_paths) {
+      console.log(`Downloading file from storage: ${storage_path}`);
 
-    console.log(`File downloaded: ${storage_path} (${arrayBuffer.byteLength} bytes)`);
+      const { data: fileData, error: downloadError } = await supabase.storage
+        .from('recipe-imports')
+        .download(storage_path);
+
+      if (downloadError || !fileData) {
+        throw new Error(`Failed to download file ${storage_path}: ${downloadError?.message || 'Unknown error'}`);
+      }
+
+      // Convert to base64
+      const arrayBuffer = await fileData.arrayBuffer();
+      const base64Data = btoa(
+        new Uint8Array(arrayBuffer).reduce((data, byte) => data + String.fromCharCode(byte), '')
+      );
+
+      // Determine image media type from file extension
+      const extension = storage_path.split('.').pop()?.toLowerCase() || 'jpeg';
+      const imageMediaType = extension === 'png' ? 'image/png' :
+                            extension === 'gif' ? 'image/gif' :
+                            extension === 'webp' ? 'image/webp' : 'image/jpeg';
+
+      console.log(`File downloaded: ${storage_path} (${arrayBuffer.byteLength} bytes)`);
+
+      imageFiles.push({
+        path: storage_path,
+        base64: base64Data,
+        mediaType: imageMediaType,
+        sizeBytes: arrayBuffer.byteLength,
+      });
+    }
+
+    console.log(`Downloaded ${imageFiles.length} file(s), total size: ${imageFiles.reduce((sum, f) => sum + f.sizeBytes, 0)} bytes`);
+
+    // Check if any image exceeds Claude's 5MB limit
+    for (const file of imageFiles) {
+      if (file.sizeBytes > CLAUDE_MAX_IMAGE_BYTES) {
+        const sizeMB = (file.sizeBytes / (1024 * 1024)).toFixed(1);
+        console.error(`Image ${file.path} exceeds Claude's 5MB limit: ${sizeMB}MB`);
+        const response: MediaImportResponse = {
+          success: false,
+          error: 'Image too large. Please try with a smaller or lower quality image.',
+        };
+        return new Response(JSON.stringify(response), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 200,
+        });
+      }
+    }
 
     // Step 2: Fetch existing data for Claude context
     const [existingIngredients, measurementTypes] = await Promise.all([
@@ -176,9 +223,14 @@ serve(async (req) => {
 
     let ocrResult;
     if (media_type === 'pdf') {
-      ocrResult = await extractTextFromPDF(base64Data);
+      ocrResult = await extractTextFromPDF(imageFiles[0].base64);
+    } else if (imageFiles.length === 1) {
+      ocrResult = await extractTextFromImage(imageFiles[0].base64, imageFiles[0].mediaType);
     } else {
-      ocrResult = await extractTextFromImage(base64Data, imageMediaType);
+      // Multiple images - use the multi-image extraction
+      ocrResult = await extractTextFromImages(
+        imageFiles.map(f => ({ base64: f.base64, mediaType: f.mediaType }))
+      );
     }
 
     console.log(`OCR extracted ${ocrResult.text.length} characters`);
@@ -234,11 +286,12 @@ serve(async (req) => {
 
     console.log(`Created recipe ${recipeId} with ${newIngredientsCount} new ingredients`);
 
-    // Step 7: Cleanup - delete temp file from storage
-    console.log(`Cleaning up temporary file: ${storage_path}`);
+    // Step 7: Cleanup - delete all temp files from storage
+    const allPaths = imageFiles.map(f => f.path);
+    console.log(`Cleaning up ${allPaths.length} temporary file(s)`);
     const { error: deleteError } = await supabase.storage
       .from('recipe-imports')
-      .remove([storage_path]);
+      .remove(allPaths);
 
     if (deleteError) {
       console.error('Failed to delete temp files:', deleteError);
@@ -309,10 +362,9 @@ serve(async (req) => {
     const { message: errorMessage, code: errorCode } = extractErrorDetails(error);
     console.error('Error importing recipe from media:', error);
 
-    // Log failed import
-    const body = await req.clone().json().catch(() => ({}));
-    const storagePaths = body?.storage_paths || [];
-    const mediaType = body?.media_type || 'image';
+    // Log failed import (use saved requestBody since we can't clone after reading)
+    const storagePaths = requestBody?.storage_paths || [];
+    const mediaType = requestBody?.media_type || 'image';
 
     // Try to get userId from auth header
     let failedUserId = 'unknown';

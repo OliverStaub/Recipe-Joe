@@ -6,6 +6,7 @@ import com.recipejoe.data.repository.RecipeRepository
 import com.recipejoe.data.repository.TokenRepository
 import com.recipejoe.domain.model.ImportResult
 import com.recipejoe.domain.model.MediaImportType
+import com.recipejoe.presentation.common.components.ImportStep
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -37,27 +38,65 @@ class AddRecipeViewModel @Inject constructor(
         }
     }
 
-    fun importFromUrl(url: String, translate: Boolean = true) {
+    fun isVideoUrl(url: String): Boolean {
+        val lowercaseUrl = url.lowercase()
+        return lowercaseUrl.contains("youtube.com") ||
+                lowercaseUrl.contains("youtu.be") ||
+                lowercaseUrl.contains("tiktok.com") ||
+                lowercaseUrl.contains("instagram.com/reel") ||
+                lowercaseUrl.contains("instagram.com/p/")
+    }
+
+    fun getVideoPlatformName(url: String): String? {
+        val lowercaseUrl = url.lowercase()
+        return when {
+            lowercaseUrl.contains("youtube.com") || lowercaseUrl.contains("youtu.be") -> "YouTube"
+            lowercaseUrl.contains("tiktok.com") -> "TikTok"
+            lowercaseUrl.contains("instagram.com") -> "Instagram"
+            else -> null
+        }
+    }
+
+    fun importFromUrl(
+        url: String,
+        translate: Boolean = true,
+        startTimestamp: String? = null,
+        endTimestamp: String? = null
+    ) {
         if (url.isBlank()) {
             _uiState.value = _uiState.value.copy(error = "Please enter a URL")
             return
         }
 
         viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(isLoading = true, error = null)
+            _uiState.value = _uiState.value.copy(
+                isLoading = true,
+                error = null,
+                currentStep = if (isVideoUrl(url)) ImportStep.FETCHING_TRANSCRIPT else ImportStep.FETCHING
+            )
+
             try {
                 val language = Locale.getDefault().language.take(2)
+
+                // Simulate step progression for better UX
+                _uiState.value = _uiState.value.copy(currentStep = ImportStep.PARSING)
+
                 val result = recipeRepository.importRecipe(
                     url = url,
                     language = language,
-                    translate = translate
+                    translate = translate,
+                    startTimestamp = startTimestamp,
+                    endTimestamp = endTimestamp
                 )
 
                 if (result.success && result.recipeId != null) {
                     _uiState.value = _uiState.value.copy(
                         isLoading = false,
+                        currentStep = null,
                         importedRecipeId = result.recipeId,
-                        importedRecipeName = result.recipeName
+                        importedRecipeName = result.recipeName,
+                        stepsCount = result.stats?.stepsCount,
+                        ingredientsCount = result.stats?.ingredientsCount
                     )
                     // Refresh token balance
                     try {
@@ -68,6 +107,7 @@ class AddRecipeViewModel @Inject constructor(
                 } else {
                     _uiState.value = _uiState.value.copy(
                         isLoading = false,
+                        currentStep = null,
                         error = result.error ?: "Import failed"
                     )
                 }
@@ -75,6 +115,7 @@ class AddRecipeViewModel @Inject constructor(
                 Timber.e(e, "Failed to import recipe")
                 _uiState.value = _uiState.value.copy(
                     isLoading = false,
+                    currentStep = null,
                     error = e.message ?: "Import failed"
                 )
             }
@@ -83,9 +124,15 @@ class AddRecipeViewModel @Inject constructor(
 
     fun importFromImage(imageData: ByteArray, translate: Boolean = true) {
         viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(isLoading = true, error = null)
+            _uiState.value = _uiState.value.copy(
+                isLoading = true,
+                error = null,
+                currentStep = ImportStep.UPLOADING
+            )
+
             try {
                 // Upload image to temp storage
+                _uiState.value = _uiState.value.copy(currentStep = ImportStep.UPLOADING)
                 val storagePath = recipeRepository.uploadTempFile(
                     data = imageData,
                     contentType = "image/jpeg",
@@ -93,6 +140,7 @@ class AddRecipeViewModel @Inject constructor(
                 )
 
                 // Import via OCR
+                _uiState.value = _uiState.value.copy(currentStep = ImportStep.RECOGNIZING)
                 val language = Locale.getDefault().language.take(2)
                 val result = recipeRepository.importFromMedia(
                     storagePaths = listOf(storagePath),
@@ -106,6 +154,7 @@ class AddRecipeViewModel @Inject constructor(
                 Timber.e(e, "Failed to import from image")
                 _uiState.value = _uiState.value.copy(
                     isLoading = false,
+                    currentStep = null,
                     error = e.message ?: "Import failed"
                 )
             }
@@ -114,7 +163,12 @@ class AddRecipeViewModel @Inject constructor(
 
     fun importFromPdf(pdfData: ByteArray, translate: Boolean = true) {
         viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(isLoading = true, error = null)
+            _uiState.value = _uiState.value.copy(
+                isLoading = true,
+                error = null,
+                currentStep = ImportStep.UPLOADING
+            )
+
             try {
                 // Upload PDF to temp storage
                 val storagePath = recipeRepository.uploadTempFile(
@@ -124,6 +178,7 @@ class AddRecipeViewModel @Inject constructor(
                 )
 
                 // Import via OCR
+                _uiState.value = _uiState.value.copy(currentStep = ImportStep.RECOGNIZING)
                 val language = Locale.getDefault().language.take(2)
                 val result = recipeRepository.importFromMedia(
                     storagePaths = listOf(storagePath),
@@ -137,6 +192,7 @@ class AddRecipeViewModel @Inject constructor(
                 Timber.e(e, "Failed to import from PDF")
                 _uiState.value = _uiState.value.copy(
                     isLoading = false,
+                    currentStep = null,
                     error = e.message ?: "Import failed"
                 )
             }
@@ -147,8 +203,11 @@ class AddRecipeViewModel @Inject constructor(
         if (result.success && result.recipeId != null) {
             _uiState.value = _uiState.value.copy(
                 isLoading = false,
+                currentStep = null,
                 importedRecipeId = result.recipeId,
-                importedRecipeName = result.recipeName
+                importedRecipeName = result.recipeName,
+                stepsCount = result.stats?.stepsCount,
+                ingredientsCount = result.stats?.ingredientsCount
             )
             // Refresh token balance
             try {
@@ -159,6 +218,7 @@ class AddRecipeViewModel @Inject constructor(
         } else {
             _uiState.value = _uiState.value.copy(
                 isLoading = false,
+                currentStep = null,
                 error = result.error ?: "Import failed"
             )
         }
@@ -171,7 +231,9 @@ class AddRecipeViewModel @Inject constructor(
     fun clearImportedRecipe() {
         _uiState.value = _uiState.value.copy(
             importedRecipeId = null,
-            importedRecipeName = null
+            importedRecipeName = null,
+            stepsCount = null,
+            ingredientsCount = null
         )
     }
 }
@@ -179,6 +241,9 @@ class AddRecipeViewModel @Inject constructor(
 data class AddRecipeUiState(
     val isLoading: Boolean = false,
     val error: String? = null,
+    val currentStep: ImportStep? = null,
     val importedRecipeId: UUID? = null,
-    val importedRecipeName: String? = null
+    val importedRecipeName: String? = null,
+    val stepsCount: Int? = null,
+    val ingredientsCount: Int? = null
 )

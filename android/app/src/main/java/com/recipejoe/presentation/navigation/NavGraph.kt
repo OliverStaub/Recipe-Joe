@@ -10,21 +10,20 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import com.recipejoe.domain.model.AuthState
+import com.recipejoe.presentation.MainScaffold
 import com.recipejoe.presentation.auth.AuthScreen
 import com.recipejoe.presentation.auth.AuthViewModel
-import com.recipejoe.presentation.home.HomeScreen
-import com.recipejoe.presentation.recipe.AddRecipeScreen
 import com.recipejoe.presentation.recipe.RecipeDetailScreen
 import com.recipejoe.presentation.settings.SettingsScreen
+import com.recipejoe.presentation.tokens.BuyTokensScreen
 import java.util.UUID
 
 sealed class Screen(val route: String) {
     data object Auth : Screen("auth")
-    data object Home : Screen("home")
+    data object Main : Screen("main")
     data object RecipeDetail : Screen("recipe/{recipeId}") {
         fun createRoute(recipeId: UUID) = "recipe/${recipeId}"
     }
-    data object AddRecipe : Screen("add_recipe")
     data object Settings : Screen("settings")
     data object BuyTokens : Screen("buy_tokens")
 }
@@ -37,8 +36,8 @@ fun NavGraph(
     val authState by authViewModel.authState.collectAsState()
 
     val startDestination = when (authState) {
-        is AuthState.Authenticated -> Screen.Home.route
-        is AuthState.Loading -> Screen.Auth.route // Show auth while loading, will redirect if authenticated
+        is AuthState.Authenticated -> Screen.Main.route
+        is AuthState.Loading -> Screen.Auth.route
         else -> Screen.Auth.route
     }
 
@@ -50,13 +49,16 @@ fun NavGraph(
             AuthScreen()
         }
 
-        composable(Screen.Home.route) {
-            HomeScreen(
+        composable(Screen.Main.route) {
+            MainScaffold(
                 onNavigateToRecipe = { recipeId ->
                     navController.navigate(Screen.RecipeDetail.createRoute(recipeId))
                 },
-                onNavigateToAddRecipe = {
-                    navController.navigate(Screen.AddRecipe.route)
+                onNavigateToSettings = {
+                    navController.navigate(Screen.Settings.route)
+                },
+                onNavigateToBuyTokens = {
+                    navController.navigate(Screen.BuyTokens.route)
                 }
             )
         }
@@ -72,17 +74,6 @@ fun NavGraph(
             )
         }
 
-        composable(Screen.AddRecipe.route) {
-            AddRecipeScreen(
-                onNavigateBack = { navController.popBackStack() },
-                onNavigateToRecipe = { recipeId ->
-                    navController.navigate(Screen.RecipeDetail.createRoute(recipeId)) {
-                        popUpTo(Screen.Home.route)
-                    }
-                }
-            )
-        }
-
         composable(Screen.Settings.route) {
             SettingsScreen(
                 onNavigateBack = { navController.popBackStack() },
@@ -93,8 +84,9 @@ fun NavGraph(
         }
 
         composable(Screen.BuyTokens.route) {
-            // TODO: Implement BuyTokensScreen
-            // For now, just navigate back
+            BuyTokensScreen(
+                onNavigateBack = { navController.popBackStack() }
+            )
         }
     }
 
@@ -102,7 +94,7 @@ fun NavGraph(
     when (authState) {
         is AuthState.Authenticated -> {
             if (navController.currentDestination?.route == Screen.Auth.route) {
-                navController.navigate(Screen.Home.route) {
+                navController.navigate(Screen.Main.route) {
                     popUpTo(Screen.Auth.route) { inclusive = true }
                 }
             }

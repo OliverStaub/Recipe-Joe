@@ -303,6 +303,17 @@ final class SupabaseService: Sendable {
             .execute()
     }
 
+    // MARK: - Favorite Toggle
+
+    /// Toggle a recipe's favorite status
+    func toggleFavorite(id: UUID, isFavorite: Bool) async throws {
+        try await client
+            .from("recipes")
+            .update(["is_favorite": isFavorite])
+            .eq("id", value: id.uuidString)
+            .execute()
+    }
+
     // MARK: - Delete Recipe
 
     /// Delete a recipe and all its related data (steps, ingredients cascade automatically)

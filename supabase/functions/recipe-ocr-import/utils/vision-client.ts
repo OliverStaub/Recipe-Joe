@@ -98,6 +98,84 @@ Output the complete recipe text, maintaining the original formatting where possi
 }
 
 /**
+ * Extract text from multiple images using Claude Vision API
+ * Combines text from all images, removing duplicates
+ */
+export async function extractTextFromImages(
+  images: Array<{ base64: string; mediaType: string }>
+): Promise<VisionOCRResult> {
+  const anthropicApiKey = Deno.env.get('ANTHROPIC_API_KEY');
+  if (!anthropicApiKey) {
+    throw new Error('ANTHROPIC_API_KEY not configured');
+  }
+
+  // Build content array with all images
+  const content: Array<{ type: string; source?: { type: string; media_type: string; data: string }; text?: string }> = [];
+
+  for (let i = 0; i < images.length; i++) {
+    content.push({
+      type: 'image',
+      source: {
+        type: 'base64',
+        media_type: images[i].mediaType,
+        data: images[i].base64,
+      },
+    });
+  }
+
+  content.push({
+    type: 'text',
+    text: `You are looking at ${images.length} images that together contain ONE recipe.
+These might be:
+- Multiple pages of the same recipe
+- Different photos of the same recipe card (front/back)
+- Screenshots that continue from one to the next
+
+IMPORTANT:
+- Extract ALL text from ALL images
+- Combine the content into ONE unified recipe
+- REMOVE any duplicate text that appears in multiple images
+- Preserve the structure (title, ingredients list, instructions)
+- Include quantities, measurements, and cooking times
+- If handwriting is unclear, make your best interpretation and note [unclear]
+- Separate ingredients from instructions clearly
+
+Output the complete recipe text as ONE unified recipe, with duplicates removed.`,
+  });
+
+  const response = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': anthropicApiKey,
+      'anthropic-version': '2023-06-01',
+    },
+    body: JSON.stringify({
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: 4096,
+      messages: [{
+        role: 'user',
+        content,
+      }],
+    }),
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`Claude Vision API error: ${response.status} - ${errorText}`);
+  }
+
+  const result = await response.json();
+  return {
+    text: result.content[0].text,
+    usage: {
+      input_tokens: result.usage?.input_tokens || 0,
+      output_tokens: result.usage?.output_tokens || 0,
+    },
+  };
+}
+
+/**
  * Extract text from PDF using Claude Vision API
  * Claude can process PDFs directly as documents
  */

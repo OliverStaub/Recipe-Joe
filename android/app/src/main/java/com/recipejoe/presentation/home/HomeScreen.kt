@@ -1,5 +1,7 @@
 package com.recipejoe.presentation.home
 
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -7,7 +9,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -18,38 +19,40 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
+import androidx.compose.material.icons.filled.Restaurant
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Timer
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SwipeToDismissBox
+import androidx.compose.material3.SwipeToDismissBoxValue
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -64,15 +67,14 @@ import java.util.UUID
 @Composable
 fun HomeScreen(
     onNavigateToRecipe: (UUID) -> Unit,
-    onNavigateToAddRecipe: () -> Unit,
+    onNavigateToSettings: () -> Unit,
+    modifier: Modifier = Modifier,
     viewModel: HomeViewModel = hiltViewModel()
 ) {
     val recipes by viewModel.recipes.collectAsState()
     val tokenBalance by viewModel.tokenBalance.collectAsState()
     val uiState by viewModel.uiState.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
-
-    var recipeToDelete by remember { mutableStateOf<Recipe?>(null) }
 
     LaunchedEffect(uiState.error) {
         uiState.error?.let { error ->
@@ -82,37 +84,7 @@ fun HomeScreen(
     }
 
     Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text(stringResource(R.string.my_recipes)) },
-                actions = {
-                    // Token balance badge
-                    Card(
-                        colors = CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.primaryContainer
-                        ),
-                        modifier = Modifier.padding(end = Spacing.md)
-                    ) {
-                        Text(
-                            text = "$tokenBalance tokens",
-                            style = MaterialTheme.typography.labelMedium,
-                            modifier = Modifier.padding(
-                                horizontal = Spacing.md,
-                                vertical = Spacing.sm
-                            )
-                        )
-                    }
-                }
-            )
-        },
-        floatingActionButton = {
-            FloatingActionButton(
-                onClick = onNavigateToAddRecipe,
-                containerColor = MaterialTheme.colorScheme.primary
-            ) {
-                Icon(Icons.Default.Add, contentDescription = stringResource(R.string.add_recipe))
-            }
-        },
+        modifier = modifier,
         snackbarHost = { SnackbarHost(snackbarHostState) }
     ) { paddingValues ->
         PullToRefreshBox(
@@ -122,103 +94,227 @@ fun HomeScreen(
                 .fillMaxSize()
                 .padding(paddingValues)
         ) {
-            if (recipes.isEmpty() && !uiState.isRefreshing) {
-                // Empty state
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
+            Column(
+                modifier = Modifier.fillMaxSize()
+            ) {
+                // Header
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = Spacing.lg, vertical = Spacing.md),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally
+                    Text(
+                        text = "RecipeJoe",
+                        style = MaterialTheme.typography.headlineLarge,
+                        fontWeight = FontWeight.Bold
+                    )
+
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(Spacing.sm)
                     ) {
-                        Text(
-                            text = stringResource(R.string.no_recipes),
-                            style = MaterialTheme.typography.headlineMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                        Spacer(modifier = Modifier.height(Spacing.sm))
-                        Text(
-                            text = stringResource(R.string.add_your_first_recipe),
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
+                        // Token balance badge
+                        Card(
+                            colors = CardDefaults.cardColors(
+                                containerColor = MaterialTheme.colorScheme.primaryContainer
+                            )
+                        ) {
+                            Text(
+                                text = "$tokenBalance tokens",
+                                style = MaterialTheme.typography.labelMedium,
+                                modifier = Modifier.padding(
+                                    horizontal = Spacing.md,
+                                    vertical = Spacing.sm
+                                )
+                            )
+                        }
+
+                        // Settings button
+                        IconButton(onClick = onNavigateToSettings) {
+                            Icon(
+                                Icons.Default.Settings,
+                                contentDescription = stringResource(R.string.settings),
+                                tint = MaterialTheme.colorScheme.primary
+                            )
+                        }
                     }
                 }
-            } else {
-                LazyColumn(
-                    contentPadding = PaddingValues(Spacing.lg),
-                    verticalArrangement = Arrangement.spacedBy(Spacing.md)
-                ) {
-                    items(recipes, key = { it.id }) { recipe ->
-                        RecipeCard(
-                            recipe = recipe,
-                            onClick = { onNavigateToRecipe(recipe.id) },
-                            onFavoriteClick = { viewModel.toggleFavorite(recipe) },
-                            onDeleteClick = { recipeToDelete = recipe }
-                        )
+
+                if (recipes.isEmpty() && !uiState.isRefreshing) {
+                    // Empty state
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            modifier = Modifier.padding(Spacing.xl)
+                        ) {
+                            Icon(
+                                Icons.Default.Restaurant,
+                                contentDescription = null,
+                                modifier = Modifier.size(64.dp),
+                                tint = MaterialTheme.colorScheme.primary
+                            )
+                            Spacer(modifier = Modifier.height(Spacing.lg))
+                            Text(
+                                text = stringResource(R.string.no_recipes),
+                                style = MaterialTheme.typography.titleLarge,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Spacer(modifier = Modifier.height(Spacing.sm))
+                            Text(
+                                text = stringResource(R.string.add_your_first_recipe),
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                } else {
+                    LazyColumn(
+                        contentPadding = PaddingValues(vertical = Spacing.sm)
+                    ) {
+                        items(recipes, key = { it.id }) { recipe ->
+                            SwipeableRecipeRow(
+                                recipe = recipe,
+                                onClick = { onNavigateToRecipe(recipe.id) },
+                                onFavorite = { viewModel.toggleFavorite(recipe) },
+                                onDelete = { viewModel.deleteRecipe(recipe) }
+                            )
+                        }
                     }
                 }
             }
         }
     }
+}
 
-    // Delete confirmation dialog
-    recipeToDelete?.let { recipe ->
-        AlertDialog(
-            onDismissRequest = { recipeToDelete = null },
-            title = { Text(stringResource(R.string.delete_recipe)) },
-            text = { Text(stringResource(R.string.delete_recipe_confirm)) },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        viewModel.deleteRecipe(recipe)
-                        recipeToDelete = null
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun SwipeableRecipeRow(
+    recipe: Recipe,
+    onClick: () -> Unit,
+    onFavorite: () -> Unit,
+    onDelete: () -> Unit
+) {
+    val dismissState = rememberSwipeToDismissBoxState(
+        confirmValueChange = { dismissValue ->
+            when (dismissValue) {
+                SwipeToDismissBoxValue.StartToEnd -> {
+                    // Swipe right to favorite
+                    onFavorite()
+                    false // Don't dismiss, just toggle
+                }
+                SwipeToDismissBoxValue.EndToStart -> {
+                    // Swipe left to delete
+                    onDelete()
+                    true
+                }
+                SwipeToDismissBoxValue.Settled -> false
+            }
+        }
+    )
+
+    SwipeToDismissBox(
+        state = dismissState,
+        backgroundContent = {
+            val direction = dismissState.dismissDirection
+
+            val color by animateColorAsState(
+                targetValue = when (direction) {
+                    SwipeToDismissBoxValue.StartToEnd -> {
+                        if (recipe.isFavorite) Color.Gray else MaterialTheme.colorScheme.primary
                     }
-                ) {
-                    Text(
-                        stringResource(R.string.delete),
-                        color = MaterialTheme.colorScheme.error
+                    SwipeToDismissBoxValue.EndToStart -> MaterialTheme.colorScheme.error
+                    SwipeToDismissBoxValue.Settled -> Color.Transparent
+                },
+                label = "swipeColor"
+            )
+
+            val icon = when (direction) {
+                SwipeToDismissBoxValue.StartToEnd -> {
+                    if (recipe.isFavorite) Icons.Default.FavoriteBorder else Icons.Default.Favorite
+                }
+                SwipeToDismissBoxValue.EndToStart -> Icons.Default.Delete
+                SwipeToDismissBoxValue.Settled -> null
+            }
+
+            val alignment = when (direction) {
+                SwipeToDismissBoxValue.StartToEnd -> Alignment.CenterStart
+                else -> Alignment.CenterEnd
+            }
+
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(color)
+                    .padding(horizontal = Spacing.xl),
+                contentAlignment = alignment
+            ) {
+                icon?.let {
+                    Icon(
+                        imageVector = it,
+                        contentDescription = null,
+                        tint = Color.White
                     )
                 }
-            },
-            dismissButton = {
-                TextButton(onClick = { recipeToDelete = null }) {
-                    Text(stringResource(R.string.cancel))
-                }
             }
+        },
+        enableDismissFromStartToEnd = true,
+        enableDismissFromEndToStart = true
+    ) {
+        RecipeRow(
+            recipe = recipe,
+            onClick = onClick
         )
     }
 }
 
 @Composable
-private fun RecipeCard(
+private fun RecipeRow(
     recipe: Recipe,
-    onClick: () -> Unit,
-    onFavoriteClick: () -> Unit,
-    onDeleteClick: () -> Unit
+    onClick: () -> Unit
 ) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick),
-        shape = RoundedCornerShape(CornerRadius.card),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-    ) {
+    Column {
         Row(
-            modifier = Modifier.padding(Spacing.md)
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable(onClick = onClick)
+                .background(MaterialTheme.colorScheme.surface)
+                .padding(horizontal = Spacing.lg, vertical = Spacing.md),
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            // Recipe image
-            AsyncImage(
-                model = recipe.imageUrl,
-                contentDescription = recipe.name,
-                modifier = Modifier
-                    .size(80.dp)
-                    .clip(RoundedCornerShape(CornerRadius.small))
-                    .aspectRatio(1f),
-                contentScale = ContentScale.Crop
-            )
+            // Recipe image or placeholder
+            if (recipe.imageUrl != null) {
+                AsyncImage(
+                    model = recipe.imageUrl,
+                    contentDescription = recipe.name,
+                    modifier = Modifier
+                        .size(80.dp)
+                        .clip(RoundedCornerShape(CornerRadius.small)),
+                    contentScale = ContentScale.Crop
+                )
+            } else {
+                // Placeholder with fork/knife icon
+                Box(
+                    modifier = Modifier
+                        .size(80.dp)
+                        .clip(RoundedCornerShape(CornerRadius.small))
+                        .background(MaterialTheme.colorScheme.primaryContainer),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        Icons.Default.Restaurant,
+                        contentDescription = null,
+                        modifier = Modifier.size(32.dp),
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                }
+            }
 
-            Spacer(modifier = Modifier.width(Spacing.md))
+            Spacer(modifier = Modifier.width(Spacing.lg))
 
             // Recipe info
             Column(
@@ -227,26 +323,25 @@ private fun RecipeCard(
                 Text(
                     text = recipe.name,
                     style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis
                 )
 
-                recipe.description?.let { description ->
+                recipe.category?.let { category ->
+                    Spacer(modifier = Modifier.height(Spacing.xs))
                     Text(
-                        text = description,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
+                        text = category,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
 
-                Spacer(modifier = Modifier.height(Spacing.xs))
-
-                Row(
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    recipe.totalTimeMinutes?.let { time ->
+                recipe.totalTimeMinutes?.let { time ->
+                    Spacer(modifier = Modifier.height(Spacing.xs))
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
                         Icon(
                             Icons.Default.Timer,
                             contentDescription = null,
@@ -255,48 +350,37 @@ private fun RecipeCard(
                         )
                         Spacer(modifier = Modifier.width(Spacing.xs))
                         Text(
-                            text = stringResource(R.string.minutes, time),
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-
-                    recipe.category?.let { category ->
-                        if (recipe.totalTimeMinutes != null) {
-                            Text(
-                                text = " • ",
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                        Text(
-                            text = category,
-                            style = MaterialTheme.typography.labelSmall,
+                            text = formatTime(time),
+                            style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
                 }
             }
 
-            // Action buttons
-            Column {
-                IconButton(onClick = onFavoriteClick) {
-                    Icon(
-                        if (recipe.isFavorite) Icons.Default.Favorite
-                        else Icons.Default.FavoriteBorder,
-                        contentDescription = null,
-                        tint = if (recipe.isFavorite) MaterialTheme.colorScheme.primary
-                               else MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-
-                IconButton(onClick = onDeleteClick) {
-                    Icon(
-                        Icons.Default.Delete,
-                        contentDescription = stringResource(R.string.delete),
-                        tint = MaterialTheme.colorScheme.error
-                    )
-                }
-            }
+            // Chevron
+            Icon(
+                Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+            )
         }
+
+        // Divider
+        HorizontalDivider(
+            modifier = Modifier.padding(start = 80.dp + Spacing.lg + Spacing.lg),
+            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
+        )
+    }
+}
+
+private fun formatTime(minutes: Int): String {
+    return when {
+        minutes >= 60 -> {
+            val hours = minutes / 60
+            val mins = minutes % 60
+            if (mins > 0) "${hours}h ${mins}m" else "${hours}h"
+        }
+        else -> "$minutes min"
     }
 }

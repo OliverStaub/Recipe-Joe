@@ -126,4 +126,18 @@ final class HomeViewModel: ObservableObject {
             return false
         }
     }
+
+    // MARK: - Toggle Favorite
+
+    func toggleFavorite(for recipe: SupabaseRecipe) async {
+        let newFavoriteState = !recipe.isFavorite
+
+        do {
+            try await SupabaseService.shared.toggleFavorite(id: recipe.id, isFavorite: newFavoriteState)
+            // Refresh the list to get updated state
+            await fetchRecipes()
+        } catch {
+            self.error = "Failed to update favorite: \(error.localizedDescription)"
+        }
+    }
 }

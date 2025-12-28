@@ -29,13 +29,16 @@
     <string name="enter_url">Enter URL</string>
     <string name="importing">Importing…</string>
     <string name="import_success">Recipe imported successfully!</string>
-    <string name="import_failed">Failed to import recipe</string>
+    <string name="import_failed">Import failed</string>
     <string name="delete_recipe">Delete Recipe</string>
     <string name="delete_recipe_confirm">Are you sure you want to delete this recipe?</string>
     <string name="edit_recipe">Edit Recipe</string>
     <string name="save">Save</string>
     <string name="cancel">Cancel</string>
     <string name="delete">Delete</string>
+    <string name="new_recipe">New Recipe</string>
+    <string name="recipe_imported">Recipe imported!</string>
+    <string name="steps">steps</string>
 
     <!-- Recipe Details -->
     <string name="ingredients">Ingredients</string>
@@ -55,6 +58,16 @@
     <string name="buy_tokens">Buy Tokens</string>
     <string name="purchase_success">Purchase successful!</string>
     <string name="purchase_failed">Purchase failed</string>
+    <string name="current_balance">Current Balance</string>
+    <string name="choose_package">Choose a package</string>
+    <string name="purchase_info">Tokens are used for AI-powered recipe imports. Purchased tokens never expire.</string>
+    <string name="token_costs">Token costs</string>
+    <string name="website_import">Website import</string>
+    <string name="video_import">Video import (YouTube, TikTok)</string>
+    <string name="photo_import">Photo import</string>
+    <string name="pdf_import">PDF import</string>
+    <string name="best_value">Best Value</string>
+    <string name="buy">Buy</string>
 
     <!-- Settings -->
     <string name="account">Account</string>
@@ -81,4 +94,31 @@
     <string name="take_photo">Take Photo</string>
     <string name="choose_from_gallery">Choose from Gallery</string>
     <string name="import_from_document">Import from Document</string>
+    <string name="photo_library">Photo Library</string>
+    <string name="import_pdf">Import PDF</string>
+    <string name="add_media">Add Media</string>
+    <string name="paste_url_hint">Paste recipe URL…</string>
+    <string name="websites">Websites</string>
+
+    <!-- Video Timestamps -->
+    <string name="timestamp_hint">Select a time range to extract a specific recipe, or leave empty to use the full video.</string>
+    <string name="start">Start</string>
+    <string name="end">End</string>
+    <string name="end_of_video">End of video</string>
+
+    <!-- Import Steps -->
+    <string name="import_step_fetching">Fetching recipe…</string>
+    <string name="import_step_transcript">Fetching transcript…</string>
+    <string name="import_step_uploading">Uploading file…</string>
+    <string name="import_step_recognizing">Reading text…</string>
+    <string name="import_step_parsing">Analyzing with AI…</string>
+    <string name="import_step_extracting">Extracting ingredients…</string>
+    <string name="import_step_saving">Saving recipe…</string>
+    <string name="import_hint_can_leave">You can leave this screen - your recipe will appear when ready.</string>
+
+    <!-- Search -->
+    <string name="search_recipes_hint">Search recipes…</string>
+    <string name="search_empty_state">Search for recipes by name</string>
+    <string name="no_results">No results found</string>
+    <string name="clear">Clear</string>
 </resources>

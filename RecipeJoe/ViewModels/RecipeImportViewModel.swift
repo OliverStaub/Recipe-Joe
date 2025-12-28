@@ -57,10 +57,10 @@ final class RecipeImportViewModel: ObservableObject {
             return false
         }
 
-        /// Whether we're in an active import state (importing or success) that should be centered
+        /// Whether we're in an active import state (importing, success, or error) that should be centered
         var isActiveImport: Bool {
             switch self {
-            case .importing, .success:
+            case .importing, .success, .error:
                 return true
             default:
                 return false
@@ -232,8 +232,8 @@ final class RecipeImportViewModel: ObservableObject {
 
     // MARK: - Media Import (OCR)
 
-    /// Maximum file sizes for upload
-    private static let maxImageSizeMB = 10
+    /// Maximum file sizes for upload (Claude Vision limit is 5MB per image)
+    private static let maxImageSizeMB = 5
     private static let maxPDFSizeMB = 20
 
     /// Import a recipe from image data (photo or camera capture)

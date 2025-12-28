@@ -78,7 +78,7 @@ struct ImportStatusSection: View {
     /// Whether the current state should expand to fill available space
     private var shouldExpand: Bool {
         switch viewModel.importState {
-        case .importing, .success:
+        case .importing, .success, .error:
             return true
         default:
             return false
@@ -127,18 +127,29 @@ struct ImportStatusSection: View {
                 .accessibilityIdentifier("importSuccess")
 
             case .error(let message):
-                VStack(alignment: .leading, spacing: 4) {
-                    HStack(spacing: 8) {
-                        Image(systemName: "exclamationmark.triangle.fill")
-                            .foregroundStyle(.red)
-                        Text("Import failed".localized(for: locale))
-                            .font(.subheadline)
-                            .fontWeight(.medium)
-                    }
-                    Text(message)
-                        .font(.caption)
+                VStack(spacing: 16) {
+                    Image(systemName: "xmark.circle.fill")
+                        .font(.system(size: 80))
                         .foregroundStyle(.red)
+
+                    Text("Import failed".localized(for: locale))
+                        .font(.title2)
+                        .fontWeight(.semibold)
+
+                    Text("Something went wrong. Please try again with different pictures.".localized(for: locale))
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                        .multilineTextAlignment(.center)
+
+                    // Show technical error in smaller text for debugging
+                    Text(message)
+                        .font(.caption2)
+                        .foregroundStyle(.tertiary)
+                        .multilineTextAlignment(.center)
                 }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .padding(24)
+                .transition(.opacity)
                 .accessibilityIdentifier("importError")
             }
         }

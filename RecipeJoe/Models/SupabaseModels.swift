@@ -104,7 +104,8 @@ typealias MediaImportResponse = RecipeImportResponse
 // MARK: - Database Models
 
 /// Recipe as stored in Supabase
-struct SupabaseRecipe: Codable, Identifiable, Sendable {
+/// Note: nonisolated required for Codable to work with Supabase SDK in non-main-actor context
+nonisolated struct SupabaseRecipe: Codable, Identifiable, Sendable {
     let id: UUID
     let userId: UUID?
     let name: String

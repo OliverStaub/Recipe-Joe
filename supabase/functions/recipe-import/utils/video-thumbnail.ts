@@ -12,6 +12,50 @@ export function getYouTubeThumbnail(videoId: string): string {
 }
 
 /**
+ * Fetch YouTube video details including description via YouTube Data API
+ * Requires YOUTUBE_API_KEY environment variable
+ */
+export async function getYouTubeVideoDetails(videoId: string): Promise<{
+  title: string | null;
+  author: string | null;
+  description: string | null;
+}> {
+  const apiKey = Deno.env.get('YOUTUBE_API_KEY');
+
+  if (!apiKey) {
+    console.warn('YOUTUBE_API_KEY not set - video descriptions will not be available');
+    return { title: null, author: null, description: null };
+  }
+
+  try {
+    const url = `https://www.googleapis.com/youtube/v3/videos?id=${videoId}&part=snippet&key=${apiKey}`;
+    const response = await fetch(url);
+
+    if (!response.ok) {
+      console.warn(`YouTube Data API failed: ${response.status}`);
+      return { title: null, author: null, description: null };
+    }
+
+    const data = await response.json();
+
+    if (!data.items || data.items.length === 0) {
+      console.warn('YouTube video not found');
+      return { title: null, author: null, description: null };
+    }
+
+    const snippet = data.items[0].snippet;
+    return {
+      title: snippet.title || null,
+      author: snippet.channelTitle || null,
+      description: snippet.description || null,
+    };
+  } catch (error) {
+    console.warn('YouTube Data API error:', error);
+    return { title: null, author: null, description: null };
+  }
+}
+
+/**
  * Get YouTube thumbnail with fallback URLs
  */
 export function getYouTubeThumbnailUrls(videoId: string): string[] {
@@ -99,27 +143,34 @@ export async function getVideoMetadata(
 ): Promise<VideoMetadata> {
   switch (platform) {
     case 'youtube': {
-      // YouTube oEmbed for title/author
-      let title = 'YouTube Recipe Video';
-      let author = 'Unknown';
+      // Try YouTube Data API first for full details including description
+      const ytDetails = await getYouTubeVideoDetails(videoId);
 
-      try {
-        const oembedUrl = `https://www.youtube.com/oembed?url=${encodeURIComponent(url)}&format=json`;
-        const response = await fetch(oembedUrl);
-        if (response.ok) {
-          const data = await response.json();
-          title = data.title || title;
-          author = data.author_name || author;
+      // Fallback to oEmbed if Data API fails (no API key)
+      let title = ytDetails.title || 'YouTube Recipe Video';
+      let author = ytDetails.author || 'Unknown';
+      const description = ytDetails.description;
+
+      if (!ytDetails.title) {
+        try {
+          const oembedUrl = `https://www.youtube.com/oembed?url=${encodeURIComponent(url)}&format=json`;
+          const response = await fetch(oembedUrl);
+          if (response.ok) {
+            const data = await response.json();
+            title = data.title || title;
+            author = data.author_name || author;
+          }
+        } catch {
+          // Use defaults
         }
-      } catch {
-        // Use defaults
       }
 
       return {
         title,
         author,
+        description,
         thumbnailUrl: getYouTubeThumbnail(videoId),
-        duration: 0, // Would need YouTube Data API for duration
+        duration: 0,
         platform,
         videoId,
       };
@@ -130,6 +181,7 @@ export async function getVideoMetadata(
       return {
         title: metadata.title || 'Instagram Recipe Reel',
         author: metadata.author || 'Unknown',
+        description: null, // Instagram oEmbed doesn't provide full caption
         thumbnailUrl: metadata.thumbnailUrl,
         duration: 0,
         platform,
@@ -142,6 +194,7 @@ export async function getVideoMetadata(
       return {
         title: metadata.title || 'TikTok Recipe Video',
         author: metadata.author || 'Unknown',
+        description: null, // TikTok oEmbed doesn't provide full caption
         thumbnailUrl: metadata.thumbnailUrl,
         duration: 0,
         platform,
@@ -153,6 +206,7 @@ export async function getVideoMetadata(
       return {
         title: 'Recipe Video',
         author: 'Unknown',
+        description: null,
         thumbnailUrl: null,
         duration: 0,
         platform,

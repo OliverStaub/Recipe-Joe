@@ -24,9 +24,11 @@ This document tracks features and changes from the iOS app that need to be imple
     - `finish:` → ✨
   - Implemented in iOS at `StepRow.swift` - create equivalent in Compose
 
-- [ ] **Single Image Import**
-  - Limit photo picker to single image selection (no multiple images)
-  - Simplifies Claude Vision processing and avoids file size errors
+- [ ] **Multi-Image Import (Max 3)**
+  - Allow photo picker to select up to 3 images
+  - Images are combined by Claude Vision to extract one unified recipe
+  - Handles duplicates across images (e.g., front/back of recipe card)
+  - Compress images before upload (max 5MB each after compression)
 
 ### Localization
 
@@ -47,9 +49,17 @@ These changes were made to the Supabase Edge Functions and apply to both iOS and
   - Includes: user_id, import_type, source, status, recipe_name, tokens_used, duration, Claude API token usage
   - Both success and failure cases are logged
 
-- [x] **Single File Upload Enforcement**
-  - Edge function now rejects multiple file uploads
-  - Returns error: "Only single file uploads are supported"
+- [x] **Multi-Image Support (Max 3)**
+  - Edge function now accepts up to 3 images per import
+  - Claude Vision extracts and combines text from all images
+  - Automatically removes duplicate content across images
+  - PDFs still limited to single file
+
+- [x] **YouTube Video Description Support**
+  - YouTube imports now fetch video description via YouTube Data API
+  - Description is included in Claude prompt for better recipe extraction
+  - Requires `YOUTUBE_API_KEY` environment variable
+  - Falls back gracefully if API key not set
 
 ## Existing Feature Parity Items
 

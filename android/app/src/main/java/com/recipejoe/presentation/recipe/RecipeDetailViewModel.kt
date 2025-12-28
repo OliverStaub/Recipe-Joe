@@ -73,6 +73,30 @@ class RecipeDetailViewModel @Inject constructor(
             }
         }
     }
+
+    fun updateStepInstruction(stepId: UUID, instruction: String) {
+        viewModelScope.launch {
+            try {
+                recipeRepository.updateStepInstruction(stepId, instruction)
+                // Reload to get updated data
+                loadRecipeDetail()
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to update step instruction")
+            }
+        }
+    }
+
+    fun updateIngredient(ingredientId: UUID, quantity: Double?, notes: String?) {
+        viewModelScope.launch {
+            try {
+                recipeRepository.updateIngredient(ingredientId, quantity, notes)
+                // Reload to get updated data
+                loadRecipeDetail()
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to update ingredient")
+            }
+        }
+    }
 }
 
 sealed class RecipeDetailUiState {
