@@ -16,38 +16,32 @@ struct StepRow: View {
     @State private var showEditSheet = false
     @State private var editInstruction: String = ""
 
-    /// Step type prefix mappings to emoji and color
-    private static let prefixMappings: [(prefix: String, emoji: String, color: Color)] = [
-        ("prep: ", "🔪", Color.blue.opacity(0.15)),
-        ("heat: ", "🔥", Color.orange.opacity(0.15)),
-        ("cook: ", "🍳", Color.yellow.opacity(0.15)),
-        ("mix: ", "🥄", Color.purple.opacity(0.15)),
-        ("assemble: ", "🍽️", Color.green.opacity(0.15)),
-        ("bake: ", "♨️", Color.red.opacity(0.15)),
-        ("rest: ", "⏸️", Color.gray.opacity(0.15)),
-        ("finish: ", "✨", Color.pink.opacity(0.15))
-    ]
+    /// Returns the emoji at the start of the instruction (if any)
+    private var leadingEmoji: String? {
+        let instruction = step.instruction
+        guard let firstChar = instruction.first else { return nil }
 
-    /// Returns the emoji and background color if instruction has a known prefix
-    private var stepTypeInfo: (emoji: String, color: Color)? {
-        let instruction = step.instruction.lowercased()
-        for mapping in Self.prefixMappings {
-            if instruction.hasPrefix(mapping.prefix) {
-                return (mapping.emoji, mapping.color)
-            }
+        // Check if first character is an emoji using a simple heuristic:
+        // Emojis are typically outside the basic ASCII/Latin range and render as single grapheme clusters
+        let firstString = String(firstChar)
+
+        // Check if it's likely an emoji by seeing if it contains emoji scalars
+        let hasEmoji = firstString.unicodeScalars.contains { scalar in
+            scalar.properties.isEmoji && (
+                scalar.properties.isEmojiPresentation ||
+                scalar.value >= 0x1F300 // Most food/object emojis start here
+            )
         }
-        return nil
+
+        return hasEmoji ? firstString : nil
     }
 
-    /// Returns the instruction text without the prefix
+    /// Returns the instruction text without the leading emoji
     private var instructionText: String {
-        let instruction = step.instruction
-        for mapping in Self.prefixMappings {
-            if instruction.lowercased().hasPrefix(mapping.prefix) {
-                return String(instruction.dropFirst(mapping.prefix.count))
-            }
-        }
-        return instruction
+        guard leadingEmoji != nil else { return step.instruction }
+
+        // Drop the first character (the emoji) and trim whitespace
+        return String(step.instruction.dropFirst()).trimmingCharacters(in: .whitespaces)
     }
 
     var body: some View {
@@ -58,14 +52,12 @@ struct StepRow: View {
                 .foregroundStyle(isHighlighted ? Color.primary : .secondary)
                 .frame(width: 24, alignment: .leading)
 
-            // Step type emoji badge (if applicable)
-            if let typeInfo = stepTypeInfo {
-                Text(typeInfo.emoji)
-                    .font(.system(size: 16))
-                    .frame(width: 28, height: 28)
-                    .background(isHighlighted ? Color.terracotta.opacity(0.15) : Color.clear)
-                    .clipShape(RoundedRectangle(cornerRadius: 6))
-            }
+            // Step emoji badge (always reserve space for consistent alignment)
+            Text(leadingEmoji ?? "")
+                .font(.system(size: 16))
+                .frame(width: 28, height: 28)
+                .background(isHighlighted && leadingEmoji != nil ? Color.terracotta.opacity(0.15) : Color.clear)
+                .clipShape(RoundedRectangle(cornerRadius: 6))
 
             // Instruction
             VStack(alignment: .leading, spacing: 6) {

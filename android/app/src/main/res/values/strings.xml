@@ -121,4 +121,23 @@
     <string name="search_empty_state">Search for recipes by name</string>
     <string name="no_results">No results found</string>
     <string name="clear">Clear</string>
+
+    <!-- Filters -->
+    <string name="filter_all">All</string>
+    <string name="filter_quick">Quick</string>
+    <string name="filter_medium">Medium</string>
+    <string name="filter_long">Long</string>
+    <string name="filter_favorites">Favorites</string>
+    <string name="no_matching_recipes">No Matching Recipes</string>
+    <string name="try_adjusting_filters">Try adjusting your filters</string>
+
+    <!-- Language Settings -->
+    <string name="app_language">App Language</string>
+    <string name="recipe_language">Recipe Language</string>
+    <string name="auto_translate">Auto-translate recipes</string>
+    <string name="translation_enabled_hint">Recipes will be translated to %s</string>
+    <string name="translation_disabled_hint">Recipes will be imported in their original language</string>
+    <string name="actions">Actions</string>
+    <string name="get_more_tokens">Get more tokens to import recipes</string>
+    <string name="sign_out_confirm">Are you sure you want to sign out?</string>
 </resources>

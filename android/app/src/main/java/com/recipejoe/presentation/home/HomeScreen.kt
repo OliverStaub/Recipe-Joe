@@ -3,6 +3,7 @@ package com.recipejoe.presentation.home
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -17,6 +18,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
@@ -29,6 +31,8 @@ import androidx.compose.material.icons.filled.Timer
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -44,8 +48,12 @@ import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -63,6 +71,10 @@ import com.recipejoe.presentation.theme.CornerRadius
 import com.recipejoe.presentation.theme.Spacing
 import java.util.UUID
 
+enum class TimeFilter {
+    ALL, QUICK, MEDIUM, LONG
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
@@ -75,6 +87,26 @@ fun HomeScreen(
     val tokenBalance by viewModel.tokenBalance.collectAsState()
     val uiState by viewModel.uiState.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
+
+    // Filter state
+    var timeFilter by rememberSaveable { mutableStateOf(TimeFilter.ALL) }
+    var showFavoritesOnly by rememberSaveable { mutableStateOf(false) }
+
+    // Filtered recipes
+    val filteredRecipes by remember(recipes, timeFilter, showFavoritesOnly) {
+        derivedStateOf {
+            recipes.filter { recipe ->
+                val passesTimeFilter = when (timeFilter) {
+                    TimeFilter.ALL -> true
+                    TimeFilter.QUICK -> (recipe.totalTimeMinutes ?: 0) <= 30
+                    TimeFilter.MEDIUM -> (recipe.totalTimeMinutes ?: 0) in 31..60
+                    TimeFilter.LONG -> (recipe.totalTimeMinutes ?: 0) > 60
+                }
+                val passesFavoriteFilter = !showFavoritesOnly || recipe.isFavorite
+                passesTimeFilter && passesFavoriteFilter
+            }
+        }
+    }
 
     LaunchedEffect(uiState.error) {
         uiState.error?.let { error ->
@@ -142,6 +174,89 @@ fun HomeScreen(
                     }
                 }
 
+                // Filter chips
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .horizontalScroll(rememberScrollState())
+                        .padding(horizontal = Spacing.lg, vertical = Spacing.sm),
+                    horizontalArrangement = Arrangement.spacedBy(Spacing.sm)
+                ) {
+                    FilterChip(
+                        selected = timeFilter == TimeFilter.ALL,
+                        onClick = { timeFilter = TimeFilter.ALL },
+                        label = { Text(stringResource(R.string.filter_all)) },
+                        colors = FilterChipDefaults.filterChipColors(
+                            selectedContainerColor = MaterialTheme.colorScheme.primary,
+                            selectedLabelColor = MaterialTheme.colorScheme.onPrimary
+                        )
+                    )
+                    FilterChip(
+                        selected = timeFilter == TimeFilter.QUICK,
+                        onClick = { timeFilter = TimeFilter.QUICK },
+                        label = { Text(stringResource(R.string.filter_quick)) },
+                        leadingIcon = {
+                            Icon(
+                                Icons.Default.Timer,
+                                contentDescription = null,
+                                modifier = Modifier.size(16.dp)
+                            )
+                        },
+                        colors = FilterChipDefaults.filterChipColors(
+                            selectedContainerColor = MaterialTheme.colorScheme.primary,
+                            selectedLabelColor = MaterialTheme.colorScheme.onPrimary
+                        )
+                    )
+                    FilterChip(
+                        selected = timeFilter == TimeFilter.MEDIUM,
+                        onClick = { timeFilter = TimeFilter.MEDIUM },
+                        label = { Text(stringResource(R.string.filter_medium)) },
+                        leadingIcon = {
+                            Icon(
+                                Icons.Default.Timer,
+                                contentDescription = null,
+                                modifier = Modifier.size(16.dp)
+                            )
+                        },
+                        colors = FilterChipDefaults.filterChipColors(
+                            selectedContainerColor = MaterialTheme.colorScheme.primary,
+                            selectedLabelColor = MaterialTheme.colorScheme.onPrimary
+                        )
+                    )
+                    FilterChip(
+                        selected = timeFilter == TimeFilter.LONG,
+                        onClick = { timeFilter = TimeFilter.LONG },
+                        label = { Text(stringResource(R.string.filter_long)) },
+                        leadingIcon = {
+                            Icon(
+                                Icons.Default.Timer,
+                                contentDescription = null,
+                                modifier = Modifier.size(16.dp)
+                            )
+                        },
+                        colors = FilterChipDefaults.filterChipColors(
+                            selectedContainerColor = MaterialTheme.colorScheme.primary,
+                            selectedLabelColor = MaterialTheme.colorScheme.onPrimary
+                        )
+                    )
+                    FilterChip(
+                        selected = showFavoritesOnly,
+                        onClick = { showFavoritesOnly = !showFavoritesOnly },
+                        label = { Text(stringResource(R.string.filter_favorites)) },
+                        leadingIcon = {
+                            Icon(
+                                if (showFavoritesOnly) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                                contentDescription = null,
+                                modifier = Modifier.size(16.dp)
+                            )
+                        },
+                        colors = FilterChipDefaults.filterChipColors(
+                            selectedContainerColor = MaterialTheme.colorScheme.primary,
+                            selectedLabelColor = MaterialTheme.colorScheme.onPrimary
+                        )
+                    )
+                }
+
                 if (recipes.isEmpty() && !uiState.isRefreshing) {
                     // Empty state
                     Box(
@@ -172,11 +287,41 @@ fun HomeScreen(
                             )
                         }
                     }
+                } else if (filteredRecipes.isEmpty()) {
+                    // No filter results
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            modifier = Modifier.padding(Spacing.xl)
+                        ) {
+                            Icon(
+                                Icons.Default.Restaurant,
+                                contentDescription = null,
+                                modifier = Modifier.size(64.dp),
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Spacer(modifier = Modifier.height(Spacing.lg))
+                            Text(
+                                text = stringResource(R.string.no_matching_recipes),
+                                style = MaterialTheme.typography.titleLarge,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Spacer(modifier = Modifier.height(Spacing.sm))
+                            Text(
+                                text = stringResource(R.string.try_adjusting_filters),
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
                 } else {
                     LazyColumn(
                         contentPadding = PaddingValues(vertical = Spacing.sm)
                     ) {
-                        items(recipes, key = { it.id }) { recipe ->
+                        items(filteredRecipes, key = { it.id }) { recipe ->
                             SwipeableRecipeRow(
                                 recipe = recipe,
                                 onClick = { onNavigateToRecipe(recipe.id) },

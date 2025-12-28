@@ -140,9 +140,11 @@ struct AddRecipeView: View {
 
     private func importRecipe() {
         guard !urlText.isEmpty else { return }
+        let url = urlText
+        urlText = "" // Clear the input field
         isTextFieldFocused = false
         Task {
-            await importViewModel.importRecipe(from: urlText)
+            await importViewModel.importRecipe(from: url)
         }
     }
 
@@ -183,21 +185,8 @@ struct AddRecipeView: View {
         }
     }
 
-    private func compressImage(_ image: UIImage, maxSizeMB: Int = 4) -> Data? {
-        let maxBytes = maxSizeMB * 1024 * 1024
-        var quality: CGFloat = 0.8
-
-        while quality > 0.1 {
-            if let data = image.jpegData(compressionQuality: quality) {
-                if data.count <= maxBytes {
-                    return data
-                }
-            }
-            quality -= 0.1
-        }
-
-        // Last resort: return with lowest quality
-        return image.jpegData(compressionQuality: 0.1)
+    private func compressImage(_ image: UIImage) -> Data? {
+        ImageCompressor.compress(image)
     }
 
     // MARK: - PDF Import

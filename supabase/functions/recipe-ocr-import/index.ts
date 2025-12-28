@@ -30,8 +30,9 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// Claude Vision API limit per image (5MB)
-const CLAUDE_MAX_IMAGE_BYTES = 5 * 1024 * 1024; // 5MB
+// Claude Vision API limit per image (5MB for base64)
+// Base64 encoding adds ~33% overhead, so max raw size is ~3.75MB
+const CLAUDE_MAX_IMAGE_BYTES = 3.75 * 1024 * 1024; // ~3.75MB raw = ~5MB base64
 
 serve(async (req) => {
   // Handle CORS preflight

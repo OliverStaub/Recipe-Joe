@@ -2,9 +2,13 @@ package com.recipejoe.presentation.settings
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.recipejoe.data.repository.AppLanguage
 import com.recipejoe.data.repository.AuthRepository
+import com.recipejoe.data.repository.RecipeLanguage
 import com.recipejoe.data.repository.RecipeRepository
 import com.recipejoe.data.repository.TokenRepository
+import com.recipejoe.data.repository.UserSettings
+import com.recipejoe.data.repository.UserSettingsRepository
 import com.recipejoe.domain.model.AuthState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -20,7 +24,8 @@ import javax.inject.Inject
 class SettingsViewModel @Inject constructor(
     private val authRepository: AuthRepository,
     private val recipeRepository: RecipeRepository,
-    private val tokenRepository: TokenRepository
+    private val tokenRepository: TokenRepository,
+    private val userSettingsRepository: UserSettingsRepository
 ) : ViewModel() {
 
     val authState: StateFlow<AuthState> = authRepository.authState
@@ -32,11 +37,51 @@ class SettingsViewModel @Inject constructor(
 
     val tokenBalance: StateFlow<Int> = tokenRepository.tokenBalance
 
+    val userSettings: StateFlow<UserSettings> = userSettingsRepository.settings
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = UserSettings()
+        )
+
     private val _uiState = MutableStateFlow(SettingsUiState())
     val uiState: StateFlow<SettingsUiState> = _uiState.asStateFlow()
 
     val userEmail: String?
         get() = authRepository.currentUserEmail
+
+    fun setAppLanguage(language: AppLanguage) {
+        viewModelScope.launch {
+            try {
+                userSettingsRepository.setAppLanguage(language)
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to set app language")
+                _uiState.value = _uiState.value.copy(error = "Failed to update language")
+            }
+        }
+    }
+
+    fun setRecipeLanguage(language: RecipeLanguage) {
+        viewModelScope.launch {
+            try {
+                userSettingsRepository.setRecipeLanguage(language)
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to set recipe language")
+                _uiState.value = _uiState.value.copy(error = "Failed to update language")
+            }
+        }
+    }
+
+    fun setEnableTranslation(enabled: Boolean) {
+        viewModelScope.launch {
+            try {
+                userSettingsRepository.setEnableTranslation(enabled)
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to set translation setting")
+                _uiState.value = _uiState.value.copy(error = "Failed to update setting")
+            }
+        }
+    }
 
     fun signOut() {
         viewModelScope.launch {

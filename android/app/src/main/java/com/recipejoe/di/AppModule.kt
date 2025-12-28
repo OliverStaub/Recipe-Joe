@@ -11,6 +11,8 @@ import com.recipejoe.data.repository.RecipeRepository
 import com.recipejoe.data.repository.RecipeRepositoryImpl
 import com.recipejoe.data.repository.TokenRepository
 import com.recipejoe.data.repository.TokenRepositoryImpl
+import com.recipejoe.data.repository.UserSettingsRepository
+import com.recipejoe.data.repository.UserSettingsRepositoryImpl
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -69,5 +71,13 @@ object AppModule {
         supabaseProvider: SupabaseClientProvider
     ): TokenRepository {
         return TokenRepositoryImpl(supabaseProvider)
+    }
+
+    @Provides
+    @Singleton
+    fun provideUserSettingsRepository(
+        @ApplicationContext context: Context
+    ): UserSettingsRepository {
+        return UserSettingsRepositoryImpl(context)
     }
 }

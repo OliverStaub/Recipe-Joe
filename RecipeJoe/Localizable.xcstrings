@@ -375,7 +375,29 @@
         "gsw" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Neus Foti"
+            "value" : "Foti ändere"
+          }
+        }
+      }
+    },
+    "Choose from Library" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aus Bibliothek wählen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Choose from Library"
+          }
+        },
+        "gsw" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Us de Bibliothek wähle"
           }
         }
       }
@@ -1906,7 +1928,7 @@
         "gsw" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Foti ufneh"
+            "value" : "Foti mache"
           }
         }
       }
