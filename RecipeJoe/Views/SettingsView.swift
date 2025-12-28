@@ -95,6 +95,14 @@ struct SettingsView: View {
                         Text(Bundle.main.appVersion)
                             .foregroundStyle(.secondary)
                     }
+
+                    Link(destination: URL(string: AppConstants.privacyPolicyURL)!) {
+                        Label("Privacy Policy".localized(for: locale), systemImage: "hand.raised")
+                    }
+
+                    Link(destination: URL(string: AppConstants.termsOfServiceURL)!) {
+                        Label("Terms of Service".localized(for: locale), systemImage: "doc.text")
+                    }
                 }
 
                 // MARK: - Account Section

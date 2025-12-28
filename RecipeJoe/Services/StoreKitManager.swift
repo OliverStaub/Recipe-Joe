@@ -51,9 +51,9 @@ final class StoreKitManager: ObservableObject {
         do {
             products = try await Product.products(for: productIds)
                 .sorted { tokenCount(for: $0.id) < tokenCount(for: $1.id) }
-            print("Loaded \(products.count) products")
+            Log.debug("Loaded \(products.count) products", category: Log.storeKit)
         } catch {
-            print("Failed to load products: \(error)")
+            Log.error("Failed to load products: \(error)", category: Log.storeKit)
             lastError = error.localizedDescription
         }
     }
@@ -80,7 +80,7 @@ final class StoreKitManager: ObservableObject {
             } catch {
                 // If server validation fails, we still finish the transaction
                 // but report the error
-                print("Server validation failed: \(error)")
+                Log.error("Server validation failed: \(error)", category: Log.storeKit)
                 lastError = error.localizedDescription
                 await transaction.finish()
                 throw error
@@ -129,7 +129,7 @@ final class StoreKitManager: ObservableObject {
                     // Refresh token balance to pick up any changes
                     try? await TokenService.shared.refreshBalance()
                 } catch {
-                    print("Transaction verification failed: \(error)")
+                    Log.error("Transaction verification failed: \(error)", category: Log.storeKit)
                 }
             }
         }

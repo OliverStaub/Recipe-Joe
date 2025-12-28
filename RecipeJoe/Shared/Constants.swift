@@ -9,10 +9,16 @@ import Foundation
 
 enum AppConstants {
     /// App Group identifier for sharing data between main app and extensions
-    static let appGroupIdentifier = "group.Oliver.RecipeJoe"
+    static let appGroupIdentifier = "group.com.oliverstaub.recipejoe"
 
     /// URL scheme for deep linking
     static let urlScheme = "recipejoe"
+
+    /// Privacy policy URL (GitHub Pages)
+    static let privacyPolicyURL = "https://oliverstaub.github.io/Recipe-Joe/privacy.html"
+
+    /// Terms of service URL (GitHub Pages)
+    static let termsOfServiceURL = "https://oliverstaub.github.io/Recipe-Joe/terms.html"
 
     /// Supabase project URL
     static let supabaseURL = "https://iqamjnyuvvmvakjdobsm.supabase.co"

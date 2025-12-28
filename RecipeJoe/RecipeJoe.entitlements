@@ -8,7 +8,7 @@
 	</array>
 	<key>com.apple.security.application-groups</key>
 	<array>
-		<string>group.Oliver.RecipeJoe</string>
+		<string>group.com.oliverstaub.recipejoe</string>
 	</array>
 </dict>
 </plist>

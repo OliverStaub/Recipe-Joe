@@ -344,7 +344,7 @@ final class AuthenticationService: ObservableObject {
         do {
             try await RecipeCacheService.shared.clearCache()
         } catch {
-            print("Failed to clear cache: \(error)")
+            Log.error("Failed to clear cache: \(error)", category: Log.auth)
         }
     }
 

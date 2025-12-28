@@ -53,7 +53,7 @@ struct DocumentPickerView: UIViewControllerRepresentable {
                 let data = try Data(contentsOf: url)
                 parent.onPicked(data)
             } catch {
-                print("Failed to read PDF: \(error)")
+                Log.error("Failed to read PDF: \(error)")
             }
 
             parent.dismiss()

@@ -102,9 +102,9 @@ final class TokenService: ObservableObject {
         do {
             tokenBalance = try await SupabaseService.shared.fetchTokenBalance()
             syncBalanceToSharedStorage()
-            print("Token balance from Supabase: \(tokenBalance)")
+            Log.debug("Token balance from Supabase: \(tokenBalance)", category: Log.tokens)
         } catch {
-            print("Failed to fetch token balance: \(error)")
+            Log.error("Failed to fetch token balance: \(error)", category: Log.tokens)
             throw TokenServiceError.balanceNotAvailable
         }
     }
@@ -114,7 +114,7 @@ final class TokenService: ObservableObject {
     func updateBalance(_ newBalance: Int) {
         tokenBalance = newBalance
         syncBalanceToSharedStorage()
-        print("Balance updated after import: \(tokenBalance)")
+        Log.debug("Balance updated after import: \(tokenBalance)", category: Log.tokens)
     }
 
     /// Sync balance to shared UserDefaults for share extension
