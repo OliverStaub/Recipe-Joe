@@ -20,14 +20,14 @@ enum TokenPackage: String, CaseIterable, Sendable {
     case starter = "tokens_10"      // 10 tokens - $1.99
     case popular = "tokens_25"      // 25 tokens - $3.99
     case bestValue = "tokens_50"    // 50 tokens - $6.99
-    case bulk = "tokens_120"        // 120 tokens - $11.99
+    case bulk = "tokens_100x"       // 100 tokens - $11.99
 
     var tokenCount: Int {
         switch self {
         case .starter: return 10
         case .popular: return 25
         case .bestValue: return 50
-        case .bulk: return 120
+        case .bulk: return 100
         }
     }
 
@@ -138,7 +138,7 @@ final class TokenService: ObservableObject {
 
     /// Get token count for a product identifier
     func tokenCountForProduct(_ productId: String) -> Int {
-        if productId.contains("120") { return 120 }
+        if productId.contains("100x") { return 100 }
         if productId.contains("50") { return 50 }
         if productId.contains("25") { return 25 }
         if productId.contains("10") { return 10 }

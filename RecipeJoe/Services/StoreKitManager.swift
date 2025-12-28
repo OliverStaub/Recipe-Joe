@@ -28,7 +28,7 @@ final class StoreKitManager: ObservableObject {
 
     // MARK: - Private Properties
 
-    private let productIds = ["tokens_10", "tokens_25", "tokens_50", "tokens_120"]
+    private let productIds = ["tokens_10", "tokens_25", "tokens_50", "tokens_100x"]
     private var transactionListener: Task<Void, Error>?
 
     // MARK: - Initialization
@@ -149,7 +149,7 @@ final class StoreKitManager: ObservableObject {
 
     /// Get the token count for a product ID
     func tokenCount(for productId: String) -> Int {
-        if productId.contains("120") { return 120 }
+        if productId.contains("100x") { return 100 }
         if productId.contains("50") { return 50 }
         if productId.contains("25") { return 25 }
         if productId.contains("10") { return 10 }

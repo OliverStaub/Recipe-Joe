@@ -491,7 +491,11 @@ struct RecipeDetailView: View {
         VStack(alignment: .leading, spacing: 12) {
             SectionHeader(title: "Ingredients".localized(for: locale), icon: "basket.fill")
 
-            VStack(alignment: .leading, spacing: 8) {
+            // Divider before ingredients (Mela style)
+            Divider()
+                .padding(.horizontal, 40)
+
+            VStack(alignment: .leading, spacing: 0) {
                 ForEach(ingredients) { ingredient in
                     IngredientRow(ingredient: ingredient) { quantity, notes in
                         Task {
@@ -504,9 +508,11 @@ struct RecipeDetailView: View {
                     }
                 }
             }
-            .padding()
-            .background(Color(.systemGray6))
-            .clipShape(RoundedRectangle(cornerRadius: 12))
+            .padding(.horizontal, 8)
+
+            // Divider after ingredients (Mela style)
+            Divider()
+                .padding(.horizontal, 40)
         }
     }
 

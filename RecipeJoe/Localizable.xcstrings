@@ -381,6 +381,7 @@
       }
     },
     "Choose from Library" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {

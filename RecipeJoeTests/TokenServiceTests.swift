@@ -31,14 +31,14 @@ struct TokenServiceTests {
         #expect(TokenPackage.starter.tokenCount == 10)
         #expect(TokenPackage.popular.tokenCount == 25)
         #expect(TokenPackage.bestValue.tokenCount == 50)
-        #expect(TokenPackage.bulk.tokenCount == 120)
+        #expect(TokenPackage.bulk.tokenCount == 100)
     }
 
     @Test func testTokenPackageIdentifiers() async throws {
         #expect(TokenPackage.starter.rawValue == "tokens_10")
         #expect(TokenPackage.popular.rawValue == "tokens_25")
         #expect(TokenPackage.bestValue.rawValue == "tokens_50")
-        #expect(TokenPackage.bulk.rawValue == "tokens_120")
+        #expect(TokenPackage.bulk.rawValue == "tokens_100x")
     }
 
     @Test func testTokenPackageDisplayNames() async throws {
@@ -135,7 +135,7 @@ struct TokenServiceTests {
         #expect(await service.tokenCountForProduct("tokens_10") == 10)
         #expect(await service.tokenCountForProduct("tokens_25") == 25)
         #expect(await service.tokenCountForProduct("tokens_50") == 50)
-        #expect(await service.tokenCountForProduct("tokens_120") == 120)
+        #expect(await service.tokenCountForProduct("tokens_100x") == 100)
         #expect(await service.tokenCountForProduct("unknown_product") == 0)
     }
 
@@ -144,7 +144,7 @@ struct TokenServiceTests {
 
         // Product IDs might have platform prefixes
         #expect(await service.tokenCountForProduct("com.recipejoe.tokens_10") == 10)
-        #expect(await service.tokenCountForProduct("ios_tokens_120") == 120)
+        #expect(await service.tokenCountForProduct("ios_tokens_100x") == 100)
     }
 
     // MARK: - Balance Check Tests
