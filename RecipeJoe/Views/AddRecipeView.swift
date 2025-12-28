@@ -12,6 +12,7 @@ struct AddRecipeView: View {
     @State private var urlText: String = ""
     @FocusState private var isTextFieldFocused: Bool
     @StateObject private var importViewModel = RecipeImportViewModel()
+    @Environment(\.locale) private var locale
 
     // Photo picker state
     @State private var showPhotoPicker = false
@@ -71,12 +72,20 @@ struct AddRecipeView: View {
                         .transition(.opacity.combined(with: .move(edge: .top)))
                     }
 
-                    // Import Status Section
-                    ImportStatusSection(viewModel: importViewModel)
-                        .padding(.horizontal, 24)
-                        .padding(.top, 8)
+                    // Import Status Section (when not importing)
+                    if !importViewModel.importState.isActiveImport {
+                        ImportStatusSection(viewModel: importViewModel)
+                            .padding(.horizontal, 24)
+                            .padding(.top, 8)
+                    }
                 }
                 .animation(.easeInOut(duration: 0.2), value: importViewModel.isVideoURL(urlText))
+
+                // Import Status Section - centered when importing/success
+                if importViewModel.importState.isActiveImport {
+                    ImportStatusSection(viewModel: importViewModel)
+                        .padding(.horizontal, 24)
+                }
 
                 Spacer()
             }
@@ -85,11 +94,11 @@ struct AddRecipeView: View {
             .onTapGesture {
                 isTextFieldFocused = false
             }
-            // Photo picker (supports multiple selection)
+            // Photo picker (single image only)
             .photosPicker(
                 isPresented: $showPhotoPicker,
                 selection: $selectedPhotoItems,
-                maxSelectionCount: 10,
+                maxSelectionCount: 1,
                 matching: .images
             )
             .onChange(of: selectedPhotoItems) { _, newItems in
@@ -114,15 +123,15 @@ struct AddRecipeView: View {
             }
             // Insufficient tokens alert
             .alert(
-                "Not Enough Tokens",
+                "Not Enough Tokens".localized(for: locale),
                 isPresented: $importViewModel.showInsufficientTokensAlert
             ) {
-                Button("Cancel", role: .cancel) {}
-                Button("Get Tokens") {
+                Button("Cancel".localized(for: locale), role: .cancel) {}
+                Button("Get Tokens".localized(for: locale)) {
                     showPurchaseSheet = true
                 }
             } message: {
-                Text("You need \(importViewModel.requiredTokens) tokens to import this recipe. Tap 'Get Tokens' to purchase more.")
+                Text("You need %lld tokens to import this recipe. Tap 'Get Tokens' to purchase more.".localizedWithFormat(for: locale, importViewModel.requiredTokens))
             }
         }
     }
@@ -140,21 +149,13 @@ struct AddRecipeView: View {
     // MARK: - Photo Import
 
     private func handlePhotoSelection(_ items: [PhotosPickerItem]) {
-        guard !items.isEmpty else { return }
+        guard let item = items.first else { return }
 
         Task {
-            var imagesData: [Data] = []
-
-            for item in items {
-                if let data = try? await item.loadTransferable(type: Data.self),
-                   let image = UIImage(data: data),
-                   let compressedData = compressImage(image) {
-                    imagesData.append(compressedData)
-                }
-            }
-
-            if !imagesData.isEmpty {
-                await importViewModel.importRecipeFromImages(imagesData)
+            if let data = try? await item.loadTransferable(type: Data.self),
+               let image = UIImage(data: data),
+               let compressedData = compressImage(image) {
+                await importViewModel.importRecipeFromImage(compressedData)
             }
 
             // Reset selection

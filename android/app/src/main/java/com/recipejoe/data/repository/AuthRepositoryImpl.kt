@@ -54,9 +54,9 @@ class AuthRepositoryImpl @Inject constructor(
                 }
             }
             is SessionStatus.NotAuthenticated -> AuthState.NotAuthenticated
-            is SessionStatus.LoadingFromStorage -> AuthState.Loading
+            SessionStatus.Initializing -> AuthState.Loading
             is SessionStatus.RefreshFailure -> {
-                Timber.e(status.cause, "Auth refresh failed")
+                Timber.e("Auth refresh failed: ${status.cause}")
                 AuthState.NotAuthenticated
             }
         }
@@ -97,13 +97,13 @@ class AuthRepositoryImpl @Inject constructor(
 
     override suspend fun signUpWithEmail(email: String, password: String) {
         try {
-            val result = auth.signUpWith(Email) {
+            auth.signUpWith(Email) {
                 this.email = email
                 this.password = password
             }
 
-            // Check if email confirmation is required
-            if (result?.session == null) {
+            // Check if email confirmation is required (user is not authenticated yet)
+            if (auth.currentUserOrNull() == null) {
                 throw AuthException.EmailConfirmationRequired
             }
         } catch (e: AuthException) {

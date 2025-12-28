@@ -16,6 +16,30 @@ struct StepRow: View {
     @State private var showEditSheet = false
     @State private var editInstruction: String = ""
 
+    /// Formats the instruction by replacing step type prefixes with emojis
+    private var formattedInstruction: String {
+        let instruction = step.instruction
+        let prefixMappings: [(prefix: String, emoji: String)] = [
+            ("prep: ", "🔪 "),
+            ("heat: ", "🔥 "),
+            ("cook: ", "🍳 "),
+            ("mix: ", "🥄 "),
+            ("assemble: ", "🍽️ "),
+            ("bake: ", "♨️ "),
+            ("rest: ", "⏸️ "),
+            ("finish: ", "✨ ")
+        ]
+
+        for mapping in prefixMappings {
+            if instruction.lowercased().hasPrefix(mapping.prefix) {
+                let rest = String(instruction.dropFirst(mapping.prefix.count))
+                return mapping.emoji + rest
+            }
+        }
+
+        return instruction
+    }
+
     var body: some View {
         HStack(alignment: .top, spacing: 12) {
             // Step number
@@ -26,7 +50,7 @@ struct StepRow: View {
 
             // Instruction
             VStack(alignment: .leading, spacing: 6) {
-                Text(step.instruction)
+                Text(formattedInstruction)
                     .font(.body)
                     .fontWeight(isHighlighted ? .medium : .regular)
                     .foregroundStyle(isHighlighted ? Color.primary : .primary)

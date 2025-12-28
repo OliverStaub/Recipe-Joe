@@ -80,7 +80,7 @@ struct InsufficientTokensView: View {
             Text("Not Enough Tokens".localized(for: locale))
                 .font(.headline)
 
-            Text("You need \(requiredTokens) tokens but only have \(availableTokens).")
+            Text("You need %lld tokens but only have %lld.".localizedWithFormat(for: locale, requiredTokens, availableTokens))
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)

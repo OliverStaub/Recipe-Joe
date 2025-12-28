@@ -15,6 +15,14 @@ import {
   insertRecipe,
 } from "../recipe-import/utils/db-operations.ts";
 import { getTokenBalance, deductTokens, checkRateLimit, TOKEN_COSTS } from "../_shared/token-client.ts";
+import {
+  logImportStart,
+  logImportSuccess,
+  logImportFailure,
+  createImportTimer,
+  extractErrorDetails,
+  type ImportType,
+} from "../_shared/import-logger.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -45,7 +53,16 @@ serve(async (req) => {
       throw new Error('media_type must be "image" or "pdf"');
     }
 
-    console.log(`Importing recipe from ${storage_paths.length} ${media_type}(s): ${storage_paths.join(', ')}`);
+    // Only allow single file uploads (simplifies Claude Vision processing)
+    if (storage_paths.length > 1) {
+      throw new Error('Only single file uploads are supported. Please upload one image or PDF at a time.');
+    }
+
+    // Start import timer and logging
+    const importTimer = createImportTimer();
+    const importType: ImportType = media_type === 'pdf' ? 'pdf' : 'image';
+    const source = storage_paths.join(', ');
+    console.log(`Importing recipe from ${storage_paths.length} ${media_type}(s): ${source}`);
 
     // Initialize Supabase client
     const supabase = getSupabaseClient();
@@ -66,6 +83,9 @@ serve(async (req) => {
     if (!userId) {
       throw new Error('Authentication required');
     }
+
+    // Log import start
+    logImportStart(userId, importType, source);
 
     // Check rate limit before processing (150 recipes per 24 hours)
     console.log(`Checking rate limit for user ${userId}...`);
@@ -116,35 +136,31 @@ serve(async (req) => {
       });
     }
 
-    // Step 1: Download all files from storage
-    console.log(`Downloading ${storage_paths.length} file(s) from storage...`);
+    // Step 1: Download file from storage
+    const storage_path = storage_paths[0];
+    console.log(`Downloading file from storage: ${storage_path}`);
 
-    const filesData: { path: string; base64: string; mediaType: string }[] = [];
+    const { data: fileData, error: downloadError } = await supabase.storage
+      .from('recipe-imports')
+      .download(storage_path);
 
-    for (const storage_path of storage_paths) {
-      const { data: fileData, error: downloadError } = await supabase.storage
-        .from('recipe-imports')
-        .download(storage_path);
-
-      if (downloadError || !fileData) {
-        throw new Error(`Failed to download file ${storage_path}: ${downloadError?.message || 'Unknown error'}`);
-      }
-
-      // Convert to base64
-      const arrayBuffer = await fileData.arrayBuffer();
-      const base64Data = btoa(
-        new Uint8Array(arrayBuffer).reduce((data, byte) => data + String.fromCharCode(byte), '')
-      );
-
-      // Determine image media type from file extension
-      const extension = storage_path.split('.').pop()?.toLowerCase() || 'jpeg';
-      const imageMediaType = extension === 'png' ? 'image/png' :
-                            extension === 'gif' ? 'image/gif' :
-                            extension === 'webp' ? 'image/webp' : 'image/jpeg';
-
-      filesData.push({ path: storage_path, base64: base64Data, mediaType: imageMediaType });
-      console.log(`File downloaded: ${storage_path} (${arrayBuffer.byteLength} bytes)`);
+    if (downloadError || !fileData) {
+      throw new Error(`Failed to download file ${storage_path}: ${downloadError?.message || 'Unknown error'}`);
     }
+
+    // Convert to base64
+    const arrayBuffer = await fileData.arrayBuffer();
+    const base64Data = btoa(
+      new Uint8Array(arrayBuffer).reduce((data, byte) => data + String.fromCharCode(byte), '')
+    );
+
+    // Determine image media type from file extension
+    const extension = storage_path.split('.').pop()?.toLowerCase() || 'jpeg';
+    const imageMediaType = extension === 'png' ? 'image/png' :
+                          extension === 'gif' ? 'image/gif' :
+                          extension === 'webp' ? 'image/webp' : 'image/jpeg';
+
+    console.log(`File downloaded: ${storage_path} (${arrayBuffer.byteLength} bytes)`);
 
     // Step 2: Fetch existing data for Claude context
     const [existingIngredients, measurementTypes] = await Promise.all([
@@ -155,44 +171,17 @@ serve(async (req) => {
     console.log(`Found ${existingIngredients.length} existing ingredients`);
     console.log(`Found ${measurementTypes.length} measurement types`);
 
-    // Step 3: Extract text using Claude Vision from all files
+    // Step 3: Extract text using Claude Vision
     console.log('Extracting text with Claude Vision...');
 
-    let combinedOcrText = '';
-    let totalInputTokens = 0;
-    let totalOutputTokens = 0;
-
+    let ocrResult;
     if (media_type === 'pdf') {
-      // For PDF, we only support single file
-      const ocrResult = await extractTextFromPDF(filesData[0].base64);
-      combinedOcrText = ocrResult.text;
-      totalInputTokens = ocrResult.usage.input_tokens;
-      totalOutputTokens = ocrResult.usage.output_tokens;
+      ocrResult = await extractTextFromPDF(base64Data);
     } else {
-      // For images, process each and combine text
-      for (let i = 0; i < filesData.length; i++) {
-        const file = filesData[i];
-        const ocrResult = await extractTextFromImage(file.base64, file.mediaType);
-
-        // Add separator between multiple images
-        if (i > 0) {
-          combinedOcrText += '\n\n--- Page/Image ' + (i + 1) + ' ---\n\n';
-        }
-        combinedOcrText += ocrResult.text;
-
-        totalInputTokens += ocrResult.usage.input_tokens;
-        totalOutputTokens += ocrResult.usage.output_tokens;
-
-        console.log(`OCR for image ${i + 1}: ${ocrResult.text.length} characters`);
-      }
+      ocrResult = await extractTextFromImage(base64Data, imageMediaType);
     }
 
-    const ocrResult = {
-      text: combinedOcrText,
-      usage: { input_tokens: totalInputTokens, output_tokens: totalOutputTokens }
-    };
-
-    console.log(`Total OCR extracted ${ocrResult.text.length} characters from ${filesData.length} file(s)`);
+    console.log(`OCR extracted ${ocrResult.text.length} characters`);
     console.log(`OCR used ${ocrResult.usage.input_tokens} input, ${ocrResult.usage.output_tokens} output tokens`);
 
     // Check if we got meaningful text
@@ -245,11 +234,11 @@ serve(async (req) => {
 
     console.log(`Created recipe ${recipeId} with ${newIngredientsCount} new ingredients`);
 
-    // Step 7: Cleanup - delete all temp files from storage
-    console.log(`Cleaning up ${storage_paths.length} temporary file(s)...`);
+    // Step 7: Cleanup - delete temp file from storage
+    console.log(`Cleaning up temporary file: ${storage_path}`);
     const { error: deleteError } = await supabase.storage
       .from('recipe-imports')
-      .remove(storage_paths);
+      .remove([storage_path]);
 
     if (deleteError) {
       console.error('Failed to delete temp files:', deleteError);
@@ -274,6 +263,29 @@ serve(async (req) => {
       output_tokens: ocrResult.usage.output_tokens + claudeResponse.usage.output_tokens,
     };
 
+    // Log successful import
+    const duration = importTimer.stop();
+    logImportSuccess({
+      user_id: userId,
+      import_type: importType,
+      source: source,
+      recipe_id: recipeId,
+      recipe_name: claudeResponse.data.recipe?.name,
+      tokens_used: tokenCost,
+      duration_ms: duration,
+      metadata: {
+        steps_count: claudeResponse.data.steps?.length || 0,
+        ingredients_count: claudeResponse.data.ingredients?.length || 0,
+        new_ingredients_count: newIngredientsCount,
+        ocr_input_tokens: ocrResult.usage.input_tokens,
+        ocr_output_tokens: ocrResult.usage.output_tokens,
+        extraction_input_tokens: claudeResponse.usage.input_tokens,
+        extraction_output_tokens: claudeResponse.usage.output_tokens,
+        total_anthropic_input_tokens: totalTokens.input_tokens,
+        total_anthropic_output_tokens: totalTokens.output_tokens,
+      },
+    });
+
     const response: MediaImportResponse = {
       success: true,
       recipe_id: recipeId,
@@ -294,11 +306,39 @@ serve(async (req) => {
     });
 
   } catch (error) {
+    const { message: errorMessage, code: errorCode } = extractErrorDetails(error);
     console.error('Error importing recipe from media:', error);
+
+    // Log failed import
+    const body = await req.clone().json().catch(() => ({}));
+    const storagePaths = body?.storage_paths || [];
+    const mediaType = body?.media_type || 'image';
+
+    // Try to get userId from auth header
+    let failedUserId = 'unknown';
+    const authHeader = req.headers.get('Authorization');
+    if (authHeader) {
+      try {
+        const supabase = getSupabaseClient();
+        const token = authHeader.replace('Bearer ', '');
+        const { data: { user } } = await supabase.auth.getUser(token);
+        if (user) failedUserId = user.id;
+      } catch {
+        // Ignore auth errors during error logging
+      }
+    }
+
+    logImportFailure({
+      user_id: failedUserId,
+      import_type: mediaType === 'pdf' ? 'pdf' : 'image',
+      source: storagePaths.join(', '),
+      error_message: errorMessage,
+      error_code: errorCode,
+    });
 
     const response: MediaImportResponse = {
       success: false,
-      error: error instanceof Error ? error.message : 'Unknown error occurred',
+      error: errorMessage,
     };
 
     return new Response(JSON.stringify(response), {

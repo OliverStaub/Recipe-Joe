@@ -9,7 +9,7 @@ import SwiftUI
 
 struct ImportProgressView: View {
     let currentStep: RecipeImportViewModel.ImportStep
-    @State private var shimmerOffset: CGFloat = -1
+    @State private var rotation: Double = 0
     @Environment(\.locale) private var locale
 
     /// Returns localized step title
@@ -36,43 +36,12 @@ struct ImportProgressView: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            // Progress bar with shimmer
-            GeometryReader { geometry in
-                ZStack(alignment: .leading) {
-                    // Background track
-                    RoundedRectangle(cornerRadius: 8)
-                        .fill(Color(.systemGray5))
-
-                    // Progress fill
-                    RoundedRectangle(cornerRadius: 8)
-                        .fill(Color.terracotta)
-                        .frame(width: geometry.size.width * currentStep.progress)
-                        .animation(.easeInOut(duration: 0.4), value: currentStep)
-
-                    // Shimmer overlay
-                    RoundedRectangle(cornerRadius: 8)
-                        .fill(
-                            LinearGradient(
-                                colors: [
-                                    .clear,
-                                    .white.opacity(0.4),
-                                    .clear
-                                ],
-                                startPoint: .leading,
-                                endPoint: .trailing
-                            )
-                        )
-                        .frame(width: 60)
-                        .offset(x: shimmerOffset * geometry.size.width)
-                        .mask(
-                            RoundedRectangle(cornerRadius: 8)
-                                .frame(width: geometry.size.width * currentStep.progress)
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                        )
-                }
-            }
-            .frame(height: 12)
+        VStack(spacing: 16) {
+            // Spinning logo
+            Image(systemName: "fork.knife.circle.fill")
+                .font(.system(size: 80))
+                .foregroundStyle(Color.terracotta)
+                .rotationEffect(.degrees(rotation))
 
             // Step indicator text
             Text(stepTitle)
@@ -85,16 +54,16 @@ struct ImportProgressView: View {
                 Text("You can leave this screen - your recipe will appear when ready.".localized(for: locale))
                     .font(.caption)
                     .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
                     .transition(.opacity)
             }
         }
-        .padding(16)
-        .background(Color(.systemGray6))
-        .clipShape(RoundedRectangle(cornerRadius: 12))
+        .frame(maxWidth: .infinity)
+        .padding(24)
         .animation(.easeInOut(duration: 0.3), value: showNoWaitHint)
         .onAppear {
-            withAnimation(.linear(duration: 1.2).repeatForever(autoreverses: false)) {
-                shimmerOffset = 1.5
+            withAnimation(.linear(duration: 2).repeatForever(autoreverses: false)) {
+                rotation = 360
             }
         }
     }
@@ -106,33 +75,41 @@ struct ImportStatusSection: View {
     @ObservedObject var viewModel: RecipeImportViewModel
     @Environment(\.locale) private var locale
 
+    /// Whether the current state should expand to fill available space
+    private var shouldExpand: Bool {
+        switch viewModel.importState {
+        case .importing, .success:
+            return true
+        default:
+            return false
+        }
+    }
+
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        Group {
             switch viewModel.importState {
             case .idle:
                 EmptyView()
 
             case .importing:
                 ImportProgressView(currentStep: viewModel.currentStep)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
                     .accessibilityIdentifier("importingIndicator")
 
             case .success:
-                VStack(alignment: .leading, spacing: 8) {
-                    HStack(spacing: 8) {
-                        Image(systemName: "checkmark.circle.fill")
-                            .foregroundStyle(.green)
-                        Text("Recipe imported!".localized(for: locale))
-                            .font(.subheadline)
-                            .fontWeight(.medium)
-                    }
+                VStack(spacing: 16) {
+                    Image(systemName: "checkmark.circle.fill")
+                        .font(.system(size: 80))
+                        .foregroundStyle(.green)
+
+                    Text("Recipe imported!".localized(for: locale))
+                        .font(.title2)
+                        .fontWeight(.semibold)
 
                     if let recipeName = viewModel.lastImportedRecipeName {
                         Text(recipeName)
                             .font(.headline)
-                            .padding(12)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .background(Color(.systemGray6))
-                            .clipShape(RoundedRectangle(cornerRadius: 12))
+                            .foregroundStyle(.secondary)
                     }
 
                     if let stats = viewModel.lastImportStats {
@@ -144,6 +121,9 @@ struct ImportStatusSection: View {
                         .foregroundStyle(.secondary)
                     }
                 }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .padding(24)
+                .transition(.opacity)
                 .accessibilityIdentifier("importSuccess")
 
             case .error(let message):

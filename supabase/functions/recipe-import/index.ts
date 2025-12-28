@@ -26,6 +26,14 @@ import {
 } from "./utils/supadata-client.ts";
 import { getVideoMetadata, getWorkingYouTubeThumbnail } from "./utils/video-thumbnail.ts";
 import { getTokenBalance, deductTokens, checkRateLimit, TOKEN_COSTS } from "../_shared/token-client.ts";
+import {
+  logImportStart,
+  logImportSuccess,
+  logImportFailure,
+  createImportTimer,
+  extractErrorDetails,
+  type ImportType,
+} from "../_shared/import-logger.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -134,7 +142,10 @@ serve(async (req) => {
       throw new Error('Invalid URL format');
     }
 
-    console.log(`Importing recipe from: ${url}`);
+    // Start import timer and logging
+    const importTimer = createImportTimer();
+    const importType: ImportType = isVideo ? 'video' : 'url';
+    logImportStart(userId, importType, url);
 
     // Step 1: Fetch existing data for Claude context
     const [existingIngredients, measurementTypes] = await Promise.all([
@@ -311,6 +322,25 @@ serve(async (req) => {
       console.log(`Tokens deducted. New balance: ${deductResult.balance}`);
     }
 
+    // Log successful import
+    const duration = importTimer.stop();
+    logImportSuccess({
+      user_id: userId,
+      import_type: importType,
+      source: url,
+      recipe_id: recipeId,
+      recipe_name: claudeResponse.data.recipe?.name,
+      tokens_used: tokenCost,
+      duration_ms: duration,
+      metadata: {
+        steps_count: claudeResponse.data.steps?.length || 0,
+        ingredients_count: claudeResponse.data.ingredients?.length || 0,
+        new_ingredients_count: newIngredientsCount,
+        claude_input_tokens: claudeResponse.usage.input_tokens,
+        claude_output_tokens: claudeResponse.usage.output_tokens,
+      },
+    });
+
     const response: ImportResponse = {
       success: true,
       recipe_id: recipeId,
@@ -331,11 +361,38 @@ serve(async (req) => {
     });
 
   } catch (error) {
+    const { message: errorMessage, code: errorCode } = extractErrorDetails(error);
     console.error('Error importing recipe:', error);
+
+    // Log failed import (we may not have all context if failure was early)
+    const body = await req.clone().json().catch(() => ({}));
+    const failedUrl = body?.url || 'unknown';
+
+    // Try to get userId from auth header
+    let failedUserId = 'unknown';
+    const authHeader = req.headers.get('Authorization');
+    if (authHeader) {
+      try {
+        const supabase = getSupabaseClient();
+        const token = authHeader.replace('Bearer ', '');
+        const { data: { user } } = await supabase.auth.getUser(token);
+        if (user) failedUserId = user.id;
+      } catch {
+        // Ignore auth errors during error logging
+      }
+    }
+
+    logImportFailure({
+      user_id: failedUserId,
+      import_type: isVideoUrl(failedUrl) ? 'video' : 'url',
+      source: failedUrl,
+      error_message: errorMessage,
+      error_code: errorCode,
+    });
 
     const response: ImportResponse = {
       success: false,
-      error: error instanceof Error ? error.message : 'Unknown error occurred',
+      error: errorMessage,
     };
 
     return new Response(JSON.stringify(response), {

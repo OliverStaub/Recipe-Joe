@@ -53,6 +53,19 @@ extension String {
         let fallback = NSLocalizedString(self, comment: "")
         return fallback
     }
+
+    /// Returns a localized and formatted version of this string based on the provided locale.
+    ///
+    /// Use this for strings that contain format specifiers like %lld, %@, etc.
+    ///
+    /// - Parameters:
+    ///   - locale: The locale to use for translation lookup
+    ///   - args: The arguments to format into the string
+    /// - Returns: The localized and formatted string
+    func localizedWithFormat(for locale: Locale, _ args: CVarArg...) -> String {
+        let localizedFormat = self.localized(for: locale)
+        return String(format: localizedFormat, arguments: args)
+    }
 }
 
 // MARK: - Localized Text Helper

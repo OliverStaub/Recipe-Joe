@@ -458,6 +458,40 @@ actor IntegrationTestClient {
         }
     }
 
+    /// Fetch token balance for a user (requires auth token)
+    func fetchTokenBalance(authToken: String) async throws -> Int {
+        guard let anonKey = IntegrationTestConfig.supabaseAnonKey else {
+            throw IntegrationTestError.missingAnonKey
+        }
+
+        guard let url = URL(string: "\(IntegrationTestConfig.supabaseURL)/rest/v1/user_tokens?select=balance") else {
+            throw IntegrationTestError.decodingError("Invalid URL")
+        }
+
+        var request = URLRequest(url: url)
+        request.httpMethod = "GET"
+        request.setValue(anonKey, forHTTPHeaderField: "apikey")
+        request.setValue("Bearer \(authToken)", forHTTPHeaderField: "Authorization")
+
+        let (data, response) = try await URLSession.shared.data(for: request)
+
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw IntegrationTestError.decodingError("Invalid response type")
+        }
+
+        if httpResponse.statusCode == 200 {
+            if let results = try? JSONSerialization.jsonObject(with: data) as? [[String: Any]],
+               let first = results.first,
+               let balance = first["balance"] as? Int {
+                return balance
+            }
+            throw IntegrationTestError.decodingError("Could not parse token balance")
+        } else {
+            let errorBody = String(data: data, encoding: .utf8)
+            throw IntegrationTestError.invalidResponse(httpResponse.statusCode, errorBody)
+        }
+    }
+
     /// Delete test recipes for a user (Admin API)
     func deleteTestRecipes(userId: UUID) async throws {
         guard let serviceKey = IntegrationTestConfig.serviceRoleKey else {

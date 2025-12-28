@@ -11,7 +11,9 @@ import os.log
 /// App-wide logger using Apple's unified logging system.
 /// Debug/Info logs only appear in DEBUG builds.
 /// Error logs appear in all builds (useful for crash diagnostics).
-enum Log {
+///
+/// This type and its methods are nonisolated to allow logging from any context.
+nonisolated enum Log {
     private static let subsystem = "com.oliverstaub.recipejoe"
 
     static let auth = Logger(subsystem: subsystem, category: "auth")

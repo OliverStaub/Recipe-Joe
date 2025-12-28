@@ -57,6 +57,16 @@ final class RecipeImportViewModel: ObservableObject {
             return false
         }
 
+        /// Whether we're in an active import state (importing or success) that should be centered
+        var isActiveImport: Bool {
+            switch self {
+            case .importing, .success:
+                return true
+            default:
+                return false
+            }
+        }
+
         var errorMessage: String? {
             if case .error(let message) = self { return message }
             return nil

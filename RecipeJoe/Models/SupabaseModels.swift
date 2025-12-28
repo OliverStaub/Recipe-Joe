@@ -29,6 +29,9 @@ struct RecipeImportResponse: Codable, Sendable {
     let tokensRemaining: Int?
     let tokensRequired: Int?
     let tokensAvailable: Int?
+    // Rate limiting info
+    let rateLimitRemaining: Int?
+    let rateLimitReset: String?
     let stats: ImportStats?
 
     enum CodingKeys: String, CodingKey {
@@ -40,6 +43,8 @@ struct RecipeImportResponse: Codable, Sendable {
         case tokensRemaining = "tokens_remaining"
         case tokensRequired = "tokens_required"
         case tokensAvailable = "tokens_available"
+        case rateLimitRemaining = "rate_limit_remaining"
+        case rateLimitReset = "rate_limit_reset"
         case stats
     }
 }

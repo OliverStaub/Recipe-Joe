@@ -17,6 +17,8 @@ import io.github.jan.supabase.functions.functions
 import io.github.jan.supabase.postgrest.postgrest
 import io.github.jan.supabase.storage.storage
 import io.ktor.client.call.body
+import io.github.jan.supabase.postgrest.query.Order
+import io.ktor.http.ContentType
 import io.ktor.http.Headers
 import io.ktor.http.HttpHeaders
 import kotlinx.coroutines.flow.Flow
@@ -102,7 +104,7 @@ class RecipeRepositoryImpl @Inject constructor(
                     filter {
                         eq("recipe_id", id.toString())
                     }
-                    order("step_number", ascending = true)
+                    order("step_number", order = Order.ASCENDING)
                 }
                 .decodeList<RecipeStepDto>()
 
@@ -112,7 +114,7 @@ class RecipeRepositoryImpl @Inject constructor(
                     filter {
                         eq("recipe_id", id.toString())
                     }
-                    order("display_order", ascending = true)
+                    order("display_order", order = Order.ASCENDING)
                 }
                 .decodeList<RecipeIngredientDto>()
 
@@ -132,7 +134,7 @@ class RecipeRepositoryImpl @Inject constructor(
             val recipesDto = client.postgrest
                 .from("recipes")
                 .select {
-                    order("created_at", ascending = false)
+                    order("created_at", order = Order.DESCENDING)
                 }
                 .decodeList<RecipeDto>()
 
@@ -204,7 +206,7 @@ class RecipeRepositoryImpl @Inject constructor(
             path = filePath,
             data = data,
             options = {
-                this.contentType = contentType
+                this.contentType = ContentType.parse(contentType)
                 this.upsert = false
             }
         )
@@ -261,7 +263,7 @@ class RecipeRepositoryImpl @Inject constructor(
             path = fileName,
             data = imageData,
             options = {
-                this.contentType = "image/jpeg"
+                this.contentType = ContentType.Image.JPEG
                 this.upsert = true
             }
         )
