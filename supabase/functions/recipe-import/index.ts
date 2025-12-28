@@ -28,11 +28,12 @@ import { getVideoMetadata, getWorkingYouTubeThumbnail } from "./utils/video-thum
 import { getTokenBalance, deductTokens, checkRateLimit, TOKEN_COSTS } from "../_shared/token-client.ts";
 import {
   logImportStart,
-  logImportSuccess,
-  logImportFailure,
+  logImportToDb,
   createImportTimer,
   extractErrorDetails,
+  detectPlatform,
   type ImportType,
+  type Platform,
 } from "../_shared/import-logger.ts";
 
 const corsHeaders = {
@@ -145,6 +146,7 @@ serve(async (req) => {
     // Start import timer and logging
     const importTimer = createImportTimer();
     const importType: ImportType = isVideo ? 'video' : 'url';
+    const platform: Platform = detectPlatform(req);
     logImportStart(userId, importType, url);
 
     // Step 1: Fetch existing data for Claude context
@@ -322,23 +324,25 @@ serve(async (req) => {
       console.log(`Tokens deducted. New balance: ${deductResult.balance}`);
     }
 
-    // Log successful import
+    // Log successful import to database
     const duration = importTimer.stop();
-    logImportSuccess({
+    const modelsUsed = isVideo
+      ? ['claude-3-5-haiku-20241022'] // Video uses haiku for transcript extraction
+      : ['claude-3-5-haiku-20241022']; // URL also uses haiku
+
+    await logImportToDb(supabase, {
       user_id: userId,
       import_type: importType,
       source: url,
+      status: 'success',
       recipe_id: recipeId,
       recipe_name: claudeResponse.data.recipe?.name,
       tokens_used: tokenCost,
+      models_used: modelsUsed,
+      input_tokens: claudeResponse.usage.input_tokens,
+      output_tokens: claudeResponse.usage.output_tokens,
+      platform,
       duration_ms: duration,
-      metadata: {
-        steps_count: claudeResponse.data.steps?.length || 0,
-        ingredients_count: claudeResponse.data.ingredients?.length || 0,
-        new_ingredients_count: newIngredientsCount,
-        claude_input_tokens: claudeResponse.usage.input_tokens,
-        claude_output_tokens: claudeResponse.usage.output_tokens,
-      },
     });
 
     const response: ImportResponse = {
@@ -382,12 +386,22 @@ serve(async (req) => {
       }
     }
 
-    logImportFailure({
+    // Log failed import - try to detect platform from request
+    let failedPlatform: Platform = 'unknown';
+    try {
+      failedPlatform = detectPlatform(req);
+    } catch {
+      // Ignore platform detection errors during error logging
+    }
+
+    await logImportToDb(supabase, {
       user_id: failedUserId,
       import_type: isVideoUrl(failedUrl) ? 'video' : 'url',
       source: failedUrl,
+      status: 'failed',
       error_message: errorMessage,
       error_code: errorCode,
+      platform: failedPlatform,
     });
 
     const response: ImportResponse = {

@@ -18,11 +18,12 @@ import {
 import { getTokenBalance, deductTokens, checkRateLimit, TOKEN_COSTS } from "../_shared/token-client.ts";
 import {
   logImportStart,
-  logImportSuccess,
-  logImportFailure,
+  logImportToDb,
   createImportTimer,
   extractErrorDetails,
+  detectPlatform,
   type ImportType,
+  type Platform,
 } from "../_shared/import-logger.ts";
 
 const corsHeaders = {
@@ -75,6 +76,7 @@ serve(async (req) => {
     const importTimer = createImportTimer();
     const importType: ImportType = media_type === 'pdf' ? 'pdf' : 'image';
     const source = storage_paths.join(', ');
+    const platform: Platform = detectPlatform(req);
     console.log(`Importing recipe from ${storage_paths.length} ${media_type}(s): ${source}`);
 
     // Initialize Supabase client
@@ -317,27 +319,24 @@ serve(async (req) => {
       output_tokens: ocrResult.usage.output_tokens + claudeResponse.usage.output_tokens,
     };
 
-    // Log successful import
+    // Log successful import to database
     const duration = importTimer.stop();
-    logImportSuccess({
+    // OCR uses sonnet for vision + haiku for extraction
+    const modelsUsed = ['claude-sonnet-4-20250514', 'claude-3-5-haiku-20241022'];
+
+    await logImportToDb(supabase, {
       user_id: userId,
       import_type: importType,
       source: source,
+      status: 'success',
       recipe_id: recipeId,
       recipe_name: claudeResponse.data.recipe?.name,
       tokens_used: tokenCost,
+      models_used: modelsUsed,
+      input_tokens: totalTokens.input_tokens,
+      output_tokens: totalTokens.output_tokens,
+      platform,
       duration_ms: duration,
-      metadata: {
-        steps_count: claudeResponse.data.steps?.length || 0,
-        ingredients_count: claudeResponse.data.ingredients?.length || 0,
-        new_ingredients_count: newIngredientsCount,
-        ocr_input_tokens: ocrResult.usage.input_tokens,
-        ocr_output_tokens: ocrResult.usage.output_tokens,
-        extraction_input_tokens: claudeResponse.usage.input_tokens,
-        extraction_output_tokens: claudeResponse.usage.output_tokens,
-        total_anthropic_input_tokens: totalTokens.input_tokens,
-        total_anthropic_output_tokens: totalTokens.output_tokens,
-      },
     });
 
     const response: MediaImportResponse = {
@@ -381,12 +380,22 @@ serve(async (req) => {
       }
     }
 
-    logImportFailure({
+    // Log failed import - try to detect platform
+    let failedPlatform: Platform = 'unknown';
+    try {
+      failedPlatform = detectPlatform(req);
+    } catch {
+      // Ignore platform detection errors
+    }
+
+    await logImportToDb(supabase, {
       user_id: failedUserId,
       import_type: mediaType === 'pdf' ? 'pdf' : 'image',
       source: storagePaths.join(', '),
+      status: 'failed',
       error_message: errorMessage,
       error_code: errorCode,
+      platform: failedPlatform,
     });
 
     const response: MediaImportResponse = {

@@ -1,8 +1,11 @@
 // Structured logging for recipe imports
-// Provides consistent logging for both successful and failed imports
+// Logs to both console and Supabase import_logs table
+
+import { SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 export type ImportType = 'url' | 'video' | 'image' | 'pdf';
-export type ImportStatus = 'started' | 'success' | 'failed';
+export type ImportStatus = 'success' | 'failed';
+export type Platform = 'ios' | 'android' | 'web' | 'unknown';
 
 export interface ImportLogEntry {
   user_id: string;
@@ -14,65 +17,116 @@ export interface ImportLogEntry {
   error_message?: string;
   error_code?: string;
   tokens_used?: number;
+  models_used?: string[];
+  input_tokens?: number;
+  output_tokens?: number;
+  platform?: Platform;
   duration_ms?: number;
-  metadata?: Record<string, unknown>;
 }
 
 /**
- * Log an import event with structured data to console
- * Logs appear in Supabase Edge Function logs dashboard
+ * Detect platform from User-Agent or X-Platform header
  */
-export function logImport(entry: ImportLogEntry): void {
+export function detectPlatform(request: Request): Platform {
+  // Check explicit platform header first
+  const platformHeader = request.headers.get('X-Platform')?.toLowerCase();
+  if (platformHeader === 'ios' || platformHeader === 'android' || platformHeader === 'web') {
+    return platformHeader;
+  }
+
+  // Fall back to User-Agent detection
+  const userAgent = request.headers.get('User-Agent')?.toLowerCase() || '';
+
+  if (userAgent.includes('iphone') || userAgent.includes('ipad') || userAgent.includes('darwin')) {
+    return 'ios';
+  }
+  if (userAgent.includes('android')) {
+    return 'android';
+  }
+  if (userAgent.includes('mozilla') || userAgent.includes('chrome') || userAgent.includes('safari')) {
+    return 'web';
+  }
+
+  return 'unknown';
+}
+
+/**
+ * Log an import event to console and database
+ */
+export async function logImportToDb(
+  supabase: SupabaseClient,
+  entry: ImportLogEntry
+): Promise<void> {
+  // Always log to console
+  logToConsole(entry);
+
+  // Insert into database
+  try {
+    const { error } = await supabase.from('import_logs').insert({
+      user_id: entry.user_id,
+      import_type: entry.import_type,
+      source: truncateSource(entry.source),
+      status: entry.status,
+      recipe_id: entry.recipe_id || null,
+      recipe_name: entry.recipe_name || null,
+      tokens_used: entry.tokens_used || null,
+      models_used: entry.models_used || null,
+      input_tokens: entry.input_tokens || null,
+      output_tokens: entry.output_tokens || null,
+      platform: entry.platform || 'unknown',
+      error_message: entry.error_message || null,
+      error_code: entry.error_code || null,
+      duration_ms: entry.duration_ms || null,
+    });
+
+    if (error) {
+      console.error('Failed to insert import log:', error);
+    }
+  } catch (err) {
+    console.error('Error logging to database:', err);
+  }
+}
+
+/**
+ * Log import event to console
+ */
+function logToConsole(entry: ImportLogEntry): void {
   const timestamp = new Date().toISOString();
   const logLevel = entry.status === 'failed' ? 'ERROR' : 'INFO';
 
-  // Build structured log object
-  const logData = {
-    timestamp,
-    level: logLevel,
-    event: 'recipe_import',
-    ...entry,
-  };
+  const parts = [
+    `[${timestamp}]`,
+    `[${logLevel}]`,
+    `[recipe_import]`,
+    `user=${entry.user_id}`,
+    `type=${entry.import_type}`,
+    `status=${entry.status}`,
+  ];
 
-  // Log to console in structured format
-  const logMessage = formatLogMessage(logData);
+  if (entry.source) {
+    parts.push(`source="${truncateSource(entry.source)}"`);
+  }
+  if (entry.recipe_id) parts.push(`recipe_id=${entry.recipe_id}`);
+  if (entry.recipe_name) parts.push(`recipe="${entry.recipe_name}"`);
+  if (entry.tokens_used !== undefined) parts.push(`tokens=${entry.tokens_used}`);
+  if (entry.models_used?.length) parts.push(`models=[${entry.models_used.join(',')}]`);
+  if (entry.platform) parts.push(`platform=${entry.platform}`);
+  if (entry.duration_ms !== undefined) parts.push(`duration=${entry.duration_ms}ms`);
+  if (entry.error_message) parts.push(`error="${entry.error_message}"`);
+
+  const message = parts.join(' ');
   if (entry.status === 'failed') {
-    console.error(logMessage);
+    console.error(message);
   } else {
-    console.log(logMessage);
+    console.log(message);
   }
 }
 
 /**
- * Format log entry for console output
+ * Truncate source URL/filename for storage
  */
-function formatLogMessage(data: Record<string, unknown>): string {
-  const { timestamp, level, event, user_id, import_type, source, status, recipe_id, recipe_name, error_message, tokens_used, duration_ms } = data;
-
-  const parts = [
-    `[${timestamp}]`,
-    `[${level}]`,
-    `[${event}]`,
-    `user=${user_id}`,
-    `type=${import_type}`,
-    `status=${status}`,
-  ];
-
-  if (source) {
-    // Truncate source for logging
-    const truncatedSource = String(source).length > 100
-      ? String(source).substring(0, 100) + '...'
-      : source;
-    parts.push(`source="${truncatedSource}"`);
-  }
-
-  if (recipe_id) parts.push(`recipe_id=${recipe_id}`);
-  if (recipe_name) parts.push(`recipe="${recipe_name}"`);
-  if (tokens_used !== undefined) parts.push(`tokens=${tokens_used}`);
-  if (duration_ms !== undefined) parts.push(`duration=${duration_ms}ms`);
-  if (error_message) parts.push(`error="${error_message}"`);
-
-  return parts.join(' ');
+function truncateSource(source: string): string {
+  return source.length > 500 ? source.substring(0, 500) + '...' : source;
 }
 
 /**
@@ -86,7 +140,7 @@ export function createImportTimer(): { stop: () => number } {
 }
 
 /**
- * Helper to log import start
+ * Helper to log import start (console only)
  */
 export function logImportStart(
   userId: string,
@@ -94,22 +148,6 @@ export function logImportStart(
   source: string
 ): void {
   console.log(`[IMPORT_START] user=${userId} type=${importType} source="${source.substring(0, 100)}"`);
-}
-
-/**
- * Helper to log import success
- */
-export function logImportSuccess(entry: Omit<ImportLogEntry, 'status'>): void {
-  logImport({ ...entry, status: 'success' });
-}
-
-/**
- * Helper to log import failure
- */
-export function logImportFailure(
-  entry: Omit<ImportLogEntry, 'status'> & { error_message: string }
-): void {
-  logImport({ ...entry, status: 'failed' });
 }
 
 /**

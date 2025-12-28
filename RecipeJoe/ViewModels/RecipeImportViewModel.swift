@@ -324,11 +324,6 @@ final class RecipeImportViewModel: ObservableObject {
             }
 
         } catch {
-            // Log detailed error for debugging
-            print("❌ Media import error: \(error)")
-            if let decodingError = error as? DecodingError {
-                print("❌ Decoding error details: \(decodingError)")
-            }
             importState = .error(error.localizedDescription)
         }
     }
