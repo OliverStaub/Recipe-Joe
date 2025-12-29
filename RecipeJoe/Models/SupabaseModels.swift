@@ -13,7 +13,7 @@ import Foundation
 struct RecipeImportRequest: Codable, Sendable {
     let url: String
     let language: String
-    let reword: Bool
+    let translate: Bool
     let startTimestamp: String?
     let endTimestamp: String?
 }
@@ -24,6 +24,14 @@ struct RecipeImportResponse: Codable, Sendable {
     let recipeId: String?
     let recipeName: String?
     let error: String?
+    // Token balance info (from server-side deduction)
+    let tokensDeducted: Int?
+    let tokensRemaining: Int?
+    let tokensRequired: Int?
+    let tokensAvailable: Int?
+    // Rate limiting info
+    let rateLimitRemaining: Int?
+    let rateLimitReset: String?
     let stats: ImportStats?
 
     enum CodingKeys: String, CodingKey {
@@ -31,6 +39,12 @@ struct RecipeImportResponse: Codable, Sendable {
         case recipeId = "recipe_id"
         case recipeName = "recipe_name"
         case error
+        case tokensDeducted = "tokens_deducted"
+        case tokensRemaining = "tokens_remaining"
+        case tokensRequired = "tokens_required"
+        case tokensAvailable = "tokens_available"
+        case rateLimitRemaining = "rate_limit_remaining"
+        case rateLimitReset = "rate_limit_reset"
         case stats
     }
 }
@@ -74,13 +88,13 @@ struct MediaImportRequest: Codable, Sendable {
     let storagePaths: [String]
     let mediaType: String
     let language: String
-    let reword: Bool
+    let translate: Bool
 
     enum CodingKeys: String, CodingKey {
         case storagePaths = "storage_paths"
         case mediaType = "media_type"
         case language
-        case reword
+        case translate
     }
 }
 
@@ -90,7 +104,8 @@ typealias MediaImportResponse = RecipeImportResponse
 // MARK: - Database Models
 
 /// Recipe as stored in Supabase
-struct SupabaseRecipe: Codable, Identifiable, Sendable {
+/// Note: nonisolated required for Codable to work with Supabase SDK in non-main-actor context
+nonisolated struct SupabaseRecipe: Codable, Identifiable, Sendable {
     let id: UUID
     let userId: UUID?
     let name: String

@@ -1,0 +1,80 @@
+FROM ubuntu:22.04
+
+# Prevent interactive prompts during package installation
+ENV DEBIAN_FRONTEND=noninteractive
+ENV ANDROID_HOME=/opt/android-sdk
+ENV PATH="${PATH}:${ANDROID_HOME}/cmdline-tools/latest/bin:${ANDROID_HOME}/platform-tools"
+
+# Install base dependencies (without nodejs - we'll install newer version)
+RUN apt-get update && apt-get install -y \
+    curl \
+    git \
+    wget \
+    unzip \
+    openjdk-17-jdk \
+    python3 \
+    python3-pip \
+    build-essential \
+    vim \
+    nano \
+    ca-certificates \
+    gnupg \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Node.js 20 LTS
+RUN mkdir -p /etc/apt/keyrings && \
+    curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg && \
+    echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_20.x nodistro main" | tee /etc/apt/sources.list.d/nodesource.list && \
+    apt-get update && \
+    apt-get install -y nodejs && \
+    rm -rf /var/lib/apt/lists/*
+
+# Install Android SDK Command Line Tools
+RUN mkdir -p ${ANDROID_HOME}/cmdline-tools && \
+    cd ${ANDROID_HOME}/cmdline-tools && \
+    wget https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip && \
+    unzip commandlinetools-linux-11076708_latest.zip && \
+    rm commandlinetools-linux-11076708_latest.zip && \
+    mv cmdline-tools latest
+
+# Accept licenses and install Android SDK components
+RUN yes | sdkmanager --licenses || true && \
+    sdkmanager "platform-tools" "platforms;android-34" "build-tools;34.0.0" \
+    "platforms;android-33" "build-tools;33.0.2" \
+    "extras;google;google_play_services" \
+    "extras;google;m2repository" \
+    "extras;android;m2repository"
+
+# Install Gradle
+RUN wget https://services.gradle.org/distributions/gradle-8.5-bin.zip && \
+    unzip gradle-8.5-bin.zip -d /opt && \
+    rm gradle-8.5-bin.zip && \
+    ln -s /opt/gradle-8.5/bin/gradle /usr/local/bin/gradle
+
+# Install Claude Code CLI
+RUN npm install -g @anthropic-ai/claude-code
+
+# Install additional useful tools for Android development
+RUN npm install -g typescript @types/node
+RUN pip3 install \
+    requests \
+    beautifulsoup4 \
+    lxml
+
+# Create workspace directory
+RUN mkdir -p /workspace/recipejoe-android
+WORKDIR /workspace
+
+# Create non-root user for better security
+RUN useradd -m -s /bin/bash claude && \
+    chown -R claude:claude /workspace && \
+    chown -R claude:claude /home/claude
+
+# Switch to non-root user
+USER claude
+
+# Set up Claude Code settings directory
+RUN mkdir -p /home/claude/.claude
+
+# Keep container running
+CMD ["bash"]

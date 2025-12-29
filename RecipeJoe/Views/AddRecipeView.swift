@@ -12,6 +12,7 @@ struct AddRecipeView: View {
     @State private var urlText: String = ""
     @FocusState private var isTextFieldFocused: Bool
     @StateObject private var importViewModel = RecipeImportViewModel()
+    @Environment(\.locale) private var locale
 
     // Photo picker state
     @State private var showPhotoPicker = false
@@ -24,16 +25,25 @@ struct AddRecipeView: View {
     // Document picker state
     @State private var showDocumentPicker = false
 
+    // Token purchase state
+    @State private var showPurchaseSheet = false
+
     var body: some View {
         NavigationStack {
             VStack(alignment: .leading, spacing: 20) {
-                // Title
-                Text("New Recipe")
-                    .font(.largeTitle)
-                    .fontWeight(.bold)
-                    .padding(.leading, 40)
-                    .padding(.top, 8)
-                    .accessibilityIdentifier("newRecipeTitle")
+                // Title with Token Balance
+                HStack {
+                    Text("New Recipe")
+                        .font(.largeTitle)
+                        .fontWeight(.bold)
+                        .accessibilityIdentifier("newRecipeTitle")
+
+                    Spacer()
+
+                    TokenBalanceView()
+                }
+                .padding(.horizontal, 40)
+                .padding(.top, 8)
 
                 // URL Input Section
                 VStack(alignment: .leading, spacing: 12) {
@@ -62,12 +72,20 @@ struct AddRecipeView: View {
                         .transition(.opacity.combined(with: .move(edge: .top)))
                     }
 
-                    // Import Status Section
-                    ImportStatusSection(viewModel: importViewModel)
-                        .padding(.horizontal, 24)
-                        .padding(.top, 8)
+                    // Import Status Section (when not importing)
+                    if !importViewModel.importState.isActiveImport {
+                        ImportStatusSection(viewModel: importViewModel)
+                            .padding(.horizontal, 24)
+                            .padding(.top, 8)
+                    }
                 }
                 .animation(.easeInOut(duration: 0.2), value: importViewModel.isVideoURL(urlText))
+
+                // Import Status Section - centered when importing/success
+                if importViewModel.importState.isActiveImport {
+                    ImportStatusSection(viewModel: importViewModel)
+                        .padding(.horizontal, 24)
+                }
 
                 Spacer()
             }
@@ -76,11 +94,11 @@ struct AddRecipeView: View {
             .onTapGesture {
                 isTextFieldFocused = false
             }
-            // Photo picker (supports multiple selection)
+            // Photo picker (up to 3 images)
             .photosPicker(
                 isPresented: $showPhotoPicker,
                 selection: $selectedPhotoItems,
-                maxSelectionCount: 10,
+                maxSelectionCount: 3,
                 matching: .images
             )
             .onChange(of: selectedPhotoItems) { _, newItems in
@@ -99,6 +117,22 @@ struct AddRecipeView: View {
                     handlePDFSelection(pdfData)
                 }
             }
+            // Token purchase sheet (triggered by insufficient tokens)
+            .sheet(isPresented: $showPurchaseSheet) {
+                TokenPurchaseView()
+            }
+            // Insufficient tokens alert
+            .alert(
+                "Not Enough Tokens".localized(for: locale),
+                isPresented: $importViewModel.showInsufficientTokensAlert
+            ) {
+                Button("Cancel".localized(for: locale), role: .cancel) {}
+                Button("Get Tokens".localized(for: locale)) {
+                    showPurchaseSheet = true
+                }
+            } message: {
+                Text("You need %lld tokens to import this recipe. Tap 'Get Tokens' to purchase more.".localizedWithFormat(for: locale, importViewModel.requiredTokens))
+            }
         }
     }
 
@@ -106,9 +140,11 @@ struct AddRecipeView: View {
 
     private func importRecipe() {
         guard !urlText.isEmpty else { return }
+        let url = urlText
+        urlText = "" // Clear the input field
         isTextFieldFocused = false
         Task {
-            await importViewModel.importRecipe(from: urlText)
+            await importViewModel.importRecipe(from: url)
         }
     }
 
@@ -118,18 +154,18 @@ struct AddRecipeView: View {
         guard !items.isEmpty else { return }
 
         Task {
-            var imagesData: [Data] = []
+            var compressedImages: [Data] = []
 
             for item in items {
                 if let data = try? await item.loadTransferable(type: Data.self),
                    let image = UIImage(data: data),
                    let compressedData = compressImage(image) {
-                    imagesData.append(compressedData)
+                    compressedImages.append(compressedData)
                 }
             }
 
-            if !imagesData.isEmpty {
-                await importViewModel.importRecipeFromImages(imagesData)
+            if !compressedImages.isEmpty {
+                await importViewModel.importRecipeFromImages(compressedImages)
             }
 
             // Reset selection
@@ -149,21 +185,8 @@ struct AddRecipeView: View {
         }
     }
 
-    private func compressImage(_ image: UIImage, maxSizeMB: Int = 5) -> Data? {
-        let maxBytes = maxSizeMB * 1024 * 1024
-        var quality: CGFloat = 0.8
-
-        while quality > 0.1 {
-            if let data = image.jpegData(compressionQuality: quality) {
-                if data.count <= maxBytes {
-                    return data
-                }
-            }
-            quality -= 0.1
-        }
-
-        // Last resort: return with lowest quality
-        return image.jpegData(compressionQuality: 0.1)
+    private func compressImage(_ image: UIImage) -> Data? {
+        ImageCompressor.compress(image)
     }
 
     // MARK: - PDF Import

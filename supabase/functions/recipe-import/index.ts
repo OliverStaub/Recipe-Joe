@@ -24,9 +24,17 @@ import {
   getVideoTranscript,
   TranscriptNotAvailableError,
 } from "./utils/supadata-client.ts";
-// Whisper fallback disabled for now - most videos have captions
-// import { transcribeWithWhisper } from "./utils/whisper-client.ts";
 import { getVideoMetadata, getWorkingYouTubeThumbnail } from "./utils/video-thumbnail.ts";
+import { getTokenBalance, deductTokens, checkRateLimit, TOKEN_COSTS } from "../_shared/token-client.ts";
+import {
+  logImportStart,
+  logImportToDb,
+  createImportTimer,
+  extractErrorDetails,
+  detectPlatform,
+  type ImportType,
+  type Platform,
+} from "../_shared/import-logger.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -69,6 +77,61 @@ serve(async (req) => {
       throw new Error('Authentication required');
     }
 
+    // Initialize Supabase client (needed for token operations)
+    const supabase = getSupabaseClient();
+
+    // Check if this is a video URL to determine token cost
+    const isVideo = isVideoUrl(url);
+    const tokenCost = isVideo ? TOKEN_COSTS.video : TOKEN_COSTS.website;
+
+    // Check rate limit before processing (150 recipes per 24 hours)
+    console.log(`Checking rate limit for user ${userId}...`);
+    const rateLimit = await checkRateLimit(supabase, userId);
+    if (!rateLimit.allowed) {
+      console.log(`Rate limit exceeded: ${rateLimit.remaining} remaining`);
+      const response: ImportResponse = {
+        success: false,
+        error: 'Rate limit exceeded. Maximum 150 recipes per 24 hours.',
+        rate_limit_remaining: rateLimit.remaining,
+        rate_limit_reset: rateLimit.resetAt.toISOString(),
+      };
+      return new Response(JSON.stringify(response), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 200,
+      });
+    }
+
+    // Check token balance before processing
+    console.log(`Checking token balance for user ${userId}...`);
+    let currentBalance: number;
+    try {
+      currentBalance = await getTokenBalance(supabase, userId);
+      console.log(`User has ${currentBalance} tokens, needs ${tokenCost}`);
+    } catch (error) {
+      console.error('Failed to check token balance:', error);
+      const response: ImportResponse = {
+        success: false,
+        error: 'Could not verify token balance. Please try again.',
+      };
+      return new Response(JSON.stringify(response), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 200,
+      });
+    }
+
+    if (currentBalance < tokenCost) {
+      const response: ImportResponse = {
+        success: false,
+        error: 'Insufficient tokens',
+        tokens_required: tokenCost,
+        tokens_available: currentBalance,
+      };
+      return new Response(JSON.stringify(response), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 200,
+      });
+    }
+
     // Validate URL format
     let parsedUrl: URL;
     try {
@@ -80,10 +143,11 @@ serve(async (req) => {
       throw new Error('Invalid URL format');
     }
 
-    console.log(`Importing recipe from: ${url}`);
-
-    // Initialize Supabase client
-    const supabase = getSupabaseClient();
+    // Start import timer and logging
+    const importTimer = createImportTimer();
+    const importType: ImportType = isVideo ? 'video' : 'url';
+    const platform: Platform = detectPlatform(req);
+    logImportStart(userId, importType, url);
 
     // Step 1: Fetch existing data for Claude context
     const [existingIngredients, measurementTypes] = await Promise.all([
@@ -94,8 +158,7 @@ serve(async (req) => {
     console.log(`Found ${existingIngredients.length} existing ingredients`);
     console.log(`Found ${measurementTypes.length} measurement types`);
 
-    // Check if this is a video URL
-    const isVideo = isVideoUrl(url);
+    // isVideo already checked above for token cost
     let claudeResponse;
     let videoThumbnailUrl: string | null = null;
 
@@ -144,15 +207,16 @@ serve(async (req) => {
         console.log(`Got transcript: ${transcript.segmentCount} segments, language: ${transcriptLanguage}`);
       } catch (error) {
         if (error instanceof TranscriptNotAvailableError) {
-          // Whisper fallback disabled for now - return user-friendly error
-          console.log('No captions available for this video');
+          // Supadata handles AI transcription automatically for most videos
+          // This error means even AI transcription failed
+          console.log('Transcript extraction failed for this video');
           const response: ImportResponse = {
             success: false,
-            error: 'This video has no captions/subtitles available. Please try a different video with subtitles enabled.',
+            error: 'Could not extract transcript from this video. The video may be private, age-restricted, or unavailable.',
           };
           return new Response(JSON.stringify(response), {
             headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-            status: 400,
+            status: 200,
           });
         } else {
           throw error;
@@ -210,7 +274,7 @@ serve(async (req) => {
 
       return new Response(JSON.stringify(response), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 400,
+        status: 200,
       });
     }
 
@@ -247,10 +311,46 @@ serve(async (req) => {
 
     console.log(`Created recipe ${recipeId} with ${newIngredientsCount} new ingredients`);
 
+    // Step 8: Deduct tokens after successful import
+    const importReason = isVideo ? 'import_video' : 'import_website';
+    console.log(`Deducting ${tokenCost} tokens for ${importReason}...`);
+    const deductResult = await deductTokens(supabase, userId, tokenCost, importReason, recipeId);
+
+    if (!deductResult.success) {
+      // Import succeeded but token deduction failed - log for manual review
+      // We don't fail the request since the recipe was already created
+      console.error('Token deduction failed:', deductResult.error);
+    } else {
+      console.log(`Tokens deducted. New balance: ${deductResult.balance}`);
+    }
+
+    // Log successful import to database
+    const duration = importTimer.stop();
+    const modelsUsed = isVideo
+      ? ['claude-3-5-haiku-20241022'] // Video uses haiku for transcript extraction
+      : ['claude-3-5-haiku-20241022']; // URL also uses haiku
+
+    await logImportToDb(supabase, {
+      user_id: userId,
+      import_type: importType,
+      source: url,
+      status: 'success',
+      recipe_id: recipeId,
+      recipe_name: claudeResponse.data.recipe?.name,
+      tokens_used: tokenCost,
+      models_used: modelsUsed,
+      input_tokens: claudeResponse.usage.input_tokens,
+      output_tokens: claudeResponse.usage.output_tokens,
+      platform,
+      duration_ms: duration,
+    });
+
     const response: ImportResponse = {
       success: true,
       recipe_id: recipeId,
       recipe_name: claudeResponse.data.recipe?.name,
+      tokens_deducted: tokenCost,
+      tokens_remaining: deductResult.balance,
       stats: {
         steps_count: claudeResponse.data.steps?.length || 0,
         ingredients_count: claudeResponse.data.ingredients?.length || 0,
@@ -265,16 +365,53 @@ serve(async (req) => {
     });
 
   } catch (error) {
+    const { message: errorMessage, code: errorCode } = extractErrorDetails(error);
     console.error('Error importing recipe:', error);
+
+    // Log failed import (we may not have all context if failure was early)
+    const body = await req.clone().json().catch(() => ({}));
+    const failedUrl = body?.url || 'unknown';
+
+    // Try to get userId from auth header
+    let failedUserId = 'unknown';
+    const authHeader = req.headers.get('Authorization');
+    if (authHeader) {
+      try {
+        const supabase = getSupabaseClient();
+        const token = authHeader.replace('Bearer ', '');
+        const { data: { user } } = await supabase.auth.getUser(token);
+        if (user) failedUserId = user.id;
+      } catch {
+        // Ignore auth errors during error logging
+      }
+    }
+
+    // Log failed import - try to detect platform from request
+    let failedPlatform: Platform = 'unknown';
+    try {
+      failedPlatform = detectPlatform(req);
+    } catch {
+      // Ignore platform detection errors during error logging
+    }
+
+    await logImportToDb(supabase, {
+      user_id: failedUserId,
+      import_type: isVideoUrl(failedUrl) ? 'video' : 'url',
+      source: failedUrl,
+      status: 'failed',
+      error_message: errorMessage,
+      error_code: errorCode,
+      platform: failedPlatform,
+    });
 
     const response: ImportResponse = {
       success: false,
-      error: error instanceof Error ? error.message : 'Unknown error occurred',
+      error: errorMessage,
     };
 
     return new Response(JSON.stringify(response), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      status: 500,
+      status: 200,
     });
   }
 });

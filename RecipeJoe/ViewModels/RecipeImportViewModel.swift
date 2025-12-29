@@ -23,6 +23,10 @@ final class RecipeImportViewModel: ObservableObject {
     @Published var startTimestamp: String = ""
     @Published var endTimestamp: String = ""
 
+    // Token-related properties
+    @Published var showInsufficientTokensAlert: Bool = false
+    @Published var requiredTokens: Int = 0
+
     // MARK: - Video URL Detection Patterns
 
     private static let videoPatterns: [(platform: String, pattern: NSRegularExpression)] = {
@@ -51,6 +55,16 @@ final class RecipeImportViewModel: ObservableObject {
         var isLoading: Bool {
             if case .importing = self { return true }
             return false
+        }
+
+        /// Whether we're in an active import state (importing, success, or error) that should be centered
+        var isActiveImport: Bool {
+            switch self {
+            case .importing, .success, .error:
+                return true
+            default:
+                return false
+            }
         }
 
         var errorMessage: String? {
@@ -85,6 +99,32 @@ final class RecipeImportViewModel: ObservableObject {
         }
     }
 
+    // MARK: - Token Management
+
+    /// Get the token cost for a URL import
+    /// - Parameter urlString: The URL to check
+    /// - Returns: The token cost based on URL type
+    func getTokenCost(for urlString: String) -> ImportTokenCost {
+        if isVideoURL(urlString) {
+            return .video
+        }
+        return .website
+    }
+
+    /// Check if user can afford the import
+    /// - Parameter urlString: The URL to import
+    /// - Returns: true if user has enough tokens
+    func canAffordImport(for urlString: String) -> Bool {
+        let cost = getTokenCost(for: urlString)
+        return TokenService.shared.canAffordImport(type: cost)
+    }
+
+    /// Check if user can afford media import (PDF/images)
+    /// - Returns: true if user has enough tokens for media import
+    func canAffordMediaImport() -> Bool {
+        return TokenService.shared.canAffordImport(type: .media)
+    }
+
     // MARK: - Import Recipe
 
     /// Import a recipe from a URL
@@ -98,6 +138,14 @@ final class RecipeImportViewModel: ObservableObject {
         }
 
         let isVideo = isVideoURL(urlString)
+        let tokenCost = isVideo ? ImportTokenCost.video : ImportTokenCost.website
+
+        // Check token balance before importing
+        guard TokenService.shared.canAffordImport(type: tokenCost) else {
+            requiredTokens = tokenCost.rawValue
+            showInsufficientTokensAlert = true
+            return
+        }
 
         importState = .importing
         currentStep = .fetching
@@ -115,9 +163,9 @@ final class RecipeImportViewModel: ObservableObject {
 
             currentStep = .parsing
 
-            // Step 2: Parsing - Use language and reword settings
+            // Step 2: Parsing - Use language and translate settings
             let language = UserSettings.shared.recipeLanguage.rawValue
-            let reword = !UserSettings.shared.keepOriginalWording
+            let translate = UserSettings.shared.enableTranslation
 
             // Start the actual import (this takes most of the time)
             try await Task.sleep(for: .milliseconds(800))
@@ -130,7 +178,7 @@ final class RecipeImportViewModel: ObservableObject {
             let response = try await SupabaseService.shared.importRecipe(
                 from: urlString,
                 language: language,
-                reword: reword,
+                translate: translate,
                 startTimestamp: startTs,
                 endTimestamp: endTs
             )
@@ -140,6 +188,14 @@ final class RecipeImportViewModel: ObservableObject {
             try await Task.sleep(for: .milliseconds(300))
 
             if response.success {
+                // Update token balance from server response
+                if let newBalance = response.tokensRemaining {
+                    TokenService.shared.updateBalance( newBalance)
+                } else {
+                    // Fallback: refresh balance from server
+                    try? await TokenService.shared.refreshBalance()
+                }
+
                 if let recipeIdString = response.recipeId,
                    let recipeId = UUID(uuidString: recipeIdString) {
                     lastImportedRecipeId = recipeId
@@ -148,9 +204,20 @@ final class RecipeImportViewModel: ObservableObject {
                 lastImportStats = response.stats
                 importState = .success
             } else {
+                // Check if this was an insufficient tokens error from server
+                if let required = response.tokensRequired,
+                   let available = response.tokensAvailable {
+                    requiredTokens = required
+                    showInsufficientTokensAlert = true
+                    // Update local balance to match server
+                    TokenService.shared.updateBalance( available)
+                }
                 importState = .error(response.error ?? "Failed to import recipe")
             }
 
+        } catch is CancellationError {
+            // User navigated away - don't show error, just reset
+            importState = .idle
         } catch {
             importState = .error(error.localizedDescription)
         }
@@ -168,8 +235,8 @@ final class RecipeImportViewModel: ObservableObject {
 
     // MARK: - Media Import (OCR)
 
-    /// Maximum file sizes for upload
-    private static let maxImageSizeMB = 10
+    /// Maximum file sizes for upload (Claude Vision limit is 5MB per image)
+    private static let maxImageSizeMB = 5
     private static let maxPDFSizeMB = 20
 
     /// Import a recipe from image data (photo or camera capture)
@@ -181,6 +248,13 @@ final class RecipeImportViewModel: ObservableObject {
     /// Import a recipe from multiple images (combined into one recipe)
     /// - Parameter imagesData: Array of JPEG image data
     func importRecipeFromImages(_ imagesData: [Data]) async {
+        // Check token balance before importing
+        guard TokenService.shared.canAffordImport(type: .media) else {
+            requiredTokens = ImportTokenCost.media.rawValue
+            showInsufficientTokensAlert = true
+            return
+        }
+
         // Validate file sizes
         for (index, imageData) in imagesData.enumerated() {
             let sizeMB = imageData.count / (1024 * 1024)
@@ -210,7 +284,7 @@ final class RecipeImportViewModel: ObservableObject {
 
             // Step 2: Call OCR Edge Function with all paths
             let language = UserSettings.shared.recipeLanguage.rawValue
-            let reword = !UserSettings.shared.keepOriginalWording
+            let translate = UserSettings.shared.enableTranslation
 
             currentStep = .parsing
             try await Task.sleep(for: .milliseconds(300))
@@ -221,13 +295,20 @@ final class RecipeImportViewModel: ObservableObject {
                 storagePaths: storagePaths,
                 mediaType: .image,
                 language: language,
-                reword: reword
+                translate: translate
             )
 
             currentStep = .saving
             try await Task.sleep(for: .milliseconds(200))
 
             if response.success {
+                // Update token balance from server response
+                if let newBalance = response.tokensRemaining {
+                    TokenService.shared.updateBalance( newBalance)
+                } else {
+                    try? await TokenService.shared.refreshBalance()
+                }
+
                 if let recipeIdString = response.recipeId,
                    let recipeId = UUID(uuidString: recipeIdString) {
                     lastImportedRecipeId = recipeId
@@ -236,9 +317,18 @@ final class RecipeImportViewModel: ObservableObject {
                 lastImportStats = response.stats
                 importState = .success
             } else {
+                if let required = response.tokensRequired,
+                   let available = response.tokensAvailable {
+                    requiredTokens = required
+                    showInsufficientTokensAlert = true
+                    TokenService.shared.updateBalance( available)
+                }
                 importState = .error(response.error ?? "Failed to import recipe from images")
             }
 
+        } catch is CancellationError {
+            // User navigated away - don't show error, just reset
+            importState = .idle
         } catch {
             importState = .error(error.localizedDescription)
         }
@@ -247,6 +337,13 @@ final class RecipeImportViewModel: ObservableObject {
     /// Import a recipe from PDF data
     /// - Parameter pdfData: PDF file data
     func importRecipeFromPDF(_ pdfData: Data) async {
+        // Check token balance before importing
+        guard TokenService.shared.canAffordImport(type: .media) else {
+            requiredTokens = ImportTokenCost.media.rawValue
+            showInsufficientTokensAlert = true
+            return
+        }
+
         // Validate file size
         let sizeMB = pdfData.count / (1024 * 1024)
         if sizeMB > Self.maxPDFSizeMB {
@@ -270,7 +367,7 @@ final class RecipeImportViewModel: ObservableObject {
 
             // Step 2: Call OCR Edge Function
             let language = UserSettings.shared.recipeLanguage.rawValue
-            let reword = !UserSettings.shared.keepOriginalWording
+            let translate = UserSettings.shared.enableTranslation
 
             currentStep = .parsing
             try await Task.sleep(for: .milliseconds(300))
@@ -281,13 +378,20 @@ final class RecipeImportViewModel: ObservableObject {
                 storagePaths: [storagePath],
                 mediaType: .pdf,
                 language: language,
-                reword: reword
+                translate: translate
             )
 
             currentStep = .saving
             try await Task.sleep(for: .milliseconds(200))
 
             if response.success {
+                // Update token balance from server response
+                if let newBalance = response.tokensRemaining {
+                    TokenService.shared.updateBalance( newBalance)
+                } else {
+                    try? await TokenService.shared.refreshBalance()
+                }
+
                 if let recipeIdString = response.recipeId,
                    let recipeId = UUID(uuidString: recipeIdString) {
                     lastImportedRecipeId = recipeId
@@ -296,9 +400,18 @@ final class RecipeImportViewModel: ObservableObject {
                 lastImportStats = response.stats
                 importState = .success
             } else {
+                if let required = response.tokensRequired,
+                   let available = response.tokensAvailable {
+                    requiredTokens = required
+                    showInsufficientTokensAlert = true
+                    TokenService.shared.updateBalance( available)
+                }
                 importState = .error(response.error ?? "Failed to import recipe from PDF")
             }
 
+        } catch is CancellationError {
+            // User navigated away - don't show error, just reset
+            importState = .idle
         } catch {
             importState = .error(error.localizedDescription)
         }

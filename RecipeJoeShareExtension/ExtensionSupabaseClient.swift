@@ -7,6 +7,7 @@
 //
 
 import Foundation
+import UIKit
 
 /// Result of a recipe import operation
 struct ImportResult {
@@ -26,23 +27,38 @@ final class ExtensionSupabaseClient {
         SharedUserDefaults.shared.accessToken != nil
     }
 
+    /// Maximum image size for Claude Vision API (3.5MB raw = ~4.7MB base64, under 5MB limit)
+    private let maxImageSizeBytes = Int(3.5 * 1024 * 1024)
+
     /// Import a recipe from files (images or PDF)
     /// - Parameters:
     ///   - files: Array of file data to import
     ///   - mediaType: "image" or "pdf"
     /// - Returns: ImportResult with success status and recipe name
     func importRecipe(files: [Data], mediaType: String) async throws -> ImportResult {
+        // Check if we have an access token
         guard let accessToken = SharedUserDefaults.shared.accessToken else {
-            return ImportResult(success: false, recipeName: nil, error: "Not authenticated")
+            return ImportResult(success: false, recipeName: nil, error: "No access token. Please open RecipeJoe and sign in again.")
         }
+
+        // Token exists, continue with import
 
         // Determine content type and extension
         let contentType = mediaType == "pdf" ? "application/pdf" : "image/jpeg"
         let fileExtension = mediaType == "pdf" ? "pdf" : "jpg"
 
+        // Compress images if needed (PDFs are not compressed)
+        var processedFiles = files
+        if mediaType == "image" {
+            processedFiles = files.compactMap { compressImage($0) }
+            if processedFiles.isEmpty {
+                return ImportResult(success: false, recipeName: nil, error: "Failed to process images")
+            }
+        }
+
         // Upload all files to temp storage
         var storagePaths: [String] = []
-        for data in files {
+        for data in processedFiles {
             let path = try await uploadToStorage(
                 data: data,
                 contentType: contentType,
@@ -60,6 +76,30 @@ final class ExtensionSupabaseClient {
         )
 
         return response
+    }
+
+    /// Compress image to fit within Claude Vision API limits
+    private func compressImage(_ data: Data) -> Data? {
+        guard let image = UIImage(data: data) else { return data }
+
+        // If already small enough, return as-is
+        if data.count <= maxImageSizeBytes {
+            // Still convert to JPEG for consistency
+            return image.jpegData(compressionQuality: 0.8) ?? data
+        }
+
+        // Progressively reduce quality until under limit
+        var quality: CGFloat = 0.8
+        while quality > 0.1 {
+            if let compressed = image.jpegData(compressionQuality: quality),
+               compressed.count <= maxImageSizeBytes {
+                return compressed
+            }
+            quality -= 0.1
+        }
+
+        // Last resort: lowest quality
+        return image.jpegData(compressionQuality: 0.1)
     }
 
     // MARK: - Private Methods
@@ -83,11 +123,22 @@ final class ExtensionSupabaseClient {
         request.setValue(contentType, forHTTPHeaderField: "Content-Type")
         request.httpBody = data
 
-        let (_, response) = try await URLSession.shared.data(for: request)
+        let responseData: Data
+        let response: URLResponse
 
-        guard let httpResponse = response as? HTTPURLResponse,
-              (200...299).contains(httpResponse.statusCode) else {
-            throw ImportError.uploadFailed
+        do {
+            (responseData, response) = try await URLSession.shared.data(for: request)
+        } catch {
+            throw ImportError.networkError("\(error)")
+        }
+
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw ImportError.uploadFailed(statusCode: 0, message: "No HTTP response")
+        }
+
+        guard (200...299).contains(httpResponse.statusCode) else {
+            let errorBody = String(data: responseData, encoding: .utf8) ?? "Unknown"
+            throw ImportError.uploadFailed(statusCode: httpResponse.statusCode, message: errorBody)
         }
 
         return filePath
@@ -103,13 +154,13 @@ final class ExtensionSupabaseClient {
 
         // Get settings from shared defaults
         let language = SharedUserDefaults.shared.recipeLanguage
-        let reword = !SharedUserDefaults.shared.keepOriginalWording
+        let translate = SharedUserDefaults.shared.enableTranslation
 
         let requestBody: [String: Any] = [
             "storage_paths": storagePaths,
             "media_type": mediaType,
             "language": language,
-            "reword": reword
+            "translate": translate
         ]
 
         var request = URLRequest(url: functionURL)
@@ -118,11 +169,13 @@ final class ExtensionSupabaseClient {
         request.setValue(AppConstants.supabaseAnonKey, forHTTPHeaderField: "apikey")
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.httpBody = try JSONSerialization.data(withJSONObject: requestBody)
+        // OCR can take a while - set 5 minute timeout
+        request.timeoutInterval = 300
 
         let (data, response) = try await URLSession.shared.data(for: request)
 
         guard let httpResponse = response as? HTTPURLResponse else {
-            throw ImportError.networkError
+            throw ImportError.networkError("No HTTP response from function")
         }
 
         // Parse response
@@ -151,16 +204,16 @@ final class ExtensionSupabaseClient {
 
 /// Errors that can occur during import
 enum ImportError: LocalizedError {
-    case uploadFailed
-    case networkError
+    case uploadFailed(statusCode: Int, message: String)
+    case networkError(String)
     case invalidResponse
 
     var errorDescription: String? {
         switch self {
-        case .uploadFailed:
-            return "Failed to upload file"
-        case .networkError:
-            return "Network error"
+        case .uploadFailed(let statusCode, let message):
+            return "Upload error \(statusCode): \(message)"
+        case .networkError(let details):
+            return "Network: \(details)"
         case .invalidResponse:
             return "Invalid server response"
         }

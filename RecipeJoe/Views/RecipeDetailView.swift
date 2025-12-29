@@ -19,7 +19,13 @@ struct RecipeDetailView: View {
     @State private var isUploadingImage = false
     @State private var uploadError: String?
     @State private var showPhotoPicker = false
+    @State private var showImageSourceDialog = false
+    @State private var showCamera = false
+    @State private var capturedImage: UIImage?
     @Environment(\.locale) private var locale
+
+    // Step highlighting for cooking progress
+    @State private var highlightedStepId: UUID?
 
     // Time picker state
     @State private var showPrepTimePicker = false
@@ -168,12 +174,32 @@ struct RecipeDetailView: View {
         .onLongPressGesture {
             guard !isUploadingImage else { return }
             UIImpactFeedbackGenerator(style: .light).impactOccurred()
-            showPhotoPicker = true
+            showImageSourceDialog = true
+        }
+        .confirmationDialog("Change Photo".localized(for: locale), isPresented: $showImageSourceDialog) {
+            Button("Take Photo".localized(for: locale)) {
+                showCamera = true
+            }
+            Button("Choose from Library".localized(for: locale)) {
+                showPhotoPicker = true
+            }
+            Button("Cancel".localized(for: locale), role: .cancel) {}
         }
         .photosPicker(isPresented: $showPhotoPicker, selection: $selectedPhotoItem, matching: .images)
         .onChange(of: selectedPhotoItem) { _, newItem in
             Task {
                 await handleImageSelection(newItem)
+            }
+        }
+        .fullScreenCover(isPresented: $showCamera) {
+            CameraView(capturedImage: $capturedImage)
+        }
+        .onChange(of: capturedImage) { _, newImage in
+            if let image = newImage {
+                Task {
+                    await handleCameraCapture(image)
+                    capturedImage = nil
+                }
             }
         }
     }
@@ -220,6 +246,45 @@ struct RecipeDetailView: View {
 
         isUploadingImage = false
         selectedPhotoItem = nil
+    }
+
+    private func handleCameraCapture(_ image: UIImage) async {
+        isUploadingImage = true
+        uploadError = nil
+
+        do {
+            // Compress image (max 1MB)
+            let compressedData = compressImage(image: image, maxSizeKB: 1024)
+
+            // Upload to Supabase
+            _ = try await SupabaseService.shared.uploadRecipeImage(
+                imageData: compressedData,
+                recipeId: recipeId
+            )
+
+            // Refresh recipe detail to show new image
+            await viewModel.fetchRecipeDetail(id: recipeId)
+
+        } catch {
+            uploadError = "Upload failed: \(error.localizedDescription)"
+        }
+
+        isUploadingImage = false
+    }
+
+    private func compressImage(image: UIImage, maxSizeKB: Int) -> Data {
+        let maxBytes = maxSizeKB * 1024
+        var compression: CGFloat = 0.8
+
+        while compression > 0.1 {
+            if let compressed = image.jpegData(compressionQuality: compression),
+               compressed.count <= maxBytes {
+                return compressed
+            }
+            compression -= 0.1
+        }
+
+        return image.jpegData(compressionQuality: 0.1) ?? Data()
     }
 
     private func compressImage(data: Data, maxSizeKB: Int) -> Data {
@@ -426,7 +491,11 @@ struct RecipeDetailView: View {
         VStack(alignment: .leading, spacing: 12) {
             SectionHeader(title: "Ingredients".localized(for: locale), icon: "basket.fill")
 
-            VStack(alignment: .leading, spacing: 8) {
+            // Divider before ingredients (Mela style)
+            Divider()
+                .padding(.horizontal, 40)
+
+            VStack(alignment: .leading, spacing: 0) {
                 ForEach(ingredients) { ingredient in
                     IngredientRow(ingredient: ingredient) { quantity, notes in
                         Task {
@@ -439,9 +508,11 @@ struct RecipeDetailView: View {
                     }
                 }
             }
-            .padding()
-            .background(Color(.systemGray6))
-            .clipShape(RoundedRectangle(cornerRadius: 12))
+            .padding(.horizontal, 8)
+
+            // Divider after ingredients (Mela style)
+            Divider()
+                .padding(.horizontal, 40)
         }
     }
 
@@ -452,16 +523,28 @@ struct RecipeDetailView: View {
         VStack(alignment: .leading, spacing: 12) {
             SectionHeader(title: "Instructions".localized(for: locale), icon: "list.number")
 
-            VStack(alignment: .leading, spacing: 16) {
+            VStack(alignment: .leading, spacing: 8) {
                 ForEach(steps) { step in
-                    StepRow(step: step) { instruction in
-                        Task {
-                            await viewModel.saveStepInstruction(
-                                stepId: step.id,
-                                instruction: instruction
-                            )
+                    StepRow(
+                        step: step,
+                        isHighlighted: highlightedStepId == step.id,
+                        onTap: {
+                            // Toggle highlight - if same step tapped, unhighlight
+                            if highlightedStepId == step.id {
+                                highlightedStepId = nil
+                            } else {
+                                highlightedStepId = step.id
+                            }
+                        },
+                        onSave: { instruction in
+                            Task {
+                                await viewModel.saveStepInstruction(
+                                    stepId: step.id,
+                                    instruction: instruction
+                                )
+                            }
                         }
-                    }
+                    )
                 }
             }
         }

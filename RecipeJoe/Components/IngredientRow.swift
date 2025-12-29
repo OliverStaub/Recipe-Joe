@@ -30,23 +30,29 @@ struct IngredientRow: View {
         return isGerman ? ing.nameDe : ing.nameEn
     }
 
-    /// Returns formatted quantity with localized measurement unit
-    private var formattedQuantity: String {
-        var parts: [String] = []
+    /// Returns formatted quantity with localized measurement unit (no space like Mela: "1l", "4EL", "375g")
+    private var formattedQuantity: String? {
+        var result = ""
 
         if let qty = ingredient.quantity {
             if qty == qty.rounded() {
-                parts.append(String(format: "%.0f", qty))
+                result = String(format: "%.0f", qty)
             } else {
-                parts.append(String(format: "%.1f", qty))
+                result = String(format: "%.1f", qty)
             }
         }
 
         if let measurement = ingredient.measurementType {
-            parts.append(isGerman ? measurement.abbreviationDe : measurement.abbreviationEn)
+            let abbr = isGerman ? measurement.abbreviationDe : measurement.abbreviationEn
+            // Add space only for longer units like "Stück" but not for "g", "ml", "EL"
+            if abbr.count > 2 {
+                result += " " + abbr
+            } else {
+                result += abbr
+            }
         }
 
-        return parts.isEmpty ? "to taste".localized(for: locale) : parts.joined(separator: " ")
+        return result.isEmpty ? nil : result
     }
 
     private var measurementAbbreviation: String? {
@@ -54,28 +60,37 @@ struct IngredientRow: View {
         return isGerman ? measurement.abbreviationDe : measurement.abbreviationEn
     }
 
+    /// Combined ingredient text with notes inline (Mela style)
+    private var ingredientText: String {
+        var text = ingredientName
+        if let notes = ingredient.notes, !notes.isEmpty {
+            text += ", " + notes
+        }
+        return text
+    }
+
     var body: some View {
-        HStack(alignment: .top, spacing: 12) {
-            // Quantity
-            Text(formattedQuantity)
-                .font(.subheadline)
-                .fontWeight(.medium)
-                .frame(width: 60, alignment: .leading)
-
-            // Ingredient name
-            VStack(alignment: .leading, spacing: 2) {
-                Text(ingredientName)
+        HStack(alignment: .firstTextBaseline, spacing: 0) {
+            // Quantity (bold, fixed width)
+            if let qty = formattedQuantity {
+                Text(qty)
                     .font(.subheadline)
-
-                if let notes = ingredient.notes, !notes.isEmpty {
-                    Text(notes)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
+                    .fontWeight(.semibold)
+                    .frame(width: 70, alignment: .leading)
+            } else {
+                // Empty space for alignment when no quantity
+                Color.clear
+                    .frame(width: 70)
             }
+
+            // Ingredient name with notes inline
+            Text(ingredientText)
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
 
             Spacer()
         }
+        .padding(.vertical, 4)
         .contentShape(Rectangle())
         .onLongPressGesture {
             if onSave != nil {

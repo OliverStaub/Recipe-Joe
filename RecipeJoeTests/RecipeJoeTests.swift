@@ -349,38 +349,74 @@ struct RecipeJoeTests {
         #expect(!result.isEmpty, "Should return non-empty string")
     }
 
-    @Test func testStepCategoryParsing() async throws {
-        // Test that step categories are correctly parsed
-        let (category, instruction) = StepCategory.parse("prep: Dice the onions")
-        #expect(category == .prep)
-        #expect(instruction == "Dice the onions")
+    // MARK: - Translation Settings Tests
+
+    @Test func testRecipeImportRequestEncoding() async throws {
+        // Test that RecipeImportRequest encodes with 'translate' key
+        let request = RecipeImportRequest(
+            url: "https://example.com",
+            language: "en",
+            translate: true,
+            startTimestamp: nil,
+            endTimestamp: nil
+        )
+
+        let encoder = JSONEncoder()
+        let data = try encoder.encode(request)
+        let json = try JSONSerialization.jsonObject(with: data) as! [String: Any]
+
+        #expect(json["translate"] as? Bool == true)
+        #expect(json["url"] as? String == "https://example.com")
+        #expect(json["language"] as? String == "en")
     }
 
-    @Test func testStepCategoryParsingMixedCase() async throws {
-        // Test that parsing is case-insensitive
-        let (category, instruction) = StepCategory.parse("PREP: Dice the onions")
-        #expect(category == .prep)
-        #expect(instruction == "Dice the onions")
+    @Test func testMediaImportRequestEncoding() async throws {
+        // Test that MediaImportRequest encodes with 'translate' key
+        let request = MediaImportRequest(
+            storagePaths: ["path/to/file"],
+            mediaType: "image",
+            language: "de",
+            translate: false
+        )
+
+        let encoder = JSONEncoder()
+        let data = try encoder.encode(request)
+        let json = try JSONSerialization.jsonObject(with: data) as! [String: Any]
+
+        #expect(json["translate"] as? Bool == false)
+        #expect(json["language"] as? String == "de")
     }
 
-    @Test func testStepCategoryParsingUnknown() async throws {
-        // Test that unknown categories return .unknown
-        let (category, instruction) = StepCategory.parse("Some random instruction")
-        #expect(category == .unknown)
-        #expect(instruction == "Some random instruction")
+    // MARK: - Step Display Tests
+
+    @Test func testStepInstructionPreserved() async throws {
+        // Test that step instruction is preserved as-is (no parsing)
+        let step = SupabaseRecipeStep(
+            id: UUID(),
+            recipeId: UUID(),
+            stepNumber: 1,
+            instruction: "prep: Dice the onions",
+            durationMinutes: 5
+        )
+
+        // The raw instruction should be preserved exactly
+        #expect(step.instruction == "prep: Dice the onions")
+        #expect(step.stepNumber == 1)
+        #expect(step.durationMinutes == 5)
     }
 
-    @Test func testStepCategoryDisplayNameWithLocale() async throws {
-        // Test that display names can be retrieved for different locales
-        let englishLocale = Locale(identifier: "en")
-        let germanLocale = Locale(identifier: "de")
+    @Test func testStepNumbering() async throws {
+        // Test that steps maintain correct numbering
+        let recipeId = UUID()
+        let steps = [
+            SupabaseRecipeStep(id: UUID(), recipeId: recipeId, stepNumber: 1, instruction: "First step", durationMinutes: nil),
+            SupabaseRecipeStep(id: UUID(), recipeId: recipeId, stepNumber: 2, instruction: "Second step", durationMinutes: nil),
+            SupabaseRecipeStep(id: UUID(), recipeId: recipeId, stepNumber: 3, instruction: "Third step", durationMinutes: nil)
+        ]
 
-        let englishName = StepCategory.prep.displayName(locale: englishLocale)
-        let germanName = StepCategory.prep.displayName(locale: germanLocale)
-
-        // Both should return non-empty strings
-        #expect(!englishName.isEmpty, "English display name should not be empty")
-        #expect(!germanName.isEmpty, "German display name should not be empty")
+        #expect(steps[0].stepNumber == 1)
+        #expect(steps[1].stepNumber == 2)
+        #expect(steps[2].stepNumber == 3)
     }
 
     // MARK: - Video URL Detection Tests

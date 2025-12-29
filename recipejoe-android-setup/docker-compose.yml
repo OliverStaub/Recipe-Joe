@@ -1,0 +1,33 @@
+services:
+  claude-android:
+    build:
+      context: .
+      dockerfile: Dockerfile.claude-android
+    container_name: recipejoe-claude
+    volumes:
+      # Mount entire RecipeJoe project root (WRITABLE)
+      - ..:/workspace/RecipeJoe
+      # Persist entire Claude config (login credentials, settings, history)
+      - claude-config:/home/claude/.claude
+      # Mount initial prompt
+      - ./android-task.md:/workspace/android-task.md:ro
+    environment:
+      # No API key needed - using Max subscription login
+      - JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
+      - ANDROID_HOME=/opt/android-sdk
+      - GRADLE_USER_HOME=/workspace/RecipeJoe/android/.gradle
+    working_dir: /workspace/RecipeJoe
+    stdin_open: true
+    tty: true
+    # Keep container running
+    command: ["tail", "-f", "/dev/null"]
+    # Resource limits to prevent runaway costs
+    deploy:
+      resources:
+        limits:
+          cpus: '4.0'
+          memory: 8G
+
+volumes:
+  claude-config:
+    driver: local

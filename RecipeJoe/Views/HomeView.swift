@@ -17,28 +17,74 @@ struct HomeView: View {
         self._navigationPath = navigationPath
     }
 
+    private var filterHeader: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 8) {
+                FilterChip(title: "All", isSelected: viewModel.filters.timeFilter == .all) {
+                    viewModel.filters.timeFilter = .all
+                }
+                FilterChip(title: "Quick", icon: "clock", isSelected: viewModel.filters.timeFilter == .quick) {
+                    viewModel.filters.timeFilter = .quick
+                }
+                FilterChip(title: "Medium", icon: "clock", isSelected: viewModel.filters.timeFilter == .medium) {
+                    viewModel.filters.timeFilter = .medium
+                }
+                FilterChip(title: "Long", icon: "clock", isSelected: viewModel.filters.timeFilter == .long) {
+                    viewModel.filters.timeFilter = .long
+                }
+                FilterChip(title: "Favorites", icon: "heart.fill", isSelected: viewModel.filters.showFavoritesOnly) {
+                    viewModel.filters.showFavoritesOnly.toggle()
+                }
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 8)
+        }
+        .listRowInsets(EdgeInsets())
+        .background(Color(.systemBackground))
+    }
+
     @ViewBuilder
     private var contentView: some View {
-        VStack(spacing: 0) {
-            // Always show filter bar
-            FilterBar(
-                filters: $viewModel.filters,
-                availableCategories: viewModel.availableCategories,
-                availableCuisines: viewModel.availableCuisines
-            )
-
-            // Content based on state
-            if viewModel.isLoading && viewModel.recipes.isEmpty {
-                loadingView
-            } else if viewModel.recipes.isEmpty && !viewModel.filters.hasActiveFilters {
-                // No recipes and no filters applied
-                emptyStateView
-            } else if viewModel.filteredRecipes.isEmpty {
-                // Either no recipes with filters, or filters filtered everything out
-                noFilterResultsView
-            } else {
-                recipeListView
+        if viewModel.isLoading && viewModel.recipes.isEmpty {
+            loadingView
+        } else if viewModel.recipes.isEmpty && !viewModel.filters.hasActiveFilters {
+            emptyStateView
+        } else if viewModel.filteredRecipes.isEmpty {
+            noFilterResultsView
+        } else {
+            List {
+                Section(header: filterHeader) {
+                    ForEach(viewModel.filteredRecipes) { recipe in
+                        NavigationLink(value: recipe.id) {
+                            RecipeRowView(recipe: recipe)
+                        }
+                        .swipeActions(edge: .leading, allowsFullSwipe: true) {
+                            Button {
+                                Task {
+                                    await viewModel.toggleFavorite(for: recipe)
+                                }
+                            } label: {
+                                Label(
+                                    recipe.isFavorite ? "Unfavorite" : "Favorite",
+                                    systemImage: recipe.isFavorite ? "heart.slash" : "heart"
+                                )
+                            }
+                            .tint(recipe.isFavorite ? .gray : .red)
+                        }
+                        .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                            Button(role: .destructive) {
+                                Task {
+                                    _ = await viewModel.deleteRecipe(id: recipe.id)
+                                }
+                            } label: {
+                                Label("Delete", systemImage: "trash")
+                            }
+                        }
+                    }
+                }
             }
+            .listStyle(.plain)
+            .accessibilityIdentifier("recipeList")
         }
     }
 
@@ -118,29 +164,6 @@ struct HomeView: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .accessibilityIdentifier("emptyHomeView")
-    }
-
-    // MARK: - Recipe List
-
-    private var recipeListView: some View {
-        List {
-            ForEach(viewModel.filteredRecipes) { recipe in
-                NavigationLink(value: recipe.id) {
-                    RecipeRowView(recipe: recipe)
-                }
-            }
-            .onDelete { indexSet in
-                // Map filtered index to original index
-                let recipesToDelete = indexSet.map { viewModel.filteredRecipes[$0] }
-                Task {
-                    for recipe in recipesToDelete {
-                        _ = await viewModel.deleteRecipe(id: recipe.id)
-                    }
-                }
-            }
-        }
-        .listStyle(.plain)
-        .accessibilityIdentifier("recipeList")
     }
 
     // MARK: - No Filter Results

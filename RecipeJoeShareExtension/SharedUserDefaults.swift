@@ -40,6 +40,14 @@ final class SharedUserDefaults {
         refreshToken = nil
     }
 
+    // MARK: - Token Balance
+
+    /// Token balance synced from main app
+    var tokenBalance: Int {
+        get { defaults?.integer(forKey: AppConstants.Keys.tokenBalance) ?? 0 }
+        set { defaults?.set(newValue, forKey: AppConstants.Keys.tokenBalance) }
+    }
+
     // MARK: - Import Settings
 
     var recipeLanguage: String {
@@ -47,8 +55,8 @@ final class SharedUserDefaults {
         set { defaults?.set(newValue, forKey: AppConstants.Keys.recipeLanguage) }
     }
 
-    var keepOriginalWording: Bool {
-        get { defaults?.bool(forKey: AppConstants.Keys.keepOriginalWording) ?? false }
-        set { defaults?.set(newValue, forKey: AppConstants.Keys.keepOriginalWording) }
+    var enableTranslation: Bool {
+        get { defaults?.bool(forKey: AppConstants.Keys.enableTranslation) ?? true }
+        set { defaults?.set(newValue, forKey: AppConstants.Keys.enableTranslation) }
     }
 }

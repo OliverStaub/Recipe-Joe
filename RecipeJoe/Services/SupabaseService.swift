@@ -9,8 +9,7 @@ import Foundation
 import Supabase
 
 /// Service to interact with Supabase Edge Functions
-@MainActor
-final class SupabaseService {
+final class SupabaseService: Sendable {
     // MARK: - Singleton
 
     static let shared = SupabaseService()
@@ -44,21 +43,21 @@ final class SupabaseService {
     /// - Parameters:
     ///   - url: The URL of the recipe webpage or video
     ///   - language: Target language for the recipe ("en" or "de")
-    ///   - reword: If true, AI will reword and translate. If false, keeps original text with category prefixes only.
+    ///   - translate: If true, translate recipe to target language when source differs
     ///   - startTimestamp: Optional start time for video (MM:SS or HH:MM:SS format). If nil, starts from beginning.
     ///   - endTimestamp: Optional end time for video (MM:SS or HH:MM:SS format). If nil, goes to end.
     /// - Returns: The import response with recipe details
     func importRecipe(
         from url: String,
         language: String = "en",
-        reword: Bool = true,
+        translate: Bool = true,
         startTimestamp: String? = nil,
         endTimestamp: String? = nil
     ) async throws -> RecipeImportResponse {
         let request = RecipeImportRequest(
             url: url,
             language: language,
-            reword: reword,
+            translate: translate,
             startTimestamp: startTimestamp,
             endTimestamp: endTimestamp
         )
@@ -189,19 +188,19 @@ final class SupabaseService {
     ///   - storagePaths: The storage paths returned from uploadTempImport (for multiple images combined into one recipe)
     ///   - mediaType: The type of media (.image or .pdf)
     ///   - language: Target language for the recipe ("en" or "de")
-    ///   - reword: If true, AI will reword and translate. If false, keeps original text with category prefixes only.
+    ///   - translate: If true, translate recipe to target language when source differs
     /// - Returns: The import response with recipe details
     func importRecipeFromMedia(
         storagePaths: [String],
         mediaType: MediaImportType,
         language: String = "en",
-        reword: Bool = true
+        translate: Bool = true
     ) async throws -> MediaImportResponse {
         let request = MediaImportRequest(
             storagePaths: storagePaths,
             mediaType: mediaType.rawValue,
             language: language,
-            reword: reword
+            translate: translate
         )
 
         let response: MediaImportResponse = try await client.functions.invoke(
@@ -304,6 +303,17 @@ final class SupabaseService {
             .execute()
     }
 
+    // MARK: - Favorite Toggle
+
+    /// Toggle a recipe's favorite status
+    func toggleFavorite(id: UUID, isFavorite: Bool) async throws {
+        try await client
+            .from("recipes")
+            .update(["is_favorite": isFavorite])
+            .eq("id", value: id.uuidString)
+            .execute()
+    }
+
     // MARK: - Delete Recipe
 
     /// Delete a recipe and all its related data (steps, ingredients cascade automatically)
@@ -313,6 +323,72 @@ final class SupabaseService {
             .delete()
             .eq("id", value: id.uuidString)
             .execute()
+    }
+
+    // MARK: - Token Management
+
+    /// Fetch the current user's token balance from Supabase
+    /// - Returns: The current token balance
+    func fetchTokenBalance() async throws -> Int {
+        struct TokenBalance: Decodable {
+            let balance: Int
+        }
+
+        let response: TokenBalance = try await client
+            .from("user_tokens")
+            .select("balance")
+            .single()
+            .execute()
+            .value
+
+        return response.balance
+    }
+
+    /// Validate a StoreKit purchase with the server and credit tokens
+    /// - Parameters:
+    ///   - transactionId: The StoreKit transaction ID
+    ///   - productId: The product identifier (e.g., "tokens_10")
+    ///   - originalTransactionId: The original transaction ID (for subscription/refund tracking)
+    func validatePurchase(
+        transactionId: String,
+        productId: String,
+        originalTransactionId: String?
+    ) async throws {
+        struct ValidateRequest: Encodable {
+            let transactionId: String
+            let productId: String
+            let originalTransactionId: String?
+        }
+
+        struct ValidateResponse: Decodable {
+            let success: Bool
+            let balance: Int?
+            let tokensAdded: Int?
+            let alreadyProcessed: Bool?
+            let error: String?
+        }
+
+        let request = ValidateRequest(
+            transactionId: transactionId,
+            productId: productId,
+            originalTransactionId: originalTransactionId
+        )
+
+        let response: ValidateResponse = try await client.functions.invoke(
+            "validate-purchase",
+            options: FunctionInvokeOptions(body: request)
+        )
+
+        if !response.success {
+            throw SupabaseError.functionError(response.error ?? "Purchase validation failed")
+        }
+
+        // Update token balance if returned
+        if let newBalance = response.balance {
+            Task { @MainActor in
+                TokenService.shared.updateBalance(newBalance)
+            }
+        }
     }
 }
 

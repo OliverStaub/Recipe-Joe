@@ -98,82 +98,51 @@ function buildSystemPrompt(options: ClaudeCallOptions): string {
     ? `## CRITICAL: Output Language = ${langName.toUpperCase()}
 - Recipe name, description, category, cuisine: MUST be in ${langName}
 - All step instructions: MUST be in ${langName}
-- Ingredient notes: MUST be in ${langName}
-- Category prefixes (prep, cook, etc.): Keep in English (they are keywords)`
+- Ingredient notes: MUST be in ${langName}`
     : `## CRITICAL: Keep Original Language
 - Recipe name, description, category, cuisine: Keep in ORIGINAL language from source
-- All step instructions: Keep in ORIGINAL language, only add category prefix
+- All step instructions: Keep in ORIGINAL language, only add emoji prefix
 - Ingredient notes: Keep in ORIGINAL language
-- Category prefixes (prep, cook, etc.): Always in English (they are keywords)
-- DO NOT translate or reword anything except adding the category prefix`;
+- DO NOT translate or reword anything except adding the emoji prefix`;
 
-  // Build step instructions based on reword setting
-  const stepInstructions = reword
-    ? `## Step Formatting Rules:
+  // Build step instructions with custom emoji selection
+  const stepInstructions = `## Step Formatting Rules:
 - IMPORTANT: You MUST extract ALL cooking steps from the recipe. Do not skip any steps.
-- Look for instructions in the HTML content if not in JSON-LD
+${reword ? '- Simplify cooking steps to single, clear actions.' : '- Keep the ORIGINAL text from the source - do NOT reword or simplify'}
 
-### Core Principle: Each step = one action type with a clear outcome
+### Emoji Prefix (REQUIRED at start of each instruction):
+Choose a SINGLE fitting emoji that represents the step. Be creative and specific!
 
-### Rules:
-1. **One Action Type Per Step** - Group same actions together: "Dice onions, carrots, celery into 1cm cubes"
-2. **Separate Steps When:**
-   - Timing differs (ingredients added at different moments)
-   - Method changes (prep → cooking)
-   - Waiting/checking required ("until golden brown")
-   - Temperature/setting changes ("Reduce heat to low")
-3. **Each Step Must Include:**
-   - Action verb (imperative: dice, mix, heat, bake)
-   - Quantities and ingredients
-   - Success criteria: timing (5min), visual (golden), texture (soft), or temperature (180°C)
-4. **Length:** Target 50-120 characters (exception: multiple ingredients may exceed)
-
-### Category Prefixes (REQUIRED at start of each instruction):
-- prep: Dice, chop, measure, prepare ingredients
-- heat: Heat pan, preheat oven, temperature setup
-- cook: Sauté, boil, simmer, roast - active cooking
-- mix: Combine, whisk, stir, fold ingredients
-- assemble: Layer, arrange, fill, shape
-- bake: Oven cooking with time/temp
-- rest: Cool, set, rest, chill periods
-- finish: Garnish, serve, final touches
-
-### Step Format:
-category: Action verb + ingredients/quantities + success criteria
-
-### Examples${targetLanguage === 'de' ? ' (in German)' : ''}:
-${targetLanguage === 'de' ? `- "prep: Zwiebeln, Karotten, Sellerie in 1cm Würfel schneiden"
-- "heat: 2 EL Öl in großem Topf bei mittlerer Hitze erhitzen"
-- "cook: Gewürfeltes Gemüse hinzufügen, weich dünsten (8min)"
-- "mix: Tomatenmark einrühren bis gleichmäßig verteilt (2min)"
-- "bake: Bei 180°C goldbraun backen (25min)"
-- "rest: Vor dem Servieren vollständig abkühlen lassen (10min)"` : `- "prep: Dice onions, carrots, celery into 1cm cubes"
-- "heat: Heat 2 tbsp oil in large pot over medium heat"
-- "cook: Add diced vegetables, sauté until soft (8min)"
-- "mix: Stir in tomato paste until evenly distributed (2min)"
-- "bake: Bake at 180°C until golden brown (25min)"
-- "rest: Let cool completely before serving (10min)"`}`
-    : `## Step Formatting Rules:
-- IMPORTANT: You MUST extract ALL cooking steps from the recipe. Do not skip any steps.
-- Keep the ORIGINAL text from the source - do NOT reword or simplify
-- ONLY add a category prefix at the start of each step
-
-### Category Prefixes (add to start of each original instruction):
-- prep: Preparation steps (cutting, measuring, etc.)
-- heat: Heating steps (preheat oven, heat pan, etc.)
-- cook: Active cooking (sauté, boil, simmer, fry, etc.)
-- mix: Mixing/combining steps
-- assemble: Assembly steps
-- bake: Oven cooking steps
-- rest: Resting/cooling steps
-- finish: Final touches, garnishing, serving
+**Priority for choosing emoji:**
+1. **Main ingredient** - If the step focuses on a specific ingredient, use its emoji:
+   - 🧅 onion, 🥕 carrot, 🍅 tomato, 🥔 potato, 🍌 banana, 🍋 lemon, 🧄 garlic
+   - 🥩 meat, 🍗 chicken, 🐟 fish, 🥚 egg, 🧀 cheese, 🥛 milk, 🧈 butter
+   - 🍝 pasta, 🍚 rice, 🥖 bread, 🥬 greens, 🫑 pepper, 🍄 mushroom
+2. **Cooking action** - If no specific ingredient stands out:
+   - 🔪 cutting/chopping, 🔥 heating/sautéing, 💨 steaming
+   - 🥄 stirring/mixing, 🫗 pouring, 🧂 seasoning
+   - ♨️ baking/oven, ❄️ cooling/chilling, ⏲️ waiting/timing
+3. **Tool or result** - As fallback:
+   - 🍳 pan cooking, 🥘 pot cooking, 🥣 bowl mixing
+   - 🍽️ plating/serving, ✨ finishing touches
 
 ### Format:
-category: [original step text unchanged]
+[emoji] [instruction text]
 
-### Example (keeping original German text):
-Original: "Die Zwiebeln fein würfeln und in Butter anschwitzen"
-Output: "prep: Die Zwiebeln fein würfeln und in Butter anschwitzen"`;
+### Examples${targetLanguage === 'de' ? ' (in German)' : ''}:
+${targetLanguage === 'de' ? `- "🧅 Zwiebeln in feine Würfel schneiden"
+- "🔥 Öl in der Pfanne erhitzen"
+- "🥕 Karotten und Sellerie hinzufügen, 5 Min. anbraten"
+- "🍅 Tomatenmark einrühren"
+- "🧀 Mit geriebenem Käse bestreuen"
+- "♨️ Bei 180°C 25 Minuten backen"
+- "❄️ Vollständig abkühlen lassen"` : `- "🧅 Dice the onions into small cubes"
+- "🔥 Heat oil in a large pan"
+- "🥕 Add carrots and celery, sauté for 5 minutes"
+- "🍅 Stir in tomato paste"
+- "🧀 Top with grated cheese"
+- "♨️ Bake at 180°C for 25 minutes"
+- "❄️ Let cool completely before serving"`}`;
 
   return `You are a recipe extraction assistant. Extract structured recipe data from webpage content.
 
@@ -381,12 +350,20 @@ function buildTranscriptSystemPrompt(options: TranscriptCallOptions): string {
 - Ingredient notes: Keep in ORIGINAL language
 - Category prefixes (prep, cook, etc.): Always in English (they are keywords)`;
 
+  // Build description section if available
+  const descriptionSection = videoMetadata.description
+    ? `
+## Video Description (may contain recipe details):
+${videoMetadata.description.substring(0, 3000)}${videoMetadata.description.length > 3000 ? '...(truncated)' : ''}
+`
+    : '';
+
   return `You are a recipe extraction assistant specialized in extracting recipes from VIDEO TRANSCRIPTS.
 
 ## Source: ${platformName} Video
 - Title: ${videoMetadata.title}
 - Creator: ${videoMetadata.author}
-
+${descriptionSection}
 ## Important Context: This is SPOKEN content from a cooking video
 - The text is a transcript of someone speaking while cooking
 - Measurements may be imprecise (e.g., "a handful", "some", "a bit of", "about")
@@ -405,14 +382,15 @@ ${languageInstructions}
 1. Validate the transcript contains recipe content. Set is_valid_recipe=false if no recipe found.
 2. Extract the recipe name from context (what they're making). If unclear, use the video title.
 3. ${reword ? `Extract and translate all details to ${langName}.` : 'Extract all details, keeping original language.'}
-4. CRITICAL: For EVERY ingredient, you MUST provide BOTH:
+4. If a video description is provided above, use it to fill in missing details (ingredients, quantities, steps) that may not be clear in the spoken transcript.
+5. CRITICAL: For EVERY ingredient, you MUST provide BOTH:
    - name_en: The ingredient name in ENGLISH
    - name_de: The ingredient name in GERMAN
    These MUST be actual translations!
-5. Infer reasonable quantities when not explicitly stated based on typical recipes.
-6. Structure the spoken instructions into clear, sequential cooking steps.
-7. Match ingredients to existing ones when possible.
-8. Use ONLY the measurement types listed below.
+6. Infer reasonable quantities when not explicitly stated based on typical recipes.
+7. Structure the spoken instructions into clear, sequential cooking steps.
+8. Match ingredients to existing ones when possible.
+9. Use ONLY the measurement types listed below.
 
 ## Existing Ingredients (id: name_en / name_de):
 ${ingredientsList}
@@ -423,24 +401,21 @@ ${measurementsList}
 ## Step Formatting Rules:
 - Convert casual spoken instructions into clear, actionable steps
 - Each step should describe ONE main action
-- Add appropriate category prefixes:
-  - prep: Preparation (cutting, measuring, etc.)
-  - heat: Heating steps (preheat, heat pan, etc.)
-  - cook: Active cooking (sauté, boil, simmer, etc.)
-  - mix: Mixing/combining
-  - assemble: Assembly steps
-  - bake: Oven cooking
-  - rest: Resting/cooling
-  - finish: Garnishing, serving
+- Start each step with a fitting emoji based on the main ingredient or action
+
+### Emoji Selection (choose the most fitting):
+1. **Main ingredient**: 🧅 onion, 🥕 carrot, 🍅 tomato, 🥔 potato, 🧄 garlic, 🥩 meat, 🍗 chicken, 🐟 fish, 🥚 egg, 🧀 cheese, 🍝 pasta, 🍚 rice, 🥬 greens, 🍄 mushroom
+2. **Cooking action**: 🔪 cutting, 🔥 heating/sautéing, 🥄 stirring, 🧂 seasoning, ♨️ baking, ❄️ cooling
+3. **Tool/result**: 🍳 pan cooking, 🥘 pot cooking, 🍽️ serving, ✨ finishing
 
 ### Examples${targetLanguage === 'de' ? ' (in German)' : ''}:
-${targetLanguage === 'de' ? `- "prep: Zwiebeln in feine Würfel schneiden"
-- "heat: Olivenöl in einer großen Pfanne erhitzen"
-- "cook: Zwiebeln glasig dünsten (ca. 5 Min)"
-- "mix: Alle Gewürze gut unterrühren"` : `- "prep: Dice the onions into small cubes"
-- "heat: Heat olive oil in a large pan"
-- "cook: Sauté onions until translucent (about 5 min)"
-- "mix: Stir in all the spices until combined"`}
+${targetLanguage === 'de' ? `- "🧅 Zwiebeln in feine Würfel schneiden"
+- "🔥 Olivenöl in einer großen Pfanne erhitzen"
+- "🧅 Zwiebeln glasig dünsten (ca. 5 Min)"
+- "🧂 Alle Gewürze gut unterrühren"` : `- "🧅 Dice the onions into small cubes"
+- "🔥 Heat olive oil in a large pan"
+- "🧅 Sauté onions until translucent (about 5 min)"
+- "🧂 Stir in all the spices until combined"`}
 
 ## Handling Missing Information:
 - If prep time isn't mentioned, estimate based on complexity

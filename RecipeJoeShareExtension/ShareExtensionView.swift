@@ -20,6 +20,7 @@ struct SharedFile: Identifiable {
 enum ShareExtensionState {
     case ready
     case notAuthenticated
+    case insufficientTokens(required: Int, available: Int)
     case importing(step: String)
     case success(recipeName: String?)
     case error(message: String)
@@ -30,6 +31,7 @@ struct ShareExtensionView: View {
     let onComplete: () -> Void
 
     @State private var state: ShareExtensionState = .ready
+    @State private var logoRotation: Double = 0
 
     /// Terracotta accent color
     private let terracotta = Color(red: 198/255, green: 93/255, blue: 0/255)
@@ -43,6 +45,9 @@ struct ShareExtensionView: View {
 
                 case .notAuthenticated:
                     notAuthenticatedView
+
+                case .insufficientTokens(let required, let available):
+                    insufficientTokensView(required: required, available: available)
 
                 case .importing(let step):
                     importingView(step: step)
@@ -76,7 +81,7 @@ struct ShareExtensionView: View {
             Button(action: startImport) {
                 HStack {
                     Image(systemName: "arrow.down.doc")
-                    Text("Import to RecipeJoe")
+                    Text(String(localized: "Import to RecipeJoe"))
                 }
                 .font(.headline)
                 .foregroundColor(.white)
@@ -96,11 +101,36 @@ struct ShareExtensionView: View {
                 .font(.system(size: 60))
                 .foregroundColor(.secondary)
 
-            Text("Sign in Required")
+            Text(String(localized: "Sign in Required"))
                 .font(.title2)
                 .fontWeight(.semibold)
 
-            Text("Please open RecipeJoe and sign in first to import recipes.")
+            Text(String(localized: "Please open RecipeJoe and sign in first to import recipes."))
+                .font(.subheadline)
+                .foregroundColor(.secondary)
+                .multilineTextAlignment(.center)
+
+            Spacer()
+        }
+        .padding(.top, 40)
+    }
+
+    private func insufficientTokensView(required: Int, available: Int) -> some View {
+        VStack(spacing: 16) {
+            Image(systemName: "exclamationmark.circle")
+                .font(.system(size: 60))
+                .foregroundColor(terracotta)
+
+            Text(String(localized: "Not Enough Tokens"))
+                .font(.title2)
+                .fontWeight(.semibold)
+
+            Text(String(format: String(localized: "You need %lld tokens to import this recipe, but only have %lld."), required, available))
+                .font(.subheadline)
+                .foregroundColor(.secondary)
+                .multilineTextAlignment(.center)
+
+            Text(String(localized: "Open RecipeJoe to purchase more tokens."))
                 .font(.subheadline)
                 .foregroundColor(.secondary)
                 .multilineTextAlignment(.center)
@@ -112,15 +142,21 @@ struct ShareExtensionView: View {
 
     private func importingView(step: String) -> some View {
         VStack(spacing: 20) {
-            ProgressView()
-                .scaleEffect(1.5)
-                .padding()
+            Image(systemName: "fork.knife.circle.fill")
+                .font(.system(size: 80))
+                .foregroundColor(terracotta)
+                .rotationEffect(.degrees(logoRotation))
+                .onAppear {
+                    withAnimation(.linear(duration: 2).repeatForever(autoreverses: false)) {
+                        logoRotation = 360
+                    }
+                }
 
             Text(step)
                 .font(.headline)
                 .foregroundColor(.primary)
 
-            Text("You can close this - the recipe will appear in RecipeJoe shortly.")
+            Text(String(localized: "You can close this - the recipe will appear in RecipeJoe shortly."))
                 .font(.subheadline)
                 .foregroundColor(.secondary)
                 .multilineTextAlignment(.center)
@@ -133,10 +169,10 @@ struct ShareExtensionView: View {
     private func successView(recipeName: String?) -> some View {
         VStack(spacing: 16) {
             Image(systemName: "checkmark.circle.fill")
-                .font(.system(size: 60))
+                .font(.system(size: 80))
                 .foregroundColor(.green)
 
-            Text("Import Started!")
+            Text(String(localized: "Import Started!"))
                 .font(.title2)
                 .fontWeight(.semibold)
 
@@ -146,7 +182,7 @@ struct ShareExtensionView: View {
                     .foregroundColor(.secondary)
             }
 
-            Text("Your recipe will appear in RecipeJoe in about a minute.")
+            Text(String(localized: "Your recipe will appear in RecipeJoe in about a minute."))
                 .font(.subheadline)
                 .foregroundColor(.secondary)
                 .multilineTextAlignment(.center)
@@ -154,6 +190,7 @@ struct ShareExtensionView: View {
             Spacer()
         }
         .padding(.top, 40)
+        .transition(.opacity)
         .onAppear {
             // Auto-close after 2 seconds
             DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
@@ -168,7 +205,7 @@ struct ShareExtensionView: View {
                 .font(.system(size: 60))
                 .foregroundColor(.red)
 
-            Text("Import Failed")
+            Text(String(localized: "Import Failed"))
                 .font(.title2)
                 .fontWeight(.semibold)
 
@@ -178,7 +215,7 @@ struct ShareExtensionView: View {
                 .multilineTextAlignment(.center)
 
             Button(action: startImport) {
-                Text("Try Again")
+                Text(String(localized: "Try Again"))
                     .font(.headline)
                     .foregroundColor(.white)
                     .frame(maxWidth: .infinity)
@@ -232,7 +269,7 @@ struct ShareExtensionView: View {
             }
 
             VStack(alignment: .leading, spacing: 4) {
-                Text(file.isPDF ? "PDF Document" : "Image")
+                Text(file.isPDF ? String(localized: "PDF Document") : String(localized: "Image"))
                     .font(.headline)
 
                 Text(formatFileSize(file.data.count))
@@ -271,7 +308,7 @@ struct ShareExtensionView: View {
             .frame(width: 70, height: 60)
 
             VStack(alignment: .leading, spacing: 4) {
-                Text("\(files.count) Images")
+                Text(String(format: String(localized: "%lld Images"), files.count))
                     .font(.headline)
 
                 let totalSize = files.reduce(0) { $0 + $1.data.count }
@@ -293,6 +330,16 @@ struct ShareExtensionView: View {
     }
 
     private func startImport() {
+        // Check token balance before importing
+        // Media imports (PDF/images) cost 3 tokens
+        let requiredTokens = 3
+        let availableTokens = SharedUserDefaults.shared.tokenBalance
+
+        guard availableTokens >= requiredTokens else {
+            state = .insufficientTokens(required: requiredTokens, available: availableTokens)
+            return
+        }
+
         let mediaType = files.first?.isPDF == true ? "pdf" : "image"
         state = .importing(step: "Uploading...")
 

@@ -27,6 +27,10 @@ struct RecipeJoeApp: App {
                 } else if authService.isAuthenticated {
                     // User is authenticated - show main app
                     MainTabView(deepLinkRecipeId: $deepLinkRecipeId)
+                        .task {
+                            // Refresh token balance from Supabase
+                            try? await TokenService.shared.refreshBalance()
+                        }
                 } else {
                     // User is not authenticated - show sign in
                     AuthenticationView()

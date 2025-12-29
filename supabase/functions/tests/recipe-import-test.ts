@@ -46,12 +46,16 @@ async function getAuthenticatedClient(): Promise<{ client: SupabaseClient; acces
 // Helper to invoke the edge function
 async function invokeEdgeFunction(
   body: Record<string, unknown>,
-  accessToken?: string
+  accessToken?: string,
+  includeApiKey = true
 ): Promise<Response> {
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
-    "apikey": SUPABASE_ANON_KEY,
   };
+
+  if (includeApiKey) {
+    headers["apikey"] = SUPABASE_ANON_KEY;
+  }
 
   if (accessToken) {
     headers["Authorization"] = `Bearer ${accessToken}`;
@@ -99,41 +103,36 @@ Deno.test("auth - request without apikey header returns 401 from Supabase gatewa
   assertEquals(response.status, 401);
 });
 
-Deno.test("auth - request with apikey but no Authorization returns 500 with auth error", async () => {
-  // With apikey but no auth token, our function runs and returns auth error
+Deno.test("auth - request with apikey but no Authorization returns 401 from gateway", async () => {
+  // Supabase gateway requires valid JWT - returns 401 before reaching our function
   const response = await invokeEdgeFunction({ url: "https://example.com/recipe" });
-  const data = await response.json();
+  await response.body?.cancel(); // Consume body to prevent leak
 
-  assertEquals(response.status, 500);
-  assertEquals(data.success, false);
-  assertEquals(data.error, "Authentication required");
+  assertEquals(response.status, 401);
 });
 
-Deno.test("auth - request with invalid token returns 500 with auth error", async () => {
+Deno.test("auth - request with invalid token returns 401 from gateway", async () => {
+  // Supabase gateway validates JWT - returns 401 for invalid tokens
   const response = await invokeEdgeFunction(
     { url: "https://example.com/recipe" },
     "invalid-token-12345"
   );
-  const data = await response.json();
+  await response.body?.cancel(); // Consume body to prevent leak
 
-  assertEquals(response.status, 500);
-  assertEquals(data.success, false);
-  assertEquals(data.error, "Authentication required");
+  assertEquals(response.status, 401);
 });
 
-Deno.test("auth - request with malformed JWT returns 500 with auth error", async () => {
-  // This is a structurally valid but malformed JWT
+Deno.test("auth - request with malformed JWT returns 401 from gateway", async () => {
+  // Supabase gateway validates JWT structure - returns 401 for malformed tokens
   const malformedToken = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwiZXhwIjoxfQ.invalid";
 
   const response = await invokeEdgeFunction(
     { url: "https://example.com/recipe" },
     malformedToken
   );
-  const data = await response.json();
+  await response.body?.cancel(); // Consume body to prevent leak
 
-  assertEquals(response.status, 500);
-  assertEquals(data.success, false);
-  assertEquals(data.error, "Authentication required");
+  assertEquals(response.status, 401);
 });
 
 Deno.test("auth - request with valid token accepts the request", async () => {
@@ -165,7 +164,7 @@ Deno.test("validation - request without URL returns error", async () => {
   const response = await invokeEdgeFunction({}, accessToken);
   const data = await response.json();
 
-  assertEquals(response.status, 500);
+  assertEquals(response.status, 200);
   assertEquals(data.success, false);
   assertEquals(data.error, "URL is required");
 });
@@ -176,7 +175,7 @@ Deno.test("validation - request with empty URL returns error", async () => {
   const response = await invokeEdgeFunction({ url: "" }, accessToken);
   const data = await response.json();
 
-  assertEquals(response.status, 500);
+  assertEquals(response.status, 200);
   assertEquals(data.success, false);
   assertEquals(data.error, "URL is required");
 });
@@ -187,7 +186,7 @@ Deno.test("validation - request with invalid URL format returns error", async ()
   const response = await invokeEdgeFunction({ url: "not-a-url" }, accessToken);
   const data = await response.json();
 
-  assertEquals(response.status, 500);
+  assertEquals(response.status, 200);
   assertEquals(data.success, false);
   assertEquals(data.error, "Invalid URL format");
 });
@@ -198,7 +197,7 @@ Deno.test("validation - request with non-http URL returns error", async () => {
   const response = await invokeEdgeFunction({ url: "ftp://example.com/recipe" }, accessToken);
   const data = await response.json();
 
-  assertEquals(response.status, 500);
+  assertEquals(response.status, 200);
   assertEquals(data.success, false);
   // Note: The URL constructor throws "Invalid URL format" before we can check protocol
   // This is expected behavior - we catch the invalid URL format error

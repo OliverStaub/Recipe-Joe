@@ -98,6 +98,84 @@ Output the complete recipe text, maintaining the original formatting where possi
 }
 
 /**
+ * Extract text from multiple images using Claude Vision API
+ * Combines text from all images, removing duplicates
+ */
+export async function extractTextFromImages(
+  images: Array<{ base64: string; mediaType: string }>
+): Promise<VisionOCRResult> {
+  const anthropicApiKey = Deno.env.get('ANTHROPIC_API_KEY');
+  if (!anthropicApiKey) {
+    throw new Error('ANTHROPIC_API_KEY not configured');
+  }
+
+  // Build content array with all images
+  const content: Array<{ type: string; source?: { type: string; media_type: string; data: string }; text?: string }> = [];
+
+  for (let i = 0; i < images.length; i++) {
+    content.push({
+      type: 'image',
+      source: {
+        type: 'base64',
+        media_type: images[i].mediaType,
+        data: images[i].base64,
+      },
+    });
+  }
+
+  content.push({
+    type: 'text',
+    text: `You are looking at ${images.length} images that together contain ONE recipe.
+These might be:
+- Multiple pages of the same recipe
+- Different photos of the same recipe card (front/back)
+- Screenshots that continue from one to the next
+
+IMPORTANT:
+- Extract ALL text from ALL images
+- Combine the content into ONE unified recipe
+- REMOVE any duplicate text that appears in multiple images
+- Preserve the structure (title, ingredients list, instructions)
+- Include quantities, measurements, and cooking times
+- If handwriting is unclear, make your best interpretation and note [unclear]
+- Separate ingredients from instructions clearly
+
+Output the complete recipe text as ONE unified recipe, with duplicates removed.`,
+  });
+
+  const response = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': anthropicApiKey,
+      'anthropic-version': '2023-06-01',
+    },
+    body: JSON.stringify({
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: 4096,
+      messages: [{
+        role: 'user',
+        content,
+      }],
+    }),
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`Claude Vision API error: ${response.status} - ${errorText}`);
+  }
+
+  const result = await response.json();
+  return {
+    text: result.content[0].text,
+    usage: {
+      input_tokens: result.usage?.input_tokens || 0,
+      output_tokens: result.usage?.output_tokens || 0,
+    },
+  };
+}
+
+/**
  * Extract text from PDF using Claude Vision API
  * Claude can process PDFs directly as documents
  */
@@ -243,56 +321,43 @@ function buildSystemPrompt(options: RecipeExtractionOptions): string {
     ? `## CRITICAL: Output Language = ${langName.toUpperCase()}
 - Recipe name, description, category, cuisine: MUST be in ${langName}
 - All step instructions: MUST be in ${langName}
-- Ingredient notes: MUST be in ${langName}
-- Category prefixes (prep, cook, etc.): Keep in English (they are keywords)`
+- Ingredient notes: MUST be in ${langName}`
     : `## CRITICAL: Keep Original Language
 - Recipe name, description, category, cuisine: Keep in ORIGINAL language from source
-- All step instructions: Keep in ORIGINAL language, only add category prefix
-- Ingredient notes: Keep in ORIGINAL language
-- Category prefixes (prep, cook, etc.): Always in English (they are keywords)`;
+- All step instructions: Keep in ORIGINAL language, only add emoji prefix
+- Ingredient notes: Keep in ORIGINAL language`;
 
-  const stepInstructions = reword
-    ? `## Step Formatting Rules:
+  const stepInstructions = `## Step Formatting Rules:
 - IMPORTANT: You MUST extract ALL cooking steps from the recipe. Do not skip any steps.
+${reword ? '- Simplify cooking steps to single, clear actions.' : '- Keep the ORIGINAL text from the source - do NOT reword or simplify'}
 
-### Core Principle: Each step = one action type with a clear outcome
+### Emoji Prefix (REQUIRED at start of each instruction):
+Choose a SINGLE fitting emoji that represents the step. Be creative and specific!
 
-### Rules:
-1. **One Action Type Per Step** - Group same actions together
-2. **Separate Steps When:**
-   - Timing differs
-   - Method changes (prep to cooking)
-   - Waiting/checking required
-   - Temperature/setting changes
-3. **Each Step Must Include:**
-   - Action verb (imperative: dice, mix, heat, bake)
-   - Quantities and ingredients
-   - Success criteria: timing, visual, texture, or temperature
-4. **Length:** Target 50-120 characters
+**Priority for choosing emoji:**
+1. **Main ingredient** - If the step focuses on a specific ingredient, use its emoji:
+   - 🧅 onion, 🥕 carrot, 🍅 tomato, 🥔 potato, 🍌 banana, 🍋 lemon, 🧄 garlic
+   - 🥩 meat, 🍗 chicken, 🐟 fish, 🥚 egg, 🧀 cheese, 🥛 milk, 🧈 butter
+   - 🍝 pasta, 🍚 rice, 🥖 bread, 🥬 greens, 🫑 pepper, 🍄 mushroom
+2. **Cooking action** - If no specific ingredient stands out:
+   - 🔪 cutting/chopping, 🔥 heating/sautéing, 💨 steaming
+   - 🥄 stirring/mixing, 🫗 pouring, 🧂 seasoning
+   - ♨️ baking/oven, ❄️ cooling/chilling, ⏲️ waiting/timing
+3. **Tool or result** - As fallback:
+   - 🍳 pan cooking, 🥘 pot cooking, 🥣 bowl mixing
+   - 🍽️ plating/serving, ✨ finishing touches
 
-### Category Prefixes (REQUIRED at start of each instruction):
-- prep: Dice, chop, measure, prepare ingredients
-- heat: Heat pan, preheat oven, temperature setup
-- cook: Saut\u00e9, boil, simmer, roast - active cooking
-- mix: Combine, whisk, stir, fold ingredients
-- assemble: Layer, arrange, fill, shape
-- bake: Oven cooking with time/temp
-- rest: Cool, set, rest, chill periods
-- finish: Garnish, serve, final touches`
-    : `## Step Formatting Rules:
-- IMPORTANT: You MUST extract ALL cooking steps from the recipe. Do not skip any steps.
-- Keep the ORIGINAL text from the source - do NOT reword or simplify
-- ONLY add a category prefix at the start of each step
+### Format:
+[emoji] [instruction text]
 
-### Category Prefixes (add to start of each original instruction):
-- prep: Preparation steps
-- heat: Heating steps
-- cook: Active cooking
-- mix: Mixing/combining steps
-- assemble: Assembly steps
-- bake: Oven cooking steps
-- rest: Resting/cooling steps
-- finish: Final touches, garnishing, serving`;
+### Examples${targetLanguage === 'de' ? ' (in German)' : ''}:
+${targetLanguage === 'de' ? `- "🧅 Zwiebeln in feine Würfel schneiden"
+- "🔥 Öl in der Pfanne erhitzen"
+- "🥕 Karotten und Sellerie hinzufügen"
+- "🧀 Mit geriebenem Käse bestreuen"` : `- "🧅 Dice the onions into small cubes"
+- "🔥 Heat oil in a large pan"
+- "🥕 Add carrots and celery"
+- "🧀 Top with grated cheese"`}`;
 
   return `You are a recipe extraction assistant. Extract structured recipe data from OCR-extracted text.
 
@@ -306,12 +371,12 @@ ${languageInstructions}
 
 ## Your Task:
 1. Validate the content contains a recipe. Set is_valid_recipe=false if not a recipe.
-2. ${reword ? `Extract all recipe details and translate EVERYTHING to ${langName} (except category prefixes).` : 'Extract all details, keeping original language (only add category prefixes to steps).'}
+2. ${reword ? `Extract all recipe details and translate EVERYTHING to ${langName}.` : 'Extract all details, keeping original language (only add emoji prefix to steps).'}
 3. CRITICAL: For EVERY ingredient, you MUST provide BOTH:
    - name_en: The ingredient name in ENGLISH
    - name_de: The ingredient name in GERMAN
    These MUST be actual translations, not duplicates!
-4. ${reword ? 'Simplify cooking steps to single, clear actions.' : 'Keep original step text, only add category prefix.'}
+4. ${reword ? 'Simplify cooking steps to single, clear actions with emoji prefix.' : 'Keep original step text, only add emoji prefix.'}
 5. Match ingredients to existing ones when possible. Set is_new=true only for unmatched ingredients.
 6. Use ONLY the measurement types listed below.
 

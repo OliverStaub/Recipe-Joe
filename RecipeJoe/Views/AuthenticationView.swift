@@ -237,7 +237,7 @@ struct AuthenticationView: View {
             }
         } catch {
             // Error is handled by authService.errorMessage
-            print("Auth error: \(error)")
+            Log.error("Auth error: \(error)", category: Log.auth)
         }
     }
 
@@ -252,7 +252,7 @@ struct AuthenticationView: View {
                 do {
                     try await authService.signInWithApple(credential: appleIDCredential)
                 } catch {
-                    print("Sign in failed: \(error)")
+                    Log.error("Sign in failed: \(error)", category: Log.auth)
                 }
             }
 

@@ -7,6 +7,10 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		3D18F8DA2EFE960D007C62D3 /* Products.storekit in Resources */ = {isa = PBXBuildFile; fileRef = 3D18F8D92EFE960D007C62D3 /* Products.storekit */; };
+		3D18F8DB2EFE960D007C62D3 /* Products.storekit in Resources */ = {isa = PBXBuildFile; fileRef = 3D18F8D92EFE960D007C62D3 /* Products.storekit */; };
+		3D18F8DD2EFE960D007C62D3 /* Products.storekit in Resources */ = {isa = PBXBuildFile; fileRef = 3D18F8D92EFE960D007C62D3 /* Products.storekit */; };
+		3D5915E42EFDD2CA0081223A /* StoreKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 3D5915E32EFDD2CA0081223A /* StoreKit.framework */; };
 		3DBFCB0C2EE31E620043D501 /* Auth in Frameworks */ = {isa = PBXBuildFile; productRef = 3DBFCB0B2EE31E620043D501 /* Auth */; };
 		3DBFCB0E2EE31E620043D501 /* Functions in Frameworks */ = {isa = PBXBuildFile; productRef = 3DBFCB0D2EE31E620043D501 /* Functions */; };
 		3DBFCB102EE31E620043D501 /* PostgREST in Frameworks */ = {isa = PBXBuildFile; productRef = 3DBFCB0F2EE31E620043D501 /* PostgREST */; };
@@ -14,22 +18,12 @@
 		3DBFCB142EE31E620043D501 /* Storage in Frameworks */ = {isa = PBXBuildFile; productRef = 3DBFCB132EE31E620043D501 /* Storage */; };
 		3DBFCB162EE322440043D501 /* Supabase in Frameworks */ = {isa = PBXBuildFile; productRef = 3DBFCB152EE322440043D501 /* Supabase */; };
 		3DBFCF6A2EEC592F0043D501 /* Kingfisher in Frameworks */ = {isa = PBXBuildFile; productRef = 3DBFCF692EEC592F0043D501 /* Kingfisher */; };
-		3DE3EB342EEF3614001A902B /* Base.xcconfig in Resources */ = {isa = PBXBuildFile; fileRef = 3DE3EB2F2EEF3614001A902B /* Base.xcconfig */; };
-		3DE3EB372EEF3614001A902B /* Base.xcconfig in Resources */ = {isa = PBXBuildFile; fileRef = 3DE3EB2F2EEF3614001A902B /* Base.xcconfig */; };
-		3DE3EB3A2EEF3614001A902B /* Base.xcconfig in Resources */ = {isa = PBXBuildFile; fileRef = 3DE3EB2F2EEF3614001A902B /* Base.xcconfig */; };
 		3DSHARE0012EF9A1230043D501 /* RecipeJoeShareExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 3DSHARE0002EF9A1230043D501 /* RecipeJoeShareExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		3DSHARE0022EF9A1230043D501 /* Supabase in Frameworks */ = {isa = PBXBuildFile; productRef = 3DSHARE0032EF9A1230043D501 /* Supabase */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
 		3D195E6E2ED381B500EAC766 /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = 3D195E582ED381B400EAC766 /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = 3D195E5F2ED381B400EAC766;
-			remoteInfo = RecipeJoe;
-		};
-		3D195E782ED381B500EAC766 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 3D195E582ED381B400EAC766 /* Project object */;
 			proxyType = 1;
@@ -60,9 +54,10 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		3D18F8D92EFE960D007C62D3 /* Products.storekit */ = {isa = PBXFileReference; lastKnownFileType = text; path = Products.storekit; sourceTree = "<group>"; };
 		3D195E602ED381B400EAC766 /* RecipeJoe.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = RecipeJoe.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		3D195E6D2ED381B500EAC766 /* RecipeJoeTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = RecipeJoeTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
-		3D195E772ED381B500EAC766 /* RecipeJoeUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = RecipeJoeUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		3D5915E32EFDD2CA0081223A /* StoreKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = StoreKit.framework; path = System/Library/Frameworks/StoreKit.framework; sourceTree = SDKROOT; };
 		3DE3EB2A2EEEDFDF001A902B /* RecipeJoe.xctestplan */ = {isa = PBXFileReference; lastKnownFileType = text; path = RecipeJoe.xctestplan; sourceTree = "<group>"; };
 		3DE3EB2F2EEF3614001A902B /* Base.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Base.xcconfig; sourceTree = "<group>"; };
 		3DSHARE0002EF9A1230043D501 /* RecipeJoeShareExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = RecipeJoeShareExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -89,11 +84,6 @@
 			path = RecipeJoeTests;
 			sourceTree = "<group>";
 		};
-		3D195E7A2ED381B500EAC766 /* RecipeJoeUITests */ = {
-			isa = PBXFileSystemSynchronizedRootGroup;
-			path = RecipeJoeUITests;
-			sourceTree = "<group>";
-		};
 		3DSHARE0062EF9A1230043D501 /* RecipeJoeShareExtension */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
@@ -112,6 +102,7 @@
 				3DBFCB102EE31E620043D501 /* PostgREST in Frameworks */,
 				3DBFCB0E2EE31E620043D501 /* Functions in Frameworks */,
 				3DBFCF6A2EEC592F0043D501 /* Kingfisher in Frameworks */,
+				3D5915E42EFDD2CA0081223A /* StoreKit.framework in Frameworks */,
 				3DBFCB162EE322440043D501 /* Supabase in Frameworks */,
 				3DBFCB0C2EE31E620043D501 /* Auth in Frameworks */,
 				3DBFCB142EE31E620043D501 /* Storage in Frameworks */,
@@ -120,13 +111,6 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		3D195E6A2ED381B500EAC766 /* Frameworks */ = {
-			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		3D195E742ED381B500EAC766 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -147,12 +131,13 @@
 		3D195E572ED381B400EAC766 = {
 			isa = PBXGroup;
 			children = (
+				3D18F8D92EFE960D007C62D3 /* Products.storekit */,
 				3DE3EB322EEF3614001A902B /* Config */,
 				3DE3EB2A2EEEDFDF001A902B /* RecipeJoe.xctestplan */,
 				3D195E622ED381B400EAC766 /* RecipeJoe */,
 				3D195E702ED381B500EAC766 /* RecipeJoeTests */,
-				3D195E7A2ED381B500EAC766 /* RecipeJoeUITests */,
 				3DSHARE0062EF9A1230043D501 /* RecipeJoeShareExtension */,
+				3D5915E22EFDD2CA0081223A /* Frameworks */,
 				3D195E612ED381B400EAC766 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -162,10 +147,17 @@
 			children = (
 				3D195E602ED381B400EAC766 /* RecipeJoe.app */,
 				3D195E6D2ED381B500EAC766 /* RecipeJoeTests.xctest */,
-				3D195E772ED381B500EAC766 /* RecipeJoeUITests.xctest */,
 				3DSHARE0002EF9A1230043D501 /* RecipeJoeShareExtension.appex */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		3D5915E22EFDD2CA0081223A /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				3D5915E32EFDD2CA0081223A /* StoreKit.framework */,
+			);
+			name = Frameworks;
 			sourceTree = "<group>";
 		};
 		3DE3EB322EEF3614001A902B /* Config */ = {
@@ -233,29 +225,6 @@
 			productReference = 3D195E6D2ED381B500EAC766 /* RecipeJoeTests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
 		};
-		3D195E762ED381B500EAC766 /* RecipeJoeUITests */ = {
-			isa = PBXNativeTarget;
-			buildConfigurationList = 3D195E872ED381B500EAC766 /* Build configuration list for PBXNativeTarget "RecipeJoeUITests" */;
-			buildPhases = (
-				3D195E732ED381B500EAC766 /* Sources */,
-				3D195E742ED381B500EAC766 /* Frameworks */,
-				3D195E752ED381B500EAC766 /* Resources */,
-			);
-			buildRules = (
-			);
-			dependencies = (
-				3D195E792ED381B500EAC766 /* PBXTargetDependency */,
-			);
-			fileSystemSynchronizedGroups = (
-				3D195E7A2ED381B500EAC766 /* RecipeJoeUITests */,
-			);
-			name = RecipeJoeUITests;
-			packageProductDependencies = (
-			);
-			productName = RecipeJoeUITests;
-			productReference = 3D195E772ED381B500EAC766 /* RecipeJoeUITests.xctest */;
-			productType = "com.apple.product-type.bundle.ui-testing";
-		};
 		3DSHARE0102EF9A1230043D501 /* RecipeJoeShareExtension */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 3DSHARE0112EF9A1230043D501 /* Build configuration list for PBXNativeTarget "RecipeJoeShareExtension" */;
@@ -287,16 +256,12 @@
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
 				LastSwiftUpdateCheck = 2610;
-				LastUpgradeCheck = 2610;
+				LastUpgradeCheck = 2620;
 				TargetAttributes = {
 					3D195E5F2ED381B400EAC766 = {
 						CreatedOnToolsVersion = 26.1.1;
 					};
 					3D195E6C2ED381B500EAC766 = {
-						CreatedOnToolsVersion = 26.1.1;
-						TestTargetID = 3D195E5F2ED381B400EAC766;
-					};
-					3D195E762ED381B500EAC766 = {
 						CreatedOnToolsVersion = 26.1.1;
 						TestTargetID = 3D195E5F2ED381B400EAC766;
 					};
@@ -325,7 +290,6 @@
 			targets = (
 				3D195E5F2ED381B400EAC766 /* RecipeJoe */,
 				3D195E6C2ED381B500EAC766 /* RecipeJoeTests */,
-				3D195E762ED381B500EAC766 /* RecipeJoeUITests */,
 				3DSHARE0102EF9A1230043D501 /* RecipeJoeShareExtension */,
 			);
 		};
@@ -336,7 +300,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				3DE3EB342EEF3614001A902B /* Base.xcconfig in Resources */,
+				3D18F8DA2EFE960D007C62D3 /* Products.storekit in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -344,15 +308,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				3DE3EB3A2EEF3614001A902B /* Base.xcconfig in Resources */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		3D195E752ED381B500EAC766 /* Resources */ = {
-			isa = PBXResourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				3DE3EB372EEF3614001A902B /* Base.xcconfig in Resources */,
+				3D18F8DB2EFE960D007C62D3 /* Products.storekit in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -360,6 +316,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				3D18F8DD2EFE960D007C62D3 /* Products.storekit in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -380,13 +337,6 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		3D195E732ED381B500EAC766 /* Sources */ = {
-			isa = PBXSourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 		3DSHARE0092EF9A1230043D501 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -401,11 +351,6 @@
 			isa = PBXTargetDependency;
 			target = 3D195E5F2ED381B400EAC766 /* RecipeJoe */;
 			targetProxy = 3D195E6E2ED381B500EAC766 /* PBXContainerItemProxy */;
-		};
-		3D195E792ED381B500EAC766 /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			target = 3D195E5F2ED381B400EAC766 /* RecipeJoe */;
-			targetProxy = 3D195E782ED381B500EAC766 /* PBXContainerItemProxy */;
 		};
 		3DSHARE0082EF9A1230043D501 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
@@ -473,6 +418,7 @@
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
 				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 			};
@@ -529,6 +475,7 @@
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_COMPILATION_MODE = wholemodule;
 				VALIDATE_PRODUCT = YES;
 			};
@@ -546,21 +493,21 @@
 				DEVELOPMENT_TEAM = Z66Q4BXFN7;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_CFBundleURLTypes = "({CFBundleURLName = \"Oliver.RecipeJoe\"; CFBundleURLSchemes = (recipejoe); })";
+				INFOPLIST_KEY_CFBundleURLTypes = "({CFBundleURLName = \"com.oliverstaub.recipejoe\"; CFBundleURLSchemes = (recipejoe); })";
+				INFOPLIST_KEY_NSCameraUsageDescription = "RecipeJoe needs camera access to photograph recipes";
+				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "RecipeJoe needs photo access to import recipe images";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
-				INFOPLIST_KEY_NSCameraUsageDescription = "RecipeJoe needs camera access to photograph recipes";
-				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "RecipeJoe needs photo access to import recipe images";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
 				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = Oliver.RecipeJoe;
+				PRODUCT_BUNDLE_IDENTIFIER = com.oliverstaub.recipejoe;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
@@ -583,21 +530,21 @@
 				DEVELOPMENT_TEAM = Z66Q4BXFN7;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_CFBundleURLTypes = "({CFBundleURLName = \"Oliver.RecipeJoe\"; CFBundleURLSchemes = (recipejoe); })";
+				INFOPLIST_KEY_CFBundleURLTypes = "({CFBundleURLName = \"com.oliverstaub.recipejoe\"; CFBundleURLSchemes = (recipejoe); })";
 				INFOPLIST_KEY_NSCameraUsageDescription = "RecipeJoe needs camera access to photograph recipes";
 				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "RecipeJoe needs photo access to import recipe images";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
 				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = Oliver.RecipeJoe;
+				PRODUCT_BUNDLE_IDENTIFIER = com.oliverstaub.recipejoe;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
@@ -619,7 +566,7 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 26.1;
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = Oliver.RecipeJoeTests;
+				PRODUCT_BUNDLE_IDENTIFIER = com.oliverstaub.recipejoeTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = NO;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
@@ -640,7 +587,7 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 26.1;
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = Oliver.RecipeJoeTests;
+				PRODUCT_BUNDLE_IDENTIFIER = com.oliverstaub.recipejoeTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = NO;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
@@ -649,45 +596,6 @@
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
 				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/RecipeJoe.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/RecipeJoe";
-			};
-			name = Release;
-		};
-		3D195E882ED381B500EAC766 /* Debug */ = {
-			isa = XCBuildConfiguration;
-			baseConfigurationReference = 3DE3EB2F2EEF3614001A902B /* Base.xcconfig */;
-			buildSettings = {
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
-				GENERATE_INFOPLIST_FILE = YES;
-				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = Oliver.RecipeJoeUITests;
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				STRING_CATALOG_GENERATE_SYMBOLS = NO;
-				SWIFT_APPROACHABLE_CONCURRENCY = YES;
-				SWIFT_EMIT_LOC_STRINGS = NO;
-				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
-				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
-				TEST_TARGET_NAME = RecipeJoe;
-			};
-			name = Debug;
-		};
-		3D195E892ED381B500EAC766 /* Release */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
-				GENERATE_INFOPLIST_FILE = YES;
-				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = Oliver.RecipeJoeUITests;
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				STRING_CATALOG_GENERATE_SYMBOLS = NO;
-				SWIFT_APPROACHABLE_CONCURRENCY = YES;
-				SWIFT_EMIT_LOC_STRINGS = NO;
-				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
-				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
-				TEST_TARGET_NAME = RecipeJoe;
 			};
 			name = Release;
 		};
@@ -709,7 +617,7 @@
 					"@executable_path/../../Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = Oliver.RecipeJoe.ShareExtension;
+				PRODUCT_BUNDLE_IDENTIFIER = com.oliverstaub.recipejoe.ShareExtension;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
@@ -739,7 +647,7 @@
 					"@executable_path/../../Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = Oliver.RecipeJoe.ShareExtension;
+				PRODUCT_BUNDLE_IDENTIFIER = com.oliverstaub.recipejoe.ShareExtension;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
@@ -777,15 +685,6 @@
 			buildConfigurations = (
 				3D195E852ED381B500EAC766 /* Debug */,
 				3D195E862ED381B500EAC766 /* Release */,
-			);
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
-		};
-		3D195E872ED381B500EAC766 /* Build configuration list for PBXNativeTarget "RecipeJoeUITests" */ = {
-			isa = XCConfigurationList;
-			buildConfigurations = (
-				3D195E882ED381B500EAC766 /* Debug */,
-				3D195E892ED381B500EAC766 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

@@ -10,9 +10,11 @@ import SwiftUI
 struct SettingsView: View {
     @ObservedObject private var userSettings = UserSettings.shared
     @ObservedObject private var authService = AuthenticationService.shared
+    @ObservedObject private var tokenService = TokenService.shared
     @Environment(\.locale) private var locale
     @State private var showSignOutConfirmation = false
     @State private var showDeleteAccountConfirmation = false
+    @State private var showPurchaseSheet = false
 
     var body: some View {
         NavigationStack {
@@ -50,19 +52,39 @@ struct SettingsView: View {
                         Label("Recipe Language".localized(for: locale), systemImage: "doc.text")
                     }
 
-                    Toggle(isOn: $userSettings.keepOriginalWording) {
-                        Label("Keep Original Wording".localized(for: locale), systemImage: "text.quote")
+                    Toggle(isOn: $userSettings.enableTranslation) {
+                        Label("Enable Translation".localized(for: locale), systemImage: "globe")
                     }
                 } header: {
                     Text("Recipe Import".localized(for: locale))
                 } footer: {
-                    if userSettings.keepOriginalWording {
-                        Text("Steps will be imported in their original language without rewording.".localized(for: locale))
-                    } else {
-                        // For interpolated strings, we need a different approach
-                        let template = "Recipes will be imported and translated to %@. This setting applies to future imports only."
+                    if userSettings.enableTranslation {
+                        let template = "Recipes will be translated to %@ when the source language differs."
                         Text(String(format: template.localized(for: locale), userSettings.recipeLanguage.displayName))
+                    } else {
+                        Text("Recipes will be imported in their original language.".localized(for: locale))
                     }
+                }
+
+                // MARK: - Tokens Section
+                Section {
+                    HStack {
+                        Label("Balance".localized(for: locale), systemImage: "circle.fill")
+                        Spacer()
+                        Text("\(tokenService.tokenBalance) tokens")
+                            .foregroundStyle(.secondary)
+                    }
+
+                    Button {
+                        showPurchaseSheet = true
+                    } label: {
+                        Label("Get More Tokens".localized(for: locale), systemImage: "plus.circle")
+                    }
+                    .accessibilityIdentifier("getMoreTokensButton")
+                } header: {
+                    Text("Tokens".localized(for: locale))
+                } footer: {
+                    Text("Tokens are used to import recipes from websites, videos, and photos.".localized(for: locale))
                 }
 
                 // MARK: - About Section
@@ -72,6 +94,14 @@ struct SettingsView: View {
                         Spacer()
                         Text(Bundle.main.appVersion)
                             .foregroundStyle(.secondary)
+                    }
+
+                    Link(destination: URL(string: AppConstants.privacyPolicyURL)!) {
+                        Label("Privacy Policy".localized(for: locale), systemImage: "hand.raised")
+                    }
+
+                    Link(destination: URL(string: AppConstants.termsOfServiceURL)!) {
+                        Label("Terms of Service".localized(for: locale), systemImage: "doc.text")
                     }
                 }
 
@@ -138,6 +168,9 @@ struct SettingsView: View {
                 }
             } message: {
                 Text("This will permanently delete your account and all your recipes. This action cannot be undone.".localized(for: locale))
+            }
+            .sheet(isPresented: $showPurchaseSheet) {
+                TokenPurchaseView()
             }
         }
     }
