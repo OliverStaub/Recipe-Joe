@@ -62,16 +62,16 @@
     {
       "displayPrice" : "11.99",
       "familyShareable" : false,
-      "internalID" : "tokens_120_id",
+      "internalID" : "tokens_100x_id",
       "localizations" : [
         {
-          "description" : "120 tokens for importing recipes",
-          "displayName" : "120 Tokens",
+          "description" : "100 tokens for importing recipes",
+          "displayName" : "100 Tokens",
           "locale" : "en_US"
         }
       ],
-      "productID" : "tokens_120",
-      "referenceName" : "120 Tokens",
+      "productID" : "tokens_100x",
+      "referenceName" : "100 Tokens",
       "type" : "Consumable"
     }
   ],

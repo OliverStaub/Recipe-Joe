@@ -156,7 +156,7 @@ Products (same as iOS):
 - `tokens_10` - 10 tokens
 - `tokens_25` - 25 tokens
 - `tokens_50` - 50 tokens
-- `tokens_120` - 120 tokens
+- `tokens_100x` - 100 tokens
 
 **Manual Setup Required:**
 1. Google Play Console: Create products

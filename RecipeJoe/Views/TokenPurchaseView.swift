@@ -217,7 +217,7 @@ private struct ProductRow: View {
 
     private var tokenCountText: String {
         let id = product.id
-        if id.contains("120") { return "\(120) " + "Tokens".localized(for: locale) }
+        if id.contains("100") { return "\(100) " + "Tokens".localized(for: locale) }
         if id.contains("50") { return "\(50) " + "Tokens".localized(for: locale) }
         if id.contains("25") { return "\(25) " + "Tokens".localized(for: locale) }
         if id.contains("10") { return "\(10) " + "Tokens".localized(for: locale) }
