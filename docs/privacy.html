@@ -37,6 +37,21 @@
       <ul>
         <li><strong>Recipes</strong> - Recipe names, ingredients, steps, and notes you create or import</li>
         <li><strong>Photos</strong> - Recipe images you upload or capture</li>
+        <li><strong>URLs</strong> - Website and video URLs you submit for recipe import</li>
+      </ul>
+
+      <h3>Purchase and Token Data</h3>
+      <ul>
+        <li><strong>Token balance</strong> - Your current token count for recipe imports</li>
+        <li><strong>Transaction history</strong> - Records of token purchases and usage</li>
+        <li><strong>Apple transaction IDs</strong> - For purchase verification and fraud prevention</li>
+      </ul>
+
+      <h3>Usage Information</h3>
+      <ul>
+        <li><strong>Import activity</strong> - Type of imports (URL, video, image, PDF), success/failure status, and processing duration</li>
+        <li><strong>Platform</strong> - Whether you're using iOS or Android</li>
+        <li><strong>Error logs</strong> - Technical error information to help us improve the service</li>
       </ul>
 
       <h3>Technical Information</h3>
@@ -53,7 +68,10 @@
         <li>Provide and maintain the RecipeJoe service</li>
         <li>Authenticate your account</li>
         <li>Store and sync your recipes across devices</li>
-        <li>Process recipe imports using AI (text extraction from URLs, images, and PDFs)</li>
+        <li>Process recipe imports using AI (text extraction from URLs, images, videos, and PDFs)</li>
+        <li>Manage your token balance and process purchases</li>
+        <li>Enforce rate limits to ensure fair usage (150 imports per 24 hours)</li>
+        <li>Monitor service performance and fix technical issues</li>
         <li>Improve our service</li>
       </ul>
     </div>
@@ -63,10 +81,16 @@
       <p>We use the following third-party services to provide our functionality:</p>
 
       <h3>Supabase</h3>
-      <p>We use Supabase for authentication and data storage. Your account information and recipes are stored securely on Supabase servers. <a href="https://supabase.com/privacy" target="_blank">Supabase Privacy Policy</a></p>
+      <p>We use Supabase for authentication and data storage. Your account information, recipes, and usage data are stored securely on Supabase servers. <a href="https://supabase.com/privacy" target="_blank">Supabase Privacy Policy</a></p>
 
       <h3>Anthropic (Claude AI)</h3>
       <p>When you import recipes from images, PDFs, or websites, we use Anthropic's Claude AI to extract recipe information. The content you import is processed by Claude but is not used to train AI models. <a href="https://www.anthropic.com/privacy" target="_blank">Anthropic Privacy Policy</a></p>
+
+      <h3>Supadata</h3>
+      <p>When you import recipes from video platforms (YouTube, Instagram, TikTok), we use Supadata to fetch video transcripts. Only the video URL is shared with this service. <a href="https://supadata.ai/privacy" target="_blank">Supadata Privacy Policy</a></p>
+
+      <h3>Apple</h3>
+      <p>We use Apple's Sign in with Apple for authentication and StoreKit for in-app purchases. <a href="https://www.apple.com/legal/privacy/" target="_blank">Apple Privacy Policy</a></p>
     </div>
 
     <div class="card">
@@ -76,12 +100,19 @@
         <li>Only you can access your recipes and account data</li>
         <li>We use HTTPS for all data transmission</li>
         <li>Recipe images are stored securely in cloud storage</li>
+        <li>Purchase transactions are verified server-side to prevent fraud</li>
       </ul>
     </div>
 
     <div class="card">
       <h2>Data Retention</h2>
-      <p>We retain your data for as long as your account is active. When you delete your account, all your data (including recipes, images, and personal information) is permanently deleted from our servers.</p>
+      <p>We retain your data for as long as your account is active:</p>
+      <ul>
+        <li><strong>Account and recipe data</strong> - Retained until you delete your account</li>
+        <li><strong>Purchase history</strong> - Retained for legal and accounting purposes</li>
+        <li><strong>Import logs</strong> - Retained for service improvement and support</li>
+      </ul>
+      <p>When you delete your account, all your personal data (including recipes, images, and preferences) is permanently deleted from our servers. Anonymized usage statistics may be retained.</p>
     </div>
 
     <div class="card">

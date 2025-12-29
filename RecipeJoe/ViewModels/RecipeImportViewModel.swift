@@ -215,6 +215,9 @@ final class RecipeImportViewModel: ObservableObject {
                 importState = .error(response.error ?? "Failed to import recipe")
             }
 
+        } catch is CancellationError {
+            // User navigated away - don't show error, just reset
+            importState = .idle
         } catch {
             importState = .error(error.localizedDescription)
         }
@@ -323,6 +326,9 @@ final class RecipeImportViewModel: ObservableObject {
                 importState = .error(response.error ?? "Failed to import recipe from images")
             }
 
+        } catch is CancellationError {
+            // User navigated away - don't show error, just reset
+            importState = .idle
         } catch {
             importState = .error(error.localizedDescription)
         }
@@ -403,6 +409,9 @@ final class RecipeImportViewModel: ObservableObject {
                 importState = .error(response.error ?? "Failed to import recipe from PDF")
             }
 
+        } catch is CancellationError {
+            // User navigated away - don't show error, just reset
+            importState = .idle
         } catch {
             importState = .error(error.localizedDescription)
         }
