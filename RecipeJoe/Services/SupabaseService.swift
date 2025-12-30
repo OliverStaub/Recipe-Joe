@@ -77,15 +77,15 @@ final class SupabaseService: Sendable {
     /// - Parameter importId: The import job ID to check
     /// - Returns: The import log entry with status, or nil if not found
     func checkImportStatus(importId: UUID) async throws -> ImportLogEntry? {
-        let response: ImportLogEntry? = try await client
+        let response: [ImportLogEntry] = try await client
             .from("import_logs")
             .select("id, status, recipe_id, recipe_name, error_message, tokens_used")
             .eq("id", value: importId.uuidString)
-            .maybeSingle()
+            .limit(1)
             .execute()
             .value
 
-        return response
+        return response.first
     }
 
     // MARK: - Recipe Fetching

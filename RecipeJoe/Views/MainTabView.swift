@@ -35,6 +35,12 @@ struct MainTabView: View {
                 deepLinkRecipeId = nil
             }
         }
+        .onChange(of: selectedTab) { _, _ in
+            // Refresh token balance when switching tabs
+            Task {
+                try? await TokenService.shared.refreshBalance()
+            }
+        }
     }
 }
 

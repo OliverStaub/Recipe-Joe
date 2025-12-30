@@ -358,7 +358,8 @@ struct RecipeJoeTests {
             language: "en",
             translate: true,
             startTimestamp: nil,
-            endTimestamp: nil
+            endTimestamp: nil,
+            importId: nil
         )
 
         let encoder = JSONEncoder()

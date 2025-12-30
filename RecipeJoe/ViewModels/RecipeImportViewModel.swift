@@ -229,8 +229,10 @@ final class RecipeImportViewModel: ObservableObject {
             // Keep the importId so we can check status on recovery
             importState = .idle
         } catch {
-            // Clear the import ID on error (not recoverable)
-            currentImportId = nil
+            // Don't clear import ID - the server may have succeeded
+            // even if iOS couldn't parse the response
+            // Keep importId so checkPendingImport can verify status
+            print("Import error: \(error)")
             importState = .error(error.localizedDescription)
         }
     }
@@ -240,8 +242,8 @@ final class RecipeImportViewModel: ObservableObject {
     func checkPendingImport() async {
         guard let importId = currentImportId else { return }
 
-        // Only check if we're in idle state (user navigated away during import)
-        guard importState == .idle else { return }
+        // Check if we're in a recoverable state (idle or error - not during active import)
+        guard importState == .idle || importState.errorMessage != nil else { return }
 
         isCheckingPendingImport = true
         defer { isCheckingPendingImport = false }
