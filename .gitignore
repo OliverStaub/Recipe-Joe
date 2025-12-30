@@ -28,6 +28,10 @@ supabase/.temp/
 # Secrets - NEVER commit these
 **/Secrets.xcconfig
 
+# Firebase config (contains API keys)
+**/google-services.json
+**/GoogleService-Info.plist
+
 # Logging infrastructure
 logging/data/
 logging/.env
