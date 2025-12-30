@@ -94,6 +94,10 @@ struct AddRecipeView: View {
             .onTapGesture {
                 isTextFieldFocused = false
             }
+            // Check for pending imports when view appears (recovery from navigation away)
+            .task {
+                await importViewModel.checkPendingImport()
+            }
             // Photo picker (up to 3 images)
             .photosPicker(
                 isPresented: $showPhotoPicker,

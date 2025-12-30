@@ -16,11 +16,22 @@ struct RecipeImportRequest: Codable, Sendable {
     let translate: Bool
     let startTimestamp: String?
     let endTimestamp: String?
+    let importId: String? // Client-generated UUID for job tracking
+
+    enum CodingKeys: String, CodingKey {
+        case url
+        case language
+        case translate
+        case startTimestamp
+        case endTimestamp
+        case importId = "import_id"
+    }
 }
 
 /// Response from recipe import Edge Function
 struct RecipeImportResponse: Codable, Sendable {
     let success: Bool
+    let importId: String? // Job ID for status tracking
     let recipeId: String?
     let recipeName: String?
     let error: String?
@@ -36,6 +47,7 @@ struct RecipeImportResponse: Codable, Sendable {
 
     enum CodingKeys: String, CodingKey {
         case success
+        case importId = "import_id"
         case recipeId = "recipe_id"
         case recipeName = "recipe_name"
         case error
@@ -100,6 +112,39 @@ struct MediaImportRequest: Codable, Sendable {
 
 /// Response from media import Edge Function (same structure as URL import)
 typealias MediaImportResponse = RecipeImportResponse
+
+// MARK: - Import Status (for job tracking)
+
+/// Status of an import job
+enum ImportJobStatus: String, Codable, Sendable {
+    case pending
+    case success
+    case failed
+}
+
+/// Import log entry for status checking
+struct ImportLogEntry: Codable, Sendable {
+    let id: UUID
+    let status: String
+    let recipeId: UUID?
+    let recipeName: String?
+    let errorMessage: String?
+    let tokensUsed: Int?
+
+    enum CodingKeys: String, CodingKey {
+        case id
+        case status
+        case recipeId = "recipe_id"
+        case recipeName = "recipe_name"
+        case errorMessage = "error_message"
+        case tokensUsed = "tokens_used"
+    }
+
+    /// Parsed status enum
+    var jobStatus: ImportJobStatus {
+        ImportJobStatus(rawValue: status) ?? .failed
+    }
+}
 
 // MARK: - Database Models
 

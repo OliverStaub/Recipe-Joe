@@ -32,6 +32,9 @@ import {
   createImportTimer,
   extractErrorDetails,
   detectPlatform,
+  createPendingImport,
+  updateImportSuccess,
+  updateImportFailed,
   type ImportType,
   type Platform,
 } from "../_shared/import-logger.ts";
@@ -47,10 +50,13 @@ serve(async (req) => {
     return new Response('ok', { headers: corsHeaders });
   }
 
+  // Track import job ID for status checking (defined here so it's accessible in catch block)
+  let importId: string | undefined;
+
   try {
     // Parse request
     const body = await req.json();
-    const { url, language = 'en', reword = true, startTimestamp, endTimestamp }: ImportRequest = body;
+    const { url, language = 'en', reword = true, startTimestamp, endTimestamp, import_id: clientImportId }: ImportRequest = body;
 
     if (!url) {
       throw new Error('URL is required');
@@ -148,6 +154,22 @@ serve(async (req) => {
     const importType: ImportType = isVideo ? 'video' : 'url';
     const platform: Platform = detectPlatform(req);
     logImportStart(userId, importType, url);
+
+    // Create pending import log entry for job tracking
+    // This allows clients to check import status if connection is lost
+    try {
+      importId = await createPendingImport(supabase, {
+        import_id: clientImportId,
+        user_id: userId,
+        import_type: importType,
+        source: url,
+        platform,
+      });
+    } catch (err) {
+      console.error('Failed to create pending import:', err);
+      // Use a fallback ID if pending creation fails
+      importId = clientImportId || crypto.randomUUID();
+    }
 
     // Step 1: Fetch existing data for Claude context
     const [existingIngredients, measurementTypes] = await Promise.all([
@@ -324,29 +346,25 @@ serve(async (req) => {
       console.log(`Tokens deducted. New balance: ${deductResult.balance}`);
     }
 
-    // Log successful import to database
+    // Update import log to success
     const duration = importTimer.stop();
     const modelsUsed = isVideo
       ? ['claude-3-5-haiku-20241022'] // Video uses haiku for transcript extraction
       : ['claude-3-5-haiku-20241022']; // URL also uses haiku
 
-    await logImportToDb(supabase, {
-      user_id: userId,
-      import_type: importType,
-      source: url,
-      status: 'success',
+    await updateImportSuccess(supabase, importId, {
       recipe_id: recipeId,
       recipe_name: claudeResponse.data.recipe?.name,
       tokens_used: tokenCost,
       models_used: modelsUsed,
       input_tokens: claudeResponse.usage.input_tokens,
       output_tokens: claudeResponse.usage.output_tokens,
-      platform,
       duration_ms: duration,
     });
 
     const response: ImportResponse = {
       success: true,
+      import_id: importId,
       recipe_id: recipeId,
       recipe_name: claudeResponse.data.recipe?.name,
       tokens_deducted: tokenCost,
@@ -368,44 +386,54 @@ serve(async (req) => {
     const { message: errorMessage, code: errorCode } = extractErrorDetails(error);
     console.error('Error importing recipe:', error);
 
-    // Log failed import (we may not have all context if failure was early)
+    // Log failed import
     const body = await req.clone().json().catch(() => ({}));
     const failedUrl = body?.url || 'unknown';
 
-    // Try to get userId from auth header
-    let failedUserId = 'unknown';
-    const authHeader = req.headers.get('Authorization');
-    if (authHeader) {
-      try {
-        const supabase = getSupabaseClient();
-        const token = authHeader.replace('Bearer ', '');
-        const { data: { user } } = await supabase.auth.getUser(token);
-        if (user) failedUserId = user.id;
-      } catch {
-        // Ignore auth errors during error logging
+    // If we have an importId (pending entry was created), update it to failed
+    if (importId) {
+      const supabase = getSupabaseClient();
+      await updateImportFailed(supabase, importId, {
+        error_message: errorMessage,
+        error_code: errorCode,
+      });
+    } else {
+      // Error occurred before pending entry was created - log to db directly
+      let failedUserId = 'unknown';
+      const authHeader = req.headers.get('Authorization');
+      if (authHeader) {
+        try {
+          const supabase = getSupabaseClient();
+          const token = authHeader.replace('Bearer ', '');
+          const { data: { user } } = await supabase.auth.getUser(token);
+          if (user) failedUserId = user.id;
+        } catch {
+          // Ignore auth errors during error logging
+        }
       }
-    }
 
-    // Log failed import - try to detect platform from request
-    let failedPlatform: Platform = 'unknown';
-    try {
-      failedPlatform = detectPlatform(req);
-    } catch {
-      // Ignore platform detection errors during error logging
-    }
+      let failedPlatform: Platform = 'unknown';
+      try {
+        failedPlatform = detectPlatform(req);
+      } catch {
+        // Ignore platform detection errors during error logging
+      }
 
-    await logImportToDb(supabase, {
-      user_id: failedUserId,
-      import_type: isVideoUrl(failedUrl) ? 'video' : 'url',
-      source: failedUrl,
-      status: 'failed',
-      error_message: errorMessage,
-      error_code: errorCode,
-      platform: failedPlatform,
-    });
+      const supabase = getSupabaseClient();
+      await logImportToDb(supabase, {
+        user_id: failedUserId,
+        import_type: isVideoUrl(failedUrl) ? 'video' : 'url',
+        source: failedUrl,
+        status: 'failed',
+        error_message: errorMessage,
+        error_code: errorCode,
+        platform: failedPlatform,
+      });
+    }
 
     const response: ImportResponse = {
       success: false,
+      import_id: importId,
       error: errorMessage,
     };
 

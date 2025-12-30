@@ -6,6 +6,25 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 This is a Recipe App
 
+## Production Status
+
+**The app is submitted for App Store review and may have active users.**
+
+### Database Migration Safety
+
+- ALL migrations must be safe and non-destructive
+- NEVER drop tables or columns with user data
+- Use additive migrations: add new columns/tables, don't remove
+- For schema changes: add new column → migrate data → deprecate old (in separate release)
+- Test migrations locally before deploying to production
+- Consider backwards compatibility with older app versions
+
+### Deployment Order
+
+1. Deploy Supabase migrations first (backwards compatible)
+2. Deploy Edge Functions
+3. Submit app update to App Store
+
 ## Core Principles
 
 - Iterative development: Small incremental changes only
