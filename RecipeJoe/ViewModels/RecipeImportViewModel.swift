@@ -27,6 +27,10 @@ final class RecipeImportViewModel: ObservableObject {
     @Published var showInsufficientTokensAlert: Bool = false
     @Published var requiredTokens: Int = 0
 
+    // Job tracking for recovery
+    private var currentImportId: UUID?
+    @Published var isCheckingPendingImport: Bool = false
+
     // MARK: - Video URL Detection Patterns
 
     private static let videoPatterns: [(platform: String, pattern: NSRegularExpression)] = {
@@ -150,6 +154,10 @@ final class RecipeImportViewModel: ObservableObject {
         importState = .importing
         currentStep = .fetching
 
+        // Generate a unique import ID for job tracking
+        let importId = UUID()
+        currentImportId = importId
+
         do {
             // Simulate step progression (actual work happens in Edge Function)
             // Step 1: Fetching
@@ -180,7 +188,8 @@ final class RecipeImportViewModel: ObservableObject {
                 language: language,
                 translate: translate,
                 startTimestamp: startTs,
-                endTimestamp: endTs
+                endTimestamp: endTs,
+                importId: importId.uuidString
             )
 
             // Step 3 & 4: Extracting & Saving happen in the Edge Function
@@ -216,10 +225,63 @@ final class RecipeImportViewModel: ObservableObject {
             }
 
         } catch is CancellationError {
-            // User navigated away - don't show error, just reset
+            // User navigated away - the server may still be processing
+            // Keep the importId so we can check status on recovery
             importState = .idle
         } catch {
+            // Don't clear import ID - the server may have succeeded
+            // even if iOS couldn't parse the response
+            // Keep importId so checkPendingImport can verify status
+            print("Import error: \(error)")
             importState = .error(error.localizedDescription)
+        }
+    }
+
+    /// Check if there's a pending import that completed while we were away
+    /// Call this when the import view appears
+    func checkPendingImport() async {
+        guard let importId = currentImportId else { return }
+
+        // Check if we're in a recoverable state (idle or error - not during active import)
+        guard importState == .idle || importState.errorMessage != nil else { return }
+
+        isCheckingPendingImport = true
+        defer { isCheckingPendingImport = false }
+
+        do {
+            guard let status = try await SupabaseService.shared.checkImportStatus(importId: importId) else {
+                // Import not found - clear and continue
+                currentImportId = nil
+                return
+            }
+
+            switch status.jobStatus {
+            case .pending:
+                // Still processing - show importing state
+                importState = .importing
+                currentStep = .extracting
+
+            case .success:
+                // Import completed successfully while we were away
+                currentImportId = nil
+                if let recipeId = status.recipeId {
+                    lastImportedRecipeId = recipeId
+                }
+                lastImportedRecipeName = status.recipeName
+
+                // Refresh token balance
+                try? await TokenService.shared.refreshBalance()
+
+                importState = .success
+
+            case .failed:
+                // Import failed while we were away
+                currentImportId = nil
+                importState = .error(status.errorMessage ?? "Import failed")
+            }
+        } catch {
+            // Network error checking status - just clear and continue
+            currentImportId = nil
         }
     }
 
@@ -231,6 +293,7 @@ final class RecipeImportViewModel: ObservableObject {
         lastImportStats = nil
         startTimestamp = ""
         endTimestamp = ""
+        currentImportId = nil
     }
 
     // MARK: - Media Import (OCR)

@@ -136,7 +136,7 @@ struct ImportStatusSection: View {
                         .font(.title2)
                         .fontWeight(.semibold)
 
-                    Text("Something went wrong. Please try again with different pictures.".localized(for: locale))
+                    Text("Something went wrong. Please try again.".localized(for: locale))
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
                         .multilineTextAlignment(.center)

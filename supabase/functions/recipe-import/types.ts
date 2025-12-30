@@ -20,6 +20,7 @@ export interface ImportRequest {
   reword?: boolean; // If false, keep original text but add category prefixes
   startTimestamp?: string; // Optional start time for video (MM:SS or HH:MM:SS)
   endTimestamp?: string; // Optional end time for video (MM:SS or HH:MM:SS)
+  import_id?: string; // Optional client-generated UUID for job tracking
 }
 
 // Video-specific types
@@ -43,6 +44,7 @@ export interface VideoMetadata {
 
 export interface ImportResponse {
   success: boolean;
+  import_id?: string; // Job ID for status tracking
   recipe_id?: string;
   recipe_name?: string;
   error?: string;

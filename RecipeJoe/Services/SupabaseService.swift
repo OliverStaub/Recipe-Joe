@@ -46,20 +46,23 @@ final class SupabaseService: Sendable {
     ///   - translate: If true, translate recipe to target language when source differs
     ///   - startTimestamp: Optional start time for video (MM:SS or HH:MM:SS format). If nil, starts from beginning.
     ///   - endTimestamp: Optional end time for video (MM:SS or HH:MM:SS format). If nil, goes to end.
+    ///   - importId: Client-generated UUID for job tracking. If connection is lost, client can check status using this ID.
     /// - Returns: The import response with recipe details
     func importRecipe(
         from url: String,
         language: String = "en",
         translate: Bool = true,
         startTimestamp: String? = nil,
-        endTimestamp: String? = nil
+        endTimestamp: String? = nil,
+        importId: String? = nil
     ) async throws -> RecipeImportResponse {
         let request = RecipeImportRequest(
             url: url,
             language: language,
             translate: translate,
             startTimestamp: startTimestamp,
-            endTimestamp: endTimestamp
+            endTimestamp: endTimestamp,
+            importId: importId
         )
 
         let response: RecipeImportResponse = try await client.functions.invoke(
@@ -68,6 +71,21 @@ final class SupabaseService: Sendable {
         )
 
         return response
+    }
+
+    /// Check the status of an import job
+    /// - Parameter importId: The import job ID to check
+    /// - Returns: The import log entry with status, or nil if not found
+    func checkImportStatus(importId: UUID) async throws -> ImportLogEntry? {
+        let response: [ImportLogEntry] = try await client
+            .from("import_logs")
+            .select("id, status, recipe_id, recipe_name, error_message, tokens_used")
+            .eq("id", value: importId.uuidString)
+            .limit(1)
+            .execute()
+            .value
+
+        return response.first
     }
 
     // MARK: - Recipe Fetching

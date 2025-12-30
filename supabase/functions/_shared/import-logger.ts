@@ -4,7 +4,7 @@
 import { SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 export type ImportType = 'url' | 'video' | 'image' | 'pdf';
-export type ImportStatus = 'success' | 'failed';
+export type ImportStatus = 'pending' | 'success' | 'failed';
 export type Platform = 'ios' | 'android' | 'web' | 'unknown';
 
 export interface ImportLogEntry {
@@ -148,6 +148,106 @@ export function logImportStart(
   source: string
 ): void {
   console.log(`[IMPORT_START] user=${userId} type=${importType} source="${source.substring(0, 100)}"`);
+}
+
+/**
+ * Create a pending import log entry (for job tracking)
+ * Returns the log ID that can be used to update the status later
+ */
+export async function createPendingImport(
+  supabase: SupabaseClient,
+  params: {
+    import_id?: string; // Client-provided ID, or generate one
+    user_id: string;
+    import_type: ImportType;
+    source: string;
+    platform: Platform;
+  }
+): Promise<string> {
+  const logId = params.import_id || crypto.randomUUID();
+
+  const { error } = await supabase.from('import_logs').insert({
+    id: logId,
+    user_id: params.user_id,
+    import_type: params.import_type,
+    source: truncateSource(params.source),
+    status: 'pending',
+    platform: params.platform,
+  });
+
+  if (error) {
+    console.error('Failed to create pending import log:', error);
+    throw new Error('Failed to create import job');
+  }
+
+  console.log(`[IMPORT_PENDING] id=${logId} user=${params.user_id} type=${params.import_type}`);
+  return logId;
+}
+
+/**
+ * Update a pending import to success
+ */
+export async function updateImportSuccess(
+  supabase: SupabaseClient,
+  importId: string,
+  params: {
+    recipe_id: string;
+    recipe_name?: string;
+    tokens_used: number;
+    models_used?: string[];
+    input_tokens?: number;
+    output_tokens?: number;
+    duration_ms?: number;
+  }
+): Promise<void> {
+  const { error } = await supabase
+    .from('import_logs')
+    .update({
+      status: 'success',
+      recipe_id: params.recipe_id,
+      recipe_name: params.recipe_name,
+      tokens_used: params.tokens_used,
+      models_used: params.models_used,
+      input_tokens: params.input_tokens,
+      output_tokens: params.output_tokens,
+      duration_ms: params.duration_ms,
+    })
+    .eq('id', importId);
+
+  if (error) {
+    console.error('Failed to update import log to success:', error);
+  } else {
+    console.log(`[IMPORT_SUCCESS] id=${importId} recipe_id=${params.recipe_id}`);
+  }
+}
+
+/**
+ * Update a pending import to failed
+ */
+export async function updateImportFailed(
+  supabase: SupabaseClient,
+  importId: string,
+  params: {
+    error_message: string;
+    error_code?: string;
+    duration_ms?: number;
+  }
+): Promise<void> {
+  const { error } = await supabase
+    .from('import_logs')
+    .update({
+      status: 'failed',
+      error_message: params.error_message,
+      error_code: params.error_code,
+      duration_ms: params.duration_ms,
+    })
+    .eq('id', importId);
+
+  if (error) {
+    console.error('Failed to update import log to failed:', error);
+  } else {
+    console.log(`[IMPORT_FAILED] id=${importId} error="${params.error_message}"`);
+  }
 }
 
 /**
