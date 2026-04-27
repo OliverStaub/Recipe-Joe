@@ -1,3 +1,0 @@
-// Base.xcconfig
-// Build settings for RecipeJoe
-// NOTE: Secrets are NOT stored here - use .env file in project root for test credentials
