@@ -9,7 +9,6 @@
       "ZSH_IN_DOCKER_VERSION": "1.2.0"
     }
   },
-  "runArgs": ["--cap-add=NET_ADMIN", "--cap-add=NET_RAW"],
   "customizations": {
     "vscode": {
       "extensions": [
@@ -53,12 +52,10 @@
     "NODE_OPTIONS": "--max-old-space-size=4096",
     "CLAUDE_CONFIG_DIR": "/home/node/.claude",
     "POWERLEVEL9K_DISABLE_GITSTATUS": "true",
-    "SUPABASE_PROJECT_REF": "${localEnv:SUPABASE_PROJECT_REF:}",
-    "EXTRA_ALLOWED_DOMAINS": "${localEnv:EXTRA_ALLOWED_DOMAINS:}"
+    "SUPABASE_PROJECT_REF": "${localEnv:SUPABASE_PROJECT_REF:}"
   },
   "workspaceMount": "source=${localWorkspaceFolder},target=/workspace,type=bind,consistency=delegated",
   "workspaceFolder": "/workspace",
   "postCreateCommand": "bash .devcontainer/post-create.sh",
-  "postStartCommand": "sudo /usr/local/bin/init-firewall.sh",
-  "waitFor": "postStartCommand"
+  "waitFor": "postCreateCommand"
 }

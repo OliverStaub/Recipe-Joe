@@ -5,7 +5,7 @@ ENV TZ="$TZ"
 
 ARG CLAUDE_CODE_VERSION=latest
 
-# Install basic development tools and iptables/ipset
+# Install basic development tools
 RUN apt-get update && apt-get install -y --no-install-recommends \
   less \
   git \
@@ -17,12 +17,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
   unzip \
   gnupg2 \
   gh \
-  iptables \
-  ipset \
-  iproute2 \
-  dnsutils \
-  aggregate \
-  jq \
   nano \
   vim \
   && apt-get clean && rm -rf /var/lib/apt/lists/*
@@ -96,10 +90,3 @@ RUN npm install -g \
 # Configure pnpm store inside the user's home so it survives the workspace bind mount
 RUN pnpm config set store-dir /home/node/.local/share/pnpm/store
 
-# Copy and set up firewall script
-COPY init-firewall.sh /usr/local/bin/
-USER root
-RUN chmod +x /usr/local/bin/init-firewall.sh && \
-  echo "node ALL=(root) NOPASSWD: /usr/local/bin/init-firewall.sh" > /etc/sudoers.d/node-firewall && \
-  chmod 0440 /etc/sudoers.d/node-firewall
-USER node

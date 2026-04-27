@@ -10,7 +10,11 @@ I want this to be a recipe App called RecipeJoe.
 Fetch this design file, read its readme, and implement the relevant aspects of the design. https://api.anthropic.com/v1/design/h/AMNiAqhSpx9N1qlu0y1ZAw?open_file=RecipeJoe+Design.html
 Implement: RecipeJoe Design.html
 
-Use shadcn svelte components. stay close to the components dont change too much.
+https://www.shadcn-svelte.com
+
+Use shadcn svelte components. see shadcn.txt
+Use the design only for the screen and for you to understand the app.
+Use the shadcn components without adapting and changing them !
 The Design File is more of a guideline dont follow it exactly. dont change the components from shadcn for now stay close to the components to reduce complexity.
 
 The payment you dont have to implement now.
