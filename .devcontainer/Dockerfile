@@ -55,6 +55,11 @@ RUN ARCH=$(dpkg --print-architecture) && \
   sudo dpkg -i "supabase_${SUPABASE_CLI_VERSION}_linux_${ARCH}.deb" && \
   rm "supabase_${SUPABASE_CLI_VERSION}_linux_${ARCH}.deb"
 
+# Allow `node` to run sudo without a password — needed by post-create.sh to fix
+# ownership on freshly-created named volumes (Docker creates them root-owned).
+RUN echo "node ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/node && \
+    chmod 0440 /etc/sudoers.d/node
+
 # Set up non-root user
 USER node
 

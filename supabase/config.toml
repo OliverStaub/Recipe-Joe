@@ -1,0 +1,47 @@
+# Supabase config — `supabase link --project-ref wjetlcyndfifwphttwtw` ties this
+# directory to the dev project. The production project will live on the `main`
+# branch with a separate ref.
+project_id = "recipejoe"
+
+[api]
+enabled = true
+port = 54321
+schemas = ["public", "storage", "graphql_public"]
+extra_search_path = ["public", "extensions"]
+max_rows = 1000
+
+[db]
+port = 54322
+shadow_port = 54320
+major_version = 17
+
+[studio]
+enabled = true
+port = 54323
+
+[auth]
+enabled = true
+site_url = "http://localhost:5173"
+additional_redirect_urls = ["http://localhost:5173/auth/callback"]
+jwt_expiry = 3600
+enable_signup = true
+
+[auth.email]
+enable_signup = true
+double_confirm_changes = true
+enable_confirmations = false
+
+[storage]
+enabled = true
+file_size_limit = "50MiB"
+
+[edge_runtime]
+enabled = true
+policy = "oneshot"
+inspector_port = 8083
+
+[functions.recipe-import]
+# false because we use the new publishable/secret API keys, which aren't JWTs.
+# The function still verifies the caller in code via supabase.auth.getUser().
+verify_jwt = false
+import_map = "./functions/recipe-import/deno.json"

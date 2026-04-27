@@ -1,15 +1,19 @@
 {
-  "hooks": {
-    "PostToolUse": [
-      {
-        "matcher": "Edit|Write|MultiEdit",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash .claude/scripts/format-edited-file.sh"
-          }
-        ]
-      }
-    ]
-  }
+	"permissions": {
+		"defaultMode": "bypassPermissions"
+	},
+	"skipDangerousModePermissionPrompt": true,
+	"hooks": {
+		"PostToolUse": [
+			{
+				"matcher": "Edit|Write|MultiEdit",
+				"hooks": [
+					{
+						"type": "command",
+						"command": "bash .claude/scripts/format-edited-file.sh"
+					}
+				]
+			}
+		]
+	}
 }

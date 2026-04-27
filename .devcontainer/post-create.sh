@@ -61,4 +61,13 @@ if [ -d .githooks ]; then
     echo "Configured git core.hooksPath -> .githooks"
 fi
 
+# 4. Ensure pnpm store and node_modules are owned by `node`, then install deps.
+# The named volumes start root-owned on first mount.
+sudo chown -R node:node /home/node/.cache/pnpm-store /workspace/node_modules 2>/dev/null || true
+pnpm config set store-dir /home/node/.cache/pnpm-store
+if [ -f package.json ]; then
+    echo "Installing project dependencies (pnpm install)..."
+    pnpm install --frozen-lockfile 2>/dev/null || pnpm install
+fi
+
 echo "post-create.sh complete."

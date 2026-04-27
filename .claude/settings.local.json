@@ -1,0 +1,15 @@
+{
+	"permissions": {
+		"allow": [
+			"WebFetch(domain:github.com)",
+			"Bash(chmod +x /Users/oliverstaub/gitroot/RecipeJoe/.devcontainer/post-create.sh)",
+			"Bash(chmod +x /Users/oliverstaub/gitroot/RecipeJoe/.claude/scripts/format-edited-file.sh)",
+			"Bash(chmod +x /Users/oliverstaub/gitroot/RecipeJoe/.githooks/pre-commit)",
+			"Bash(git -C /Users/oliverstaub/gitroot/RecipeJoe config core.hooksPath .githooks)",
+			"Read(//usr/local/bin/**)",
+			"Bash(sudo -nl)",
+			"Bash(git -C /Users/oliverstaub/gitroot/RecipeJoe ls-files --error-unmatch .env)",
+			"Bash(git -C /Users/oliverstaub/gitroot/RecipeJoe check-ignore -v .env)"
+		]
+	}
+}
