@@ -1,0 +1,27 @@
+I want you to crate a svelte / svelte kit web app.
+
+
+eventually i want to host it on vercel.
+
+I want to use supabase for db, auth and edge functions.
+
+I want this to be a recipe App called RecipeJoe.
+
+Fetch this design file, read its readme, and implement the relevant aspects of the design. https://api.anthropic.com/v1/design/h/AMNiAqhSpx9N1qlu0y1ZAw?open_file=RecipeJoe+Design.html
+Implement: RecipeJoe Design.html
+
+Use shadcn svelte components. stay close to the components dont change too much.
+The Design File is more of a guideline dont follow it exactly. dont change the components from shadcn for now stay close to the components to reduce complexity.
+
+The payment you dont have to implement now.
+
+
+
+in the git history you can find the old supabase functions. you can orient yourself from those but please rewrite them using modern best practices.
+
+Use very modular and reusable Architecture and Code Design.
+Use Clean Code practices.
+
+Codex will review your code.
+
+Update the claude.md using the claude.md plugin

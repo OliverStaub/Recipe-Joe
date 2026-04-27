@@ -1,0 +1,39 @@
+#!/usr/bin/env bash
+# Pre-commit: run Prettier on staged files and re-stage the formatted result.
+# Activated by: git config core.hooksPath .githooks  (done by post-create.sh).
+set -u
+
+STAGED=$(git diff --cached --name-only --diff-filter=ACMR \
+    | grep -E '\.(js|jsx|ts|tsx|svelte|json|jsonc|css|scss|html|md|mdx|yaml|yml)$' \
+    || true)
+
+[ -z "$STAGED" ] && exit 0
+
+PRETTIER=""
+if [ -x "./node_modules/.bin/prettier" ]; then
+    PRETTIER="./node_modules/.bin/prettier"
+elif command -v prettier >/dev/null 2>&1; then
+    PRETTIER="prettier"
+else
+    echo "pre-commit: prettier not found, skipping format"
+    exit 0
+fi
+
+# Format only files that still exist (skip deletions/renames-from).
+FILES=()
+while IFS= read -r f; do
+    [ -f "$f" ] && FILES+=("$f")
+done <<< "$STAGED"
+
+[ ${#FILES[@]} -eq 0 ] && exit 0
+
+echo "pre-commit: formatting ${#FILES[@]} staged file(s) with prettier"
+"$PRETTIER" --write --log-level warn "${FILES[@]}" || {
+    echo "pre-commit: prettier failed — aborting commit"
+    exit 1
+}
+
+# Re-stage anything Prettier rewrote.
+git add -- "${FILES[@]}"
+
+exit 0
